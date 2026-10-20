@@ -20,7 +20,8 @@ export type IconName =
   | "sparkle"
   | "key"
   | "refresh"
-  | "profile";
+  | "profile"
+  | "phone";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -132,6 +133,9 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
         <path d="M5 20c0-3.87 3.13-7 7-7s7 3.13 7 7" />
       </>
     ),
+    phone: (
+      <path d="M6.5 3h3l1.2 5-2.2 1.5a15 15 0 0 0 6 6l1.5-2.2 5 1.2v3c0 2-1.5 3.5-3.5 3.5C9.5 21 3 14.5 3 6.5 3 4.5 4.5 3 6.5 3Z" />
+    ),
   };
 
   return (
@@ -149,7 +153,7 @@ export function PageHeading({
   description,
   action,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
   action?: React.ReactNode;
@@ -157,7 +161,7 @@ export function PageHeading({
   return (
     <section className="page-heading">
       <div>
-        <span className="eyebrow">{eyebrow}</span>
+        {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h1>{title}</h1>
         <p>{description}</p>
       </div>
