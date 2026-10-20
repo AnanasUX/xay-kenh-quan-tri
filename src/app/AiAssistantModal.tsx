@@ -108,7 +108,7 @@ export function AiAssistantModal({
               <span className={`engine-dot ${apiKey.trim() ? "engine-gemini" : "engine-builtin"}`} />
               <span>
                 {apiKey.trim()
-                  ? "Động cơ: Google Gemini 2.5 Flash (Đã kết nối API)"
+                  ? "Động cơ: Google Gemini 3.8 Flash (Đã kết nối API)"
                   : "Động cơ: AI Thông minh tích hợp (Sẵn sàng - Không cần key)"}
               </span>
             </div>

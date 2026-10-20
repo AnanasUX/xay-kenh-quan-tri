@@ -45,167 +45,335 @@ export type LandingPageConfig = {
 };
 
 export const initialLandingPageConfig: LandingPageConfig = {
-  siteName: "Lớp Can Thiệp Chuyên Biệt Cô Hương",
-  shortName: "Cô Hương",
-  logo: "logo-co-huong.svg",
-  consultationLabel: "Đăng ký tư vấn",
-  phone: "090 123 4567",
-  email: "lienhe@cothuong.vn",
-  address: "Hà Nội, Việt Nam",
-  navigation: [
-    { label: "Trang chủ", path: "/" },
-    { label: "Giới thiệu", path: "/#gioi-thieu" },
-    { label: "Chương trình can thiệp", path: "/#chuong-trinh-can-thiep" },
-    { label: "Đội ngũ", path: "/#doi-ngu" },
-    { label: "Góc phụ huynh", path: "/#goc-phu-huynh" },
-    { label: "Liên hệ", path: "/#lien-he" },
+  "siteName": "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương",
+  "shortName": "Cô Hương",
+  "logo": "./images/brand-logo.png",
+  "consultationLabel": "Tư vấn ngay",
+  "phone": "096 290 3942",
+  "email": "mamnonhpkid@gmail.com",
+  "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+  "navigation": [
+    {
+      "label": "Giới thiệu",
+      "path": "#about"
+    },
+    {
+      "label": "Lĩnh vực",
+      "path": "#areas"
+    },
+    {
+      "label": "Quy trình",
+      "path": "#process"
+    },
+    {
+      "label": "Đội ngũ",
+      "path": "#team"
+    },
+    {
+      "label": "Không gian",
+      "path": "#gallery"
+    },
+    {
+      "label": "Góc phụ huynh",
+      "path": "#resources"
+    },
+    {
+      "label": "FAQ",
+      "path": "#faq"
+    },
+    {
+      "label": "Liên hệ",
+      "path": "#contact"
+    }
   ],
-  sections: [
+  "sections": [
     {
-      id: "general",
-      label: "Thông tin chung",
-      title: "Thông tin nhận diện",
-      description: "Tên trung tâm, logo, điều hướng và thông tin liên hệ dùng trên toàn website.",
-      enabled: true,
+      "id": "general",
+      "label": "Thông tin chung",
+      "title": "Thông tin nhận diện",
+      "description": "Tên trung tâm, logo, điều hướng và thông tin liên hệ dùng trên toàn website.",
+      "enabled": true
     },
     {
-      id: "hero",
-      label: "Mở đầu",
-      eyebrow: "THIẾT KẾ MỘT HÀNH TRÌNH PHÙ HỢP VỚI TRẺ",
-      title: "Tôn trọng từng nhịp phát triển, đồng hành cùng gia đình",
-      description:
-        "Không gian kết nối dành cho trẻ và phụ huynh, nơi mỗi khác biệt được lắng nghe, mỗi bước tiến được ghi nhận, và hành trình phát triển được xây dựng bằng sự thấu hiểu.",
-      enabled: true,
-      image: "khong-gian-hoc-tap-hero.jpg",
-      primaryAction: "Đăng ký tư vấn",
-      secondaryAction: "Tìm hiểu phương pháp",
+      "id": "hero",
+      "label": "Mở đầu",
+      "eyebrow": "Đồng hành cùng trẻ và gia đình tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+      "title": "Tôn trọng từng nhịp phát triển, đồng hành cùng gia đình",
+      "description": "Mỗi bước tiến của con đều được trân trọng và ghi nhận. Trung tâm chuyên sâu về phát triển ngôn ngữ & âm ngữ trị liệu, can thiệp hành vi ứng dụng ABA, điều hòa cảm giác và vận động, can thiệp sớm & chuẩn bị vào lớp 1. Chúng tôi xây dựng lộ trình khoa học, cá nhân hóa và gắn kết chặt chẽ cùng phụ huynh trên hành trình giúp con hòa nhập.",
+      "enabled": true,
+      "image": "./images/classroom-main.jpg",
+      "primaryAction": "Tư vấn ngay",
+      "secondaryAction": "Phương pháp dạy học"
     },
     {
-      id: "mission",
-      label: "Sứ mệnh",
-      title: "Sứ mệnh và môi trường hỗ trợ",
-      description:
-        "Chúng tôi xây dựng sự an tâm trước, hiểu nhu cầu trước, rồi mới lựa chọn hướng hỗ trợ.",
-      enabled: true,
-      items: [
-        { id: "mission-1", title: "Tôn trọng từng nhịp phát triển", description: "Không so sánh, không thúc ép. Mỗi trẻ có một cách cảm nhận và tốc độ trưởng thành riêng." },
-        { id: "mission-2", title: "Phối hợp chặt chẽ với gia đình", description: "Gia đình luôn là người đồng hành quan trọng trong mọi mục tiêu và quyết định." },
-        { id: "mission-3", title: "An toàn và kín đáo", description: "Thông tin được tôn trọng, trao đổi minh bạch và chỉ sử dụng cho mục đích hỗ trợ." },
-      ],
+      "id": "mission",
+      "label": "Sứ mệnh",
+      "title": "Sứ mệnh và cam kết của Trung tâm hỗ trợ trẻ tự kỷ Cô Hương",
+      "description": "Chúng tôi lấy sự an tâm của gia đình và hạnh phúc của trẻ làm trung tâm, tôn trọng nhịp phát triển tự nhiên thay vì tạo áp lực hay gò ép con.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "mission-1",
+          "title": "Cá nhân hóa theo từng trẻ",
+          "description": "Mỗi trẻ có hồ sơ đánh giá và kế hoạch can thiệp cá nhân (IEP) độc lập, thiết kế riêng biệt phù hợp với thế mạnh và mức độ phát triển của con."
+        },
+        {
+          "id": "mission-2",
+          "title": "Đồng hành 3 bên: Trẻ – Gia đình – Chuyên gia",
+          "description": "Gia đình luôn được chuyển giao kỹ năng thực hành tại nhà, cập nhật tiến trình và dữ liệu tiến bộ của con hàng tuần một cách minh bạch."
+        },
+        {
+          "id": "mission-3",
+          "title": "Môi trường an toàn và nhân văn",
+          "description": "Không áp đặt, không phán xét. Trung tâm cam kết tôn trọng cảm xúc, tâm lý của con và bảo mật tuyệt đối thông tin của gia đình."
+        }
+      ]
     },
     {
-      id: "support",
-      label: "Lĩnh vực hỗ trợ",
-      title: "Lĩnh vực hỗ trợ tham khảo",
-      description:
-        "Nội dung dưới đây chỉ mang tính tham khảo. Trong trao đổi ban đầu, chúng tôi cùng gia đình nhìn vào nhu cầu thực tế thay vì gán nhãn cho trẻ.",
-      enabled: true,
-      items: [
-        { id: "support-1", title: "Giao tiếp / Ngôn ngữ", description: "Trẻ chậm nói, khó diễn đạt, ít tương tác hoặc cần phát triển kỹ năng giao tiếp." },
-        { id: "support-2", title: "Kỹ năng xã hội", description: "Tăng khả năng kết nối, hợp tác, làm việc nhóm và thích nghi trong môi trường mới." },
-        { id: "support-3", title: "Tự lập", description: "Hỗ trợ trẻ hình thành thói quen, kỹ năng tự chăm sóc và chủ động trong sinh hoạt." },
-        { id: "support-4", title: "Nhận thức / Học tập", description: "Khơi gợi hứng thú học hỏi, tăng tập trung và xây dựng chiến lược học phù hợp." },
-        { id: "support-5", title: "Điều hòa cảm xúc", description: "Nhận biết, gọi tên và thể hiện cảm xúc theo cách an toàn, tích cực." },
-        { id: "support-6", title: "Học qua chơi", description: "Thiết kế hoạt động vui chơi có mục tiêu, phù hợp nhịp độ và sở thích của trẻ." },
-      ],
+      "id": "support",
+      "label": "Lĩnh vực hỗ trợ",
+      "eyebrow": "Chương trình can thiệp chuyên biệt chuẩn khoa học",
+      "title": "Các chương trình can thiệp chuyên sâu tại trung tâm",
+      "description": "Thiết kế dựa trên các mô hình khoa học quốc tế, linh hoạt theo độ tuổi, khả năng tiếp thu và nhu cầu thực tế của từng trẻ.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "support-1",
+          "title": "Âm ngữ trị liệu & Bật âm",
+          "description": "Hỗ trợ trẻ chậm nói, khó diễn đạt, luyện phát âm chuẩn, gia tăng vốn từ vựng và phát triển kỹ năng tương tác hai chiều hiệu quả."
+        },
+        {
+          "id": "support-2",
+          "title": "Can thiệp hành vi ứng dụng (ABA)",
+          "description": "Giảm thiểu các hành vi tiêu cực, hình thành thói quen hành vi thích nghi tích cực và rèn luyện khả năng làm theo hướng dẫn."
+        },
+        {
+          "id": "support-3",
+          "title": "Điều hòa cảm giác & Vận động (OT)",
+          "description": "Giúp trẻ tự điều chỉnh phản ứng giác quan, cải thiện khả năng tập trung chú ý và nâng cao sự phối hợp vận động thô/tinh."
+        },
+        {
+          "id": "support-4",
+          "title": "Kỹ năng xã hội & Giao tiếp nhóm",
+          "description": "Tạo cơ hội cho con chơi luân phiên, chia sẻ, kết nối với bạn bè và học cách thích nghi linh hoạt trong môi trường tập thể."
+        },
+        {
+          "id": "support-5",
+          "title": "Tiền tiểu học & Kỹ năng học đường",
+          "description": "Rèn luyện tác phong ngồi bàn, khả năng tập trung nghe giảng, làm theo hiệu lệnh, tiền đọc viết và sự tự tin vững bước vào lớp 1."
+        },
+        {
+          "id": "support-6",
+          "title": "Kỹ năng tự lập sinh hoạt",
+          "description": "Hướng dẫn trẻ tự ăn uống, thay đồ, vệ sinh cá nhân và quản lý đồ dùng cá nhân để tự chủ hơn trong cuộc sống hằng ngày."
+        }
+      ]
     },
     {
-      id: "process",
-      label: "Quy trình",
-      title: "Quy trình tham khảo",
-      description:
-        "Gia đình được trao đổi xuyên suốt. Chúng tôi bắt đầu từ nhu cầu thực tế, đồng thuận mục tiêu và theo dõi những thay đổi nhỏ nhất.",
-      enabled: true,
-      items: [
-        { id: "process-1", title: "Tiếp nhận thông tin gia đình", description: "Lắng nghe nhu cầu, bối cảnh và những băn khoăn ban đầu của phụ huynh.", meta: "01" },
-        { id: "process-2", title: "Trao đổi nhu cầu", description: "Cùng gia đình xác định điều cần ưu tiên và kết quả mong đợi.", meta: "02" },
-        { id: "process-3", title: "Xây dựng mục tiêu", description: "Lựa chọn mục tiêu thực tế, có thể theo dõi và phù hợp với trẻ.", meta: "03" },
-        { id: "process-4", title: "Thực hiện / Theo dõi", description: "Đồng hành qua hoạt động, ghi nhận tiến triển và trao đổi thường xuyên.", meta: "04" },
-        { id: "process-5", title: "Trao đổi định kỳ", description: "Cập nhật, điều chỉnh kế hoạch và thống nhất bước tiếp theo cùng gia đình.", meta: "05" },
-      ],
+      "id": "process",
+      "label": "Quy trình",
+      "eyebrow": "Quy trình can thiệp 5 bước rõ ràng và khoa học",
+      "title": "Quy trình can thiệp 5 bước rõ ràng và khoa học",
+      "description": "Đảm bảo sự minh bạch trong từng giai đoạn, từ đánh giá đầu vào chính xác đến chuyển giao kỹ năng bền vững cho gia đình.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "process-1",
+          "title": "Tiếp nhận & Lắng nghe",
+          "description": "Trò chuyện chuyên sâu ban đầu với phụ huynh để thấu hiểu những băn khoăn, mong đợi và bối cảnh sinh hoạt của gia đình.",
+          "meta": "01"
+        },
+        {
+          "id": "process-2",
+          "title": "Đánh giá phát triển toàn diện",
+          "description": "Sử dụng các bộ thang đo tiêu chuẩn uy tín để xác định chính xác độ tuổi phát triển và các vùng kỹ năng con cần hỗ trợ.",
+          "meta": "02"
+        },
+        {
+          "id": "process-3",
+          "title": "Xây dựng kế hoạch IEP cá nhân",
+          "description": "Thống nhất với phụ huynh về các mục tiêu can thiệp ngắn hạn và dài hạn cụ thể, phù hợp nhất với nhịp độ của con.",
+          "meta": "03"
+        },
+        {
+          "id": "process-4",
+          "title": "Thực hiện can thiệp & Ghi nhận",
+          "description": "Triển khai các giờ học tương tác 1:1 hoặc nhóm nhỏ, đồng thời theo dõi sát sao dữ liệu tiến bộ của con qua từng buổi.",
+          "meta": "04"
+        },
+        {
+          "id": "process-5",
+          "title": "Đánh giá định kỳ & Điều chỉnh",
+          "description": "Tổ chức họp đánh giá định kỳ 3–6 tháng để tổng kết kết quả đạt được, từ đó điều chỉnh lộ trình cho giai đoạn tiếp theo.",
+          "meta": "05"
+        }
+      ]
     },
     {
-      id: "team",
-      label: "Đội ngũ",
-      title: "Đội ngũ giáo viên",
-      description:
-        "Mỗi hồ sơ có sẵn vị trí cho ảnh, tên, chuyên môn và phần giới thiệu. Thông tin chính thức sẽ được cập nhật sau khi trung tâm xác minh.",
-      enabled: true,
-      items: [
-        { id: "teacher-1", title: "Tên giáo viên", description: "Thêm phần giới thiệu ngắn về kinh nghiệm, chuyên môn và phương pháp đồng hành cùng trẻ.", meta: "Chuyên môn / vai trò" },
-        { id: "teacher-2", title: "Tên giáo viên", description: "Thêm phần giới thiệu ngắn về kinh nghiệm, chuyên môn và phương pháp đồng hành cùng trẻ.", meta: "Chuyên môn / vai trò" },
-        { id: "teacher-3", title: "Tên giáo viên", description: "Thêm phần giới thiệu ngắn về kinh nghiệm, chuyên môn và phương pháp đồng hành cùng trẻ.", meta: "Chuyên môn / vai trò" },
-        { id: "teacher-4", title: "Tên giáo viên", description: "Thêm phần giới thiệu ngắn về kinh nghiệm, chuyên môn và phương pháp đồng hành cùng trẻ.", meta: "Chuyên môn / vai trò" },
-      ],
+      "id": "team",
+      "label": "Đội ngũ",
+      "eyebrow": "Chuyên môn cao · Tận tâm · Giàu tình thương",
+      "title": "Đội ngũ chuyên gia & giáo viên tận tâm",
+      "description": "Được đào tạo bài bản chuyên sâu về Tâm lý học, Giáo dục Đặc biệt và Âm ngữ trị liệu, luôn kiên nhẫn và đồng hành bằng cả trái tim.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "teacher-1",
+          "title": "ThS. Hoàng Thị Hương",
+          "description": "Hơn 10 năm kinh nghiệm trong công tác đánh giá, chẩn đoán và thiết kế chương trình can thiệp sớm cho trẻ tự kỷ, chậm phát triển.",
+          "meta": "Giám đốc chuyên môn • ThS Tâm lý học lâm sàng"
+        },
+        {
+          "id": "teacher-2",
+          "title": "CN. Nguyễn Thu Trang",
+          "description": "Tốt nghiệp Đại học Sư phạm Hà Nội chuyên ngành Giáo dục Đặc biệt, sở hữu chứng chỉ quốc tế về trị liệu ngôn ngữ và phát triển giao tiếp.",
+          "meta": "Chuyên viên Âm ngữ trị liệu"
+        },
+        {
+          "id": "teacher-3",
+          "title": "CN. Lê Hoàng Minh",
+          "description": "Chuyên sâu về trị liệu tích hợp giác quan, vận động chức năng và thiết kế môi trường học tập an toàn, thân thiện cho trẻ.",
+          "meta": "Chuyên viên Điều hòa Cảm giác (OT)"
+        },
+        {
+          "id": "teacher-4",
+          "title": "Cô Vũ Mai Anh",
+          "description": "Giàu kinh nghiệm trong việc xây dựng thói quen tự lập, điều hòa cảm xúc hành vi và chuẩn bị tâm thế vững vàng vào lớp 1 cho trẻ.",
+          "meta": "Giáo viên Can thiệp sớm & Tiền tiểu học"
+        }
+      ]
     },
     {
-      id: "gallery",
-      label: "Không gian",
-      title: "Không gian học tập",
-      description:
-        "Các hình ảnh dưới đây chỉ minh họa định hướng không gian. Cần bổ sung ảnh thực tế được phép sử dụng trước khi triển khai.",
-      enabled: true,
-      image: "khong-gian-hoc-tap.jpg",
-      items: [
-        { id: "gallery-1", title: "Không gian học tập chính", meta: "khong-gian-01.jpg" },
-        { id: "gallery-2", title: "Khu vực hoạt động nhóm", meta: "khong-gian-02.jpg" },
-        { id: "gallery-3", title: "Góc học cá nhân", meta: "khong-gian-03.jpg" },
-      ],
+      "id": "gallery",
+      "label": "Không gian",
+      "title": "Không gian học tập an toàn và truyền cảm hứng",
+      "description": "Hệ thống phòng học cá nhân, phòng vận động giác quan và khu vực kỹ năng được thiết kế tối ưu, ấm cúng, đầy đủ giáo cụ trực quan giúp trẻ thoải mái khám phá.",
+      "enabled": true,
+      "image": "./images/classroom-main.jpg",
+      "items": [
+        {
+          "id": "gallery-1",
+          "title": "Toàn cảnh phòng học sáng, thoáng với nội thất gỗ tự nhiên thân thiện",
+          "meta": "./images/classroom-main.jpg"
+        },
+        {
+          "id": "gallery-2",
+          "title": "Chi tiết góc học tập cá nhân với giáo cụ trực quan phong phú",
+          "meta": "./images/classroom-detail.jpg"
+        },
+        {
+          "id": "gallery-3",
+          "title": "Khu vực vận động cảm giác và tương tác nhóm an toàn",
+          "meta": "./images/classroom-main.jpg"
+        }
+      ]
     },
     {
-      id: "resources",
-      label: "Tài nguyên",
-      title: "Tài nguyên cho phụ huynh",
-      description:
-        "Các tiêu đề dưới đây là nội dung mẫu. Bài viết chỉ xuất hiện sau khi được xác minh nguồn và duyệt nội dung.",
-      enabled: true,
-      items: [
-        { id: "resource-1", title: "5 cách bố trí góc học tập cho trẻ", description: "Gợi ý đơn giản để tạo một góc học tập yên tĩnh, thân thiện và dễ duy trì tại nhà.", meta: "Không gian" },
-        { id: "resource-2", title: "Kỹ năng chuyển giao về nhà", description: "Cùng trẻ tiếp tục kỹ năng đã học qua những hoạt động gần gũi hằng ngày.", meta: "Đồng hành" },
-        { id: "resource-3", title: "Những điều nên trao đổi khi đón trẻ", description: "Một vài câu hỏi mở giúp cha mẹ hiểu ngày của con mà không tạo áp lực.", meta: "Cảm xúc" },
-      ],
+      "id": "resources",
+      "label": "Tài nguyên",
+      "eyebrow": "Góc chia sẻ kiến thức hữu ích cho ba mẹ",
+      "title": "Góc chia sẻ kiến thức hữu ích cho ba mẹ",
+      "description": "Tổng hợp các bài viết, cẩm nang thực hành giúp ba mẹ tự tin đồng hành và hỗ trợ con trong từng sinh hoạt thường nhật.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "resource-1",
+          "title": "5 cách kích thích phản xạ ngôn ngữ tự nhiên tại nhà cho trẻ chậm nói",
+          "description": "Tận dụng những khoảnh khắc đời thường như giờ ăn, giờ tắm, lúc đi dạo để tạo nhu cầu giao tiếp tự nhiên cho trẻ.",
+          "meta": "Âm ngữ"
+        },
+        {
+          "id": "resource-2",
+          "title": "Xử lý cơn giận dữ (Meltdown) ở trẻ tự kỷ một cách an toàn và thấu cảm",
+          "description": "Cách nhận biết sớm các dấu hiệu quá tải giác quan và các bước xử lý giúp con nhanh chóng lấy lại sự bình tĩnh.",
+          "meta": "Cảm xúc"
+        },
+        {
+          "id": "resource-3",
+          "title": "Xây dựng lịch trình sinh hoạt trực quan bằng hình ảnh (PECS) cho trẻ",
+          "description": "Tạo cấu trúc ngày rõ ràng giúp giảm bớt sự lo âu, giúp trẻ chủ động và tự lập trong các hoạt động hằng ngày.",
+          "meta": "Kỹ năng sống"
+        }
+      ]
     },
     {
-      id: "faq",
-      label: "Câu hỏi thường gặp",
-      title: "Câu hỏi thường gặp",
-      description:
-        "Một vài thông tin cơ bản trước khi gia đình bắt đầu. Nếu chưa tìm thấy câu trả lời phù hợp, hãy gửi câu hỏi cho chúng tôi.",
-      enabled: true,
-      items: [
-        { id: "faq-1", title: "Tôi có thể trao đổi với chuyên viên như thế nào?", description: "Trung tâm cần xác minh phương thức trao đổi, tần suất cập nhật và cách thức phối hợp với gia đình." },
-        { id: "faq-2", title: "Phụ huynh có thể tham gia trong quá trình hỗ trợ không?", description: "Phụ huynh được khuyến khích tham gia theo kế hoạch phối hợp của từng trẻ." },
-        { id: "faq-3", title: "Thời lượng và lịch hỗ trợ được sắp xếp như thế nào?", description: "Lịch hỗ trợ được thống nhất sau buổi trao đổi nhu cầu ban đầu." },
-        { id: "faq-4", title: "Thông tin gia đình được sử dụng ra sao?", description: "Thông tin chỉ được sử dụng cho mục đích tư vấn và hỗ trợ đã thống nhất." },
-      ],
+      "id": "faq",
+      "label": "Câu hỏi thường gặp",
+      "title": "Những câu hỏi phụ huynh thường quan tâm",
+      "description": "Giải đáp thực tế giúp ba mẹ giải tỏa băn khoăn khi bắt đầu hành trình đồng hành cùng trung tâm.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "faq-1",
+          "title": "Thời điểm vàng để can thiệp cho trẻ là khi nào?",
+          "description": "Giai đoạn từ 18 tháng đến trước 6 tuổi là \"thời điểm vàng\" khi não bộ của trẻ có tính dẻo cao nhất. Can thiệp càng sớm, cơ hội hòa nhập và bắt nhịp với bạn bè của trẻ càng thuận lợi."
+        },
+        {
+          "id": "faq-2",
+          "title": "Phụ huynh có được tham gia vào các buổi can thiệp không?",
+          "description": "Có. Trung tâm luôn khuyến khích và tạo điều kiện để phụ huynh quan sát, phối hợp cùng giáo viên, từ đó nắm bắt phương pháp để tiếp tục hỗ trợ con hiệu quả khi ở nhà."
+        },
+        {
+          "id": "faq-3",
+          "title": "Thời lượng một buổi can thiệp của con kéo dài bao lâu?",
+          "description": "Tùy thuộc vào chương trình và độ tuổi, mỗi buổi can thiệp thường kéo dài từ 45 đến 60 phút để đảm bảo sự tập trung cao độ và năng lượng tốt nhất cho trẻ."
+        },
+        {
+          "id": "faq-4",
+          "title": "Thông tin đánh giá và hồ sơ của con có được bảo mật không?",
+          "description": "Tuyệt đối bảo mật. Mọi hồ sơ, kết quả đánh giá chuyên môn và thông tin cá nhân của trẻ chỉ được dùng cho mục đích can thiệp và có sự đồng ý của gia đình."
+        }
+      ]
     },
     {
-      id: "contact",
-      label: "Biểu mẫu tư vấn",
-      eyebrow: "BẮT ĐẦU BẰNG MỘT CUỘC TRÒ CHUYỆN",
-      title: "Trao đổi cùng trung tâm",
-      description:
-        "Đây là biểu mẫu giao diện tham khảo. Thông tin chỉ nên được gửi khi trung tâm xác nhận kênh tiếp nhận và chính sách quyền riêng tư.",
-      enabled: true,
-      primaryAction: "Gửi yêu cầu tư vấn",
-      items: [
-        { id: "field-name", title: "Họ tên phụ huynh", meta: "text" },
-        { id: "field-phone", title: "Số điện thoại", meta: "tel" },
-        { id: "field-need", title: "Nhu cầu gia đình quan tâm", meta: "select" },
-        { id: "field-note", title: "Điều bạn muốn chia sẻ thêm", meta: "textarea" },
-      ],
+      "id": "contact",
+      "label": "Biểu mẫu tư vấn",
+      "eyebrow": "ĐỒNG HÀNH CÙNG CON TỪ HÔM NAY",
+      "title": "Đăng ký tư vấn & Đánh giá phát triển cho con",
+      "description": "Để lại thông tin để chuyên gia của Trung tâm Cô Hương liên hệ và hỗ trợ ba mẹ đặt lịch đánh giá phát triển chuyên sâu hoàn toàn miễn phí.",
+      "enabled": true,
+      "primaryAction": "Gửi yêu cầu tư vấn miễn phí",
+      "items": [
+        {
+          "id": "field-name",
+          "title": "Họ tên phụ huynh",
+          "meta": "text"
+        },
+        {
+          "id": "field-phone",
+          "title": "Số điện thoại",
+          "meta": "tel"
+        },
+        {
+          "id": "field-need",
+          "title": "Nhu cầu gia đình quan tâm",
+          "meta": "select"
+        },
+        {
+          "id": "field-note",
+          "title": "Điều bạn muốn chia sẻ thêm",
+          "meta": "textarea"
+        }
+      ]
     },
     {
-      id: "footer",
-      label: "Chân trang",
-      title: "Lớp Can Thiệp Chuyên Biệt Cô Hương",
-      description:
-        "Trang này chỉ là bản thiết kế tham khảo. Nội dung, hình ảnh, đội ngũ, bài viết và thông tin liên hệ cần được trung tâm xác minh trước khi triển khai.",
-      enabled: true,
-      items: [
-        { id: "footer-1", title: "Khám phá", description: "Giới thiệu · Lĩnh vực hỗ trợ · Đội ngũ · Tài nguyên" },
-        { id: "footer-2", title: "Hỗ trợ", description: "Góc phụ huynh · Câu hỏi thường gặp · Liên hệ · Quyền riêng tư" },
-      ],
-    },
-  ],
+      "id": "footer",
+      "label": "Chân trang",
+      "title": "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương",
+      "description": "Đồng hành cùng trẻ tự kỷ, chậm nói và gia đình bằng sự thấu hiểu, tôn trọng nhịp phát triển và phương pháp khoa học chuẩn mực tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên.",
+      "enabled": true,
+      "items": [
+        {
+          "id": "footer-1",
+          "title": "Khám phá",
+          "description": "Giới thiệu · Lĩnh vực · Quy trình · Đội ngũ · Không gian"
+        },
+        {
+          "id": "footer-2",
+          "title": "Hỗ trợ phụ huynh",
+          "description": "Góc phụ huynh · Câu hỏi thường gặp · Đăng ký tư vấn · Chính sách bảo mật"
+        }
+      ]
+    }
+  ]
 };

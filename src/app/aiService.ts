@@ -294,7 +294,7 @@ export async function callGeminiApi(
   targetSectionId: LandingSectionId | "all",
   apiKey: string
 ): Promise<AiGenerateResult> {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+  const modelsToTry = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
   const systemInstruction = `
 Bạn là chuyên gia thương hiệu và biên tập nội dung y tế / giáo dục đặc biệt (can thiệp sớm, tự kỷ, chậm nói, trị liệu tâm lý cho trẻ em).
@@ -312,6 +312,9 @@ CÁC NGUYÊN TẮC QUAN TRỌNG:
 `;
 
   const requestBody = {
+    systemInstruction: {
+      parts: [{ text: systemInstruction }]
+    },
     contents: [
       {
         parts: [
@@ -330,18 +333,37 @@ CÁC NGUYÊN TẮC QUAN TRỌNG:
   };
 
   try {
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
-    });
+    let lastError: any = null;
+    let data: any = null;
+    let successfulModel = modelsToTry[0];
 
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      throw new Error(errData?.error?.message || `HTTP ${res.status}: Không thể gọi Gemini API`);
+    for (const model of modelsToTry) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (res.ok) {
+          data = await res.json();
+          successfulModel = model;
+          break;
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        lastError = new Error(errData?.error?.message || `HTTP ${res.status}: Lỗi khi gọi model ${model}`);
+        console.warn(`Model ${model} failed, trying next fallback:`, lastError.message);
+      } catch (err: any) {
+        lastError = err;
+      }
     }
 
-    const data = await res.json();
+    if (!data) {
+      throw lastError || new Error("Không thể kết nối đến các model Gemini API");
+    }
+
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawText) {
       throw new Error("Gemini không trả về kết quả nội dung");
@@ -374,7 +396,7 @@ CÁC NGUYÊN TẮC QUAN TRỌNG:
       success: true,
       config: mergedConfig,
       summary: [
-        "Đã sinh cấu hình thông minh thành công bằng Google Gemini AI",
+        `Đã sinh cấu hình thông minh thành công bằng Google Gemini AI (${successfulModel})`,
         `Đã cập nhật ${mergedConfig.sections.length} khối nội dung`,
       ],
       engine: "gemini",

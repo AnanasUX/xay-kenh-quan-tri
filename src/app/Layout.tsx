@@ -26,9 +26,9 @@ export default function Layout() {
     <div className="app-shell">
       <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""}`}>
         <div className="brand">
-          <span className="brand-symbol">A</span>
-          <span>aurora</span>
-          <small>STUDIO</small>
+          <img src="./logo.png" alt="Logo" style={{ width: 34, height: 34, borderRadius: 8, objectFit: "contain", flexShrink: 0 }} />
+          <span>Cô Hương</span>
+          <small>QUẢN TRỊ</small>
         </div>
         <button
           aria-label="Đóng menu"
