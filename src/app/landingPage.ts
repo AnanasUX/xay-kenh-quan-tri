@@ -40,6 +40,7 @@ export type LandingPageConfig = {
   phone: string;
   email: string;
   address: string;
+  facebook?: string;
   navigation: { label: string; path: string }[];
   sections: LandingSection[];
 };
@@ -52,6 +53,7 @@ export const initialLandingPageConfig: LandingPageConfig = {
   "phone": "096 290 3942",
   "email": "mamnonhpkid@gmail.com",
   "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+  "facebook": "https://www.facebook.com",
   "navigation": [
     {
       "label": "Giới thiệu",

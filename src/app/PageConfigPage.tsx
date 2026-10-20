@@ -362,7 +362,7 @@ function GeneralSettings({
 }: {
   config: typeof initialLandingPageConfig;
   onChange: (
-    field: "siteName" | "shortName" | "logo" | "consultationLabel" | "phone" | "email" | "address",
+    field: "siteName" | "shortName" | "logo" | "consultationLabel" | "phone" | "email" | "address" | "facebook",
     value: string,
   ) => void;
   onNavigationChange: (index: number, field: "label" | "path", value: string) => void;
@@ -392,12 +392,13 @@ function GeneralSettings({
       </div>
       <div className="form-section">
         <div className="form-section-title">
-          <strong>Thông tin liên hệ</strong>
-          <p>Dùng cho biểu mẫu tư vấn và chân trang.</p>
+          <strong>Thông tin liên hệ & Mạng xã hội</strong>
+          <p>Dùng cho biểu mẫu tư vấn, nút nổi liên hệ nhanh và chân trang.</p>
         </div>
         <div className="form-grid">
           <label>Số điện thoại<input value={config.phone} onChange={(event) => onChange("phone", event.target.value)} /></label>
           <label>Email<input type="email" value={config.email} onChange={(event) => onChange("email", event.target.value)} /></label>
+          <label className="field-wide">Đường dẫn Facebook Fanpage / Messenger<input value={config.facebook || ""} placeholder="https://www.facebook.com/..." onChange={(event) => onChange("facebook", event.target.value)} /></label>
           <label className="field-wide">Địa chỉ<input value={config.address} onChange={(event) => onChange("address", event.target.value)} /></label>
         </div>
       </div>
