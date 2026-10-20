@@ -50,7 +50,11 @@ export function PageConfigPage() {
     setDirty(true);
   };
 
-  const updateItem = (itemId: string, field: "title" | "description" | "meta", value: string) => {
+  const updateItem = (
+    itemId: string,
+    field: "title" | "description" | "meta" | "image",
+    value: string,
+  ) => {
     updateSection({
       items: activeSection.items?.map((item) =>
         item.id === itemId ? { ...item, [field]: value } : item,
@@ -305,7 +309,23 @@ export function PageConfigPage() {
                   <h3>{activeSection.title}</h3>
                   <p>{activeSection.description}</p>
                   {activeSection.image && <div className="mini-image"><Icon name="eye" size={19} /><span>{activeSection.image}</span></div>}
-                  {activeSection.items && (
+                  {activeSection.id === "team" ? (
+                    <div className="mini-team-list">
+                      {activeSection.items?.slice(0, 4).map((item) => (
+                        <div key={item.id} className="mini-team-item">
+                          {item.image ? (
+                            <img src={item.image} alt={item.title} className="mini-avatar" />
+                          ) : (
+                            <span className="mini-avatar-placeholder"><Icon name="profile" size={14} /></span>
+                          )}
+                          <div>
+                            <strong>{item.title}</strong>
+                            <small>{item.meta || "Chuyên môn"}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : activeSection.items && (
                     <div className="mini-items">
                       {activeSection.items.slice(0, 6).map((item) => (
                         <span key={item.id}><i />{item.title}</span>
@@ -405,7 +425,7 @@ function SectionEditor({
 }: {
   section: LandingSection;
   onChange: (patch: Partial<LandingSection>) => void;
-  onItemChange: (itemId: string, field: "title" | "description" | "meta", value: string) => void;
+  onItemChange: (itemId: string, field: "title" | "description" | "meta" | "image", value: string) => void;
   onRemoveItem: (itemId: string) => void;
   onAddItem: () => void;
 }) {
@@ -443,13 +463,155 @@ function SectionEditor({
                   <button aria-label={`Xóa mục ${index + 1}`} onClick={() => onRemoveItem(item.id)}><Icon name="close" size={15} /></button>
                 </header>
                 <div className="form-grid">
-                  <label className="field-wide">Tiêu đề<input value={item.title} onChange={(event) => onItemChange(item.id, "title", event.target.value)} /></label>
-                  {item.meta !== undefined && !/^\d+$/.test(item.meta) && <label className="field-wide">Nhãn phụ / vai trò<input value={item.meta} onChange={(event) => onItemChange(item.id, "meta", event.target.value)} /></label>}
-                  {item.description !== undefined && <label className="field-wide">Mô tả<textarea value={item.description} onChange={(event) => onItemChange(item.id, "description", event.target.value)} /></label>}
+                  <label className="field-wide">Tiêu đề / Tên<input value={item.title} onChange={(event) => onItemChange(item.id, "title", event.target.value)} /></label>
+                  {item.meta !== undefined && !/^\d+$/.test(item.meta) && <label className="field-wide">Chuyên môn / Vai trò<input value={item.meta} onChange={(event) => onItemChange(item.id, "meta", event.target.value)} /></label>}
+                  {item.description !== undefined && <label className="field-wide">Mô tả giới thiệu<textarea value={item.description} onChange={(event) => onItemChange(item.id, "description", event.target.value)} /></label>}
+                  
+                  {/* Mục 5: Thêm ảnh chân dung cho Đội ngũ giáo viên */}
+                  {section.id === "team" && (
+                    <ItemImageField
+                      label="Ảnh chân dung giáo viên"
+                      value={item.image || ""}
+                      onChange={(val) => onItemChange(item.id, "image", val)}
+                    />
+                  )}
+
+                  {/* Ảnh không gian phòng học */}
+                  {section.id === "gallery" && (
+                    <ItemImageField
+                      label="Hình ảnh không gian"
+                      value={item.meta || ""}
+                      onChange={(val) => onItemChange(item.id, "meta", val)}
+                    />
+                  )}
                 </div>
               </article>
             ))}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function compressImageFile(file: File, maxWidth = 600, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function ItemImageField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [editingUrl, setEditingUrl] = useState(false);
+  const [urlInput, setUrlInput] = useState(value);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressedDataUrl = await compressImageFile(file, 480, 0.85);
+      onChange(compressedDataUrl);
+    } catch {
+      alert("Không thể đọc tệp ảnh này");
+    }
+  };
+
+  return (
+    <div className="field-wide item-image-field">
+      <span className="item-image-label">{label}</span>
+      <div className="item-image-row">
+        <div className="item-image-thumb">
+          {value ? (
+            <img src={value} alt="Chân dung" />
+          ) : (
+            <div className="item-image-empty">
+              <Icon name="profile" size={24} />
+              <small>Chưa có ảnh</small>
+            </div>
+          )}
+        </div>
+        <div className="item-image-controls">
+          <label className="upload-btn">
+            <Icon name="page" size={15} />
+            {value ? "Thay ảnh mới" : "Tải ảnh từ máy"}
+            <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: "none" }} />
+          </label>
+          <button
+            type="button"
+            className="secondary-btn-sm"
+            onClick={() => setEditingUrl(!editingUrl)}
+          >
+            {editingUrl ? "Đóng URL" : "Dán link ảnh"}
+          </button>
+          {value && (
+            <button
+              type="button"
+              className="danger-btn-sm"
+              onClick={() => onChange("")}
+              title="Xóa ảnh chân dung này"
+            >
+              <Icon name="close" size={14} /> Xóa ảnh
+            </button>
+          )}
+        </div>
+      </div>
+      {editingUrl && (
+        <div className="item-image-url-input">
+          <input
+            type="text"
+            placeholder="Dán đường dẫn ảnh https://... hoặc ./images/..."
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+          />
+          <button
+            type="button"
+            className="secondary-btn-sm"
+            onClick={() => {
+              onChange(urlInput.trim());
+              setEditingUrl(false);
+            }}
+          >
+            Lưu
+          </button>
         </div>
       )}
     </div>
@@ -465,21 +627,32 @@ function MediaField({
   value: string;
   onChange?: (value: string) => void;
 }) {
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !onChange) return;
+    try {
+      const dataUrl = await compressImageFile(file, 960, 0.85);
+      onChange(dataUrl);
+    } catch {
+      onChange(file.name);
+    }
+  };
+
   return (
     <label className="field-wide">
       {label}
       <span className="media-field">
         <span><Icon name="page" size={18} /></span>
-        <span><strong>{value}</strong><small>JPG, PNG hoặc WEBP · Tối đa 5MB</small></span>
+        <span>
+          <strong>{value.startsWith("data:") ? "Ảnh đã tải lên (Dung lượng nhẹ)" : value}</strong>
+          <small>JPG, PNG hoặc WEBP · Tối đa 5MB</small>
+        </span>
         <span className="media-upload">
           Thay ảnh
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file && onChange) onChange(file.name);
-            }}
+            onChange={handleUpload}
           />
         </span>
       </span>

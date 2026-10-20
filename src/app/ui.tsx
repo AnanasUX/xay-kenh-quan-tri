@@ -19,7 +19,8 @@ export type IconName =
   | "chevron"
   | "sparkle"
   | "key"
-  | "refresh";
+  | "refresh"
+  | "profile";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -123,6 +124,12 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
         <path d="M3 3v5h5" />
         <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
         <path d="M16 21h5v-5" />
+      </>
+    ),
+    profile: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M5 20c0-3.87 3.13-7 7-7s7 3.13 7 7" />
       </>
     ),
   };

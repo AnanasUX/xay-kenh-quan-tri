@@ -16,6 +16,7 @@ export type ConfigItem = {
   title: string;
   description?: string;
   meta?: string;
+  image?: string;
 };
 
 export type LandingSection = {
