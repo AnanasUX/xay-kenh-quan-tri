@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AiAssistantModal } from "./AiAssistantModal";
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
@@ -21,6 +22,7 @@ export function PageConfigPage() {
   const [activeId, setActiveId] = useState<LandingSectionId>("general");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
 
   useEffect(() => {
     fetch(CLOUD_API_URL, { cache: "no-store" })
@@ -74,18 +76,19 @@ export function PageConfigPage() {
     updateSection({ items: activeSection.items?.filter((item) => item.id !== itemId) });
   };
 
-  const save = async (publish = false) => {
+  const save = async (publish = false, overrideConfig?: LandingPageConfig) => {
+    const targetConfig = overrideConfig || config;
     setSaving(true);
     notify(publish ? "Đang xuất bản & đồng bộ đám mây..." : "Đang lưu bản nháp...");
 
     // 1. Lưu cục bộ
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(targetConfig));
     window.localStorage.setItem(`${STORAGE_KEY}:status`, publish ? "published" : "draft");
 
     // 2. Phát tín hiệu thời gian thực cho các tab đang mở
     try {
       const channel = new BroadcastChannel("aurora-cms-sync");
-      channel.postMessage({ type: "config_updated", config, publish });
+      channel.postMessage({ type: "config_updated", config: targetConfig, publish });
       channel.close();
     } catch {}
 
@@ -94,7 +97,7 @@ export function PageConfigPage() {
       await fetch(CLOUD_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify(targetConfig),
       });
       notify(publish ? "Đã xuất bản & đồng bộ dữ liệu toàn hệ thống!" : "Đã lưu bản nháp thành công!");
     } catch {
@@ -102,6 +105,15 @@ export function PageConfigPage() {
     } finally {
       setSaving(false);
       setDirty(false);
+    }
+  };
+
+  const handleApplyAiConfig = async (newConfig: LandingPageConfig, publishImmediately: boolean) => {
+    setConfig(newConfig);
+    setDirty(!publishImmediately);
+    notify(publishImmediately ? "Đang đồng bộ dữ liệu AI lên website..." : "Đã cập nhật cấu hình từ AI!");
+    if (publishImmediately) {
+      await save(true, newConfig);
     }
   };
 
@@ -146,6 +158,15 @@ export function PageConfigPage() {
         description="Quản lý toàn bộ thông tin và các khối nội dung đang hiển thị trên website."
         action={
           <div className="config-actions">
+            <button
+              className="ai-trigger-button"
+              onClick={() => setShowAiModal(true)}
+              type="button"
+              title="Tự động cấu hình toàn bộ hoặc từng phần website bằng AI"
+            >
+              <Icon name="sparkle" size={16} />
+              Trợ lý AI
+            </button>
             <label className="secondary-button" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>
               <Icon name="page" size={15} />
               Nhập JSON
@@ -205,21 +226,32 @@ export function PageConfigPage() {
               <h2>{activeSection.title}</h2>
               <p>{activeSection.id === "general" ? activeSection.description : "Chỉnh sửa nội dung đang hiển thị trên landing page."}</p>
             </div>
-            {activeSection.id !== "general" && (
-              <label className="visibility-control">
-                <span>
-                  <strong>Hiển thị khối</strong>
-                  <small>Ẩn hoặc hiện trên trang chính</small>
-                </span>
-                <button
-                  aria-label="Thay đổi trạng thái hiển thị"
-                  className={activeSection.enabled ? "toggle enabled" : "toggle"}
-                  onClick={() => updateSection({ enabled: !activeSection.enabled })}
-                >
-                  <i />
-                </button>
-              </label>
-            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="ai-section-button"
+                onClick={() => setShowAiModal(true)}
+                title="Yêu cầu AI viết lại hoặc nâng cấp nội dung mục này"
+              >
+                <Icon name="sparkle" size={14} />
+                Viết lại bằng AI
+              </button>
+              {activeSection.id !== "general" && (
+                <label className="visibility-control">
+                  <span>
+                    <strong>Hiển thị khối</strong>
+                    <small>Ẩn hoặc hiện trên trang chính</small>
+                  </span>
+                  <button
+                    aria-label="Thay đổi trạng thái hiển thị"
+                    className={activeSection.enabled ? "toggle enabled" : "toggle"}
+                    onClick={() => updateSection({ enabled: !activeSection.enabled })}
+                  >
+                    <i />
+                  </button>
+                </label>
+              )}
+            </div>
           </div>
 
           {activeSection.id === "general" ? (
@@ -291,6 +323,14 @@ export function PageConfigPage() {
           </div>
         </aside>
       </section>
+
+      <AiAssistantModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        currentConfig={config}
+        activeSectionId={activeId}
+        onApply={handleApplyAiConfig}
+      />
     </>
   );
 }

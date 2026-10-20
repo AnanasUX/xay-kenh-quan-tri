@@ -16,7 +16,10 @@ export type IconName =
   | "eye"
   | "calendar"
   | "check"
-  | "chevron";
+  | "chevron"
+  | "sparkle"
+  | "key"
+  | "refresh";
 
 export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
   const paths: Record<IconName, React.ReactNode> = {
@@ -102,6 +105,26 @@ export function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
     ),
     check: <path d="m5 12 4 4L19 6" />,
     chevron: <path d="m9 18 6-6-6-6" />,
+    sparkle: (
+      <>
+        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z" />
+        <path d="M19 3v4M21 5h-4" />
+      </>
+    ),
+    key: (
+      <>
+        <circle cx="7.5" cy="15.5" r="4.5" />
+        <path d="m10.7 12.3 8.3-8.3h3v3l-2 2v2l-2 2v2l-1.3 1.3" />
+      </>
+    ),
+    refresh: (
+      <>
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+        <path d="M16 21h5v-5" />
+      </>
+    ),
   };
 
   return (
