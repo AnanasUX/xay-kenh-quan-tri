@@ -1,14 +1,15 @@
-import { useMemo, useState } from "react";
-import { initialLandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
+import { useEffect, useMemo, useState } from "react";
+import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
 
-const STORAGE_KEY = "aurora-cms:landing-page";
+export const STORAGE_KEY = "aurora-cms:landing-page";
+export const CLOUD_API_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/landing_config";
 
-function loadLandingPageConfig() {
+function loadLandingPageConfig(): LandingPageConfig {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
-    return saved ? (JSON.parse(saved) as typeof initialLandingPageConfig) : initialLandingPageConfig;
+    return saved ? (JSON.parse(saved) as LandingPageConfig) : initialLandingPageConfig;
   } catch {
     return initialLandingPageConfig;
   }
@@ -16,9 +17,22 @@ function loadLandingPageConfig() {
 
 export function PageConfigPage() {
   const { notify } = useCms();
-  const [config, setConfig] = useState(loadLandingPageConfig);
+  const [config, setConfig] = useState<LandingPageConfig>(loadLandingPageConfig);
   const [activeId, setActiveId] = useState<LandingSectionId>("general");
   const [dirty, setDirty] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(CLOUD_API_URL, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.sections)) {
+          setConfig(data);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.warn("Could not load from cloud:", err));
+  }, []);
   const activeSection = useMemo(
     () => config.sections.find((section) => section.id === activeId)!,
     [activeId, config.sections],
@@ -60,16 +74,35 @@ export function PageConfigPage() {
     updateSection({ items: activeSection.items?.filter((item) => item.id !== itemId) });
   };
 
-  const save = (publish = false) => {
+  const save = async (publish = false) => {
+    setSaving(true);
+    notify(publish ? "Đang xuất bản & đồng bộ đám mây..." : "Đang lưu bản nháp...");
+
+    // 1. Lưu cục bộ
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     window.localStorage.setItem(`${STORAGE_KEY}:status`, publish ? "published" : "draft");
+
+    // 2. Phát tín hiệu thời gian thực cho các tab đang mở
     try {
       const channel = new BroadcastChannel("aurora-cms-sync");
       channel.postMessage({ type: "config_updated", config, publish });
       channel.close();
     } catch {}
-    setDirty(false);
-    notify(publish ? "Đã xuất bản cấu hình landing page" : "Đã lưu bản nháp cấu hình");
+
+    // 3. Đồng bộ lên máy chủ đám mây để tất cả thiết bị/người dùng đều thấy
+    try {
+      await fetch(CLOUD_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
+      notify(publish ? "Đã xuất bản & đồng bộ dữ liệu toàn hệ thống!" : "Đã lưu bản nháp thành công!");
+    } catch {
+      notify("Đã lưu cục bộ (kết nối máy chủ tạm thời gián đoạn)");
+    } finally {
+      setSaving(false);
+      setDirty(false);
+    }
   };
 
   const exportJson = () => {
@@ -122,12 +155,12 @@ export function PageConfigPage() {
               <Icon name="share" size={15} />
               Xuất JSON
             </button>
-            <button className="secondary-button" onClick={() => save(false)}>
+            <button className="secondary-button" disabled={saving} onClick={() => save(false)}>
               Lưu bản nháp
             </button>
-            <button className="primary-button" onClick={() => save(true)}>
+            <button className="primary-button" disabled={saving} onClick={() => save(true)}>
               <Icon name="check" size={16} />
-              Xuất bản thay đổi
+              {saving ? "Đang đồng bộ..." : "Xuất bản thay đổi"}
             </button>
           </div>
         }
