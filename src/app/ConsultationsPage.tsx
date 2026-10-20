@@ -113,11 +113,11 @@ export function ConsultationsPage() {
     }
   };
 
-  const statusMeta: Record<ConsultationLead["status"], { label: string; bg: string; color: string }> = {
-    new: { label: "Chờ liên hệ", bg: "#fff1f0", color: "#cf1322" },
-    contacted: { label: "Đã tư vấn", bg: "#e6f7ff", color: "#096dd9" },
-    scheduled: { label: "Đã hẹn lịch đánh giá", bg: "#f6ffed", color: "#389e0d" },
-    completed: { label: "Đã nhập học / Hoàn thành", bg: "#f9f0ff", color: "#722ed1" },
+  const statusMeta: Record<ConsultationLead["status"], { label: string; bg: string; color: string; border: string }> = {
+    new: { label: "Chờ liên hệ", bg: "var(--color-status-error-bg)", color: "var(--color-status-error)", border: "var(--color-status-error-border)" },
+    contacted: { label: "Đã tư vấn", bg: "var(--color-status-info-bg)", color: "var(--color-status-info)", border: "var(--color-status-info-border)" },
+    scheduled: { label: "Đã hẹn lịch đánh giá", bg: "var(--color-status-success-bg)", color: "var(--color-status-success)", border: "var(--color-status-success-border)" },
+    completed: { label: "Đã nhập học / Hoàn thành", bg: "var(--purple-100)", color: "var(--purple-700)", border: "var(--purple-300)" },
   };
 
   return (
@@ -259,7 +259,7 @@ export function ConsultationsPage() {
                         style={{
                           background: meta.bg,
                           color: meta.color,
-                          border: `1px solid ${meta.color}40`,
+                          border: `1px solid ${meta.border}`,
                           padding: "6px 12px",
                           borderRadius: "20px",
                           fontSize: "13px",

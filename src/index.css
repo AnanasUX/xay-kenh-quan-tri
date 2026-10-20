@@ -2,11 +2,109 @@
 @import "tailwindcss";
 
 :root {
-  font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #211829;
-  background: #f8f6fa;
-  font-synthesis: none;
-  font-size: 16px;
+  /* ==========================================================================
+     01.1 / COLOR DESIGN SYSTEM TOKENS (Đồng bộ với logo trung tâm)
+     ========================================================================== */
+  --color-brand-primary: #50008b;
+  --color-brand-secondary: #0847ab;
+  --color-brand-accent: #2d9935;
+
+  --color-text-primary: #25213b;
+  --color-text-secondary: #565268;
+  --color-text-muted: #686279;
+
+  --color-background-surface: #ffffff;
+  --color-background-page: #fcfaff;
+  --color-background-subtle: #fcfaff;
+
+  --color-border-default: #e3dcee;
+
+  --color-action-primary: #50008b;
+  --color-action-primary-hover: #410070;
+  --color-action-secondary: #0847ab;
+  --color-focus-ring: #0847ab;
+
+  --color-status-success: #176b35;
+  --color-status-warning: #795c00;
+  --color-status-error: #b51f2b;
+  --color-status-info: #175d82;
+
+  --color-status-success-bg: #e8f8ec;
+  --color-status-warning-bg: #fffbe6;
+  --color-status-error-bg: #fff1f0;
+  --color-status-info-bg: #e6f7ff;
+
+  --color-status-success-border: #b7eb8f;
+  --color-status-warning-border: #ffe58f;
+  --color-status-error-border: #ffa39e;
+  --color-status-info-border: #91d5ff;
+
+  /* Bảng màu giao diện đồng bộ với logo */
+  --color-logo-purple: #50008b;
+  --color-logo-blue: #0847ab;
+  --color-logo-green: #2d9935;
+  --color-logo-yellow: #ffd300;
+  --color-logo-red: #ec0024;
+  --color-logo-sky: #0c95e1;
+
+  /* Thang tím nhận diện gốc 50–900 */
+  --purple-50: #faf7ff;
+  --purple-100: #f3ebff;
+  --purple-200: #e3d2f5;
+  --purple-300: #cba9e8;
+  --purple-400: #aa75d3;
+  --purple-500: #8747b5;
+  --purple-600: #6b239f;
+  --purple-700: #50008b;
+  --purple-800: #410070;
+  --purple-900: #2e0050;
+
+  /* ==========================================================================
+     01.2 / TYPOGRAPHY SCALE (Be Vietnam Pro - ưu tiên dấu tiếng Việt rõ)
+     ========================================================================== */
+  --font-sans: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+
+  --font-display-size: 56px;
+  --font-display-line: 1.15;
+  --font-h1-size: 36px;
+  --font-h1-line: 1.25;
+  --font-h2-size: 28px;
+  --font-h2-line: 1.30;
+  --font-h3-size: 22px;
+  --font-h3-line: 1.35;
+  --font-h4-size: 18px;
+  --font-h4-line: 1.40;
+  --font-body-large-size: 18px;
+  --font-body-large-line: 1.60;
+  --font-body-size: 16px;
+  --font-body-line: 1.60;
+  --font-small-size: 14px;
+  --font-small-line: 1.60;
+  --font-caption-size: 12px;
+  --font-caption-line: 1.60;
+
+  /* UI Aliases */
+  --primary: var(--color-brand-primary);
+  --primary-dark: var(--color-action-primary-hover);
+  --primary-soft: var(--purple-100);
+  --ink: var(--color-text-primary);
+  --secondary: var(--color-text-secondary);
+  --muted: var(--color-text-muted);
+  --surface: var(--color-background-surface);
+  --subtle: var(--color-background-subtle);
+  --line: var(--color-border-default);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(37, 33, 59, 0.05);
+  --shadow-card: 0 4px 16px rgba(37, 33, 59, 0.06);
+
+  color: var(--color-text-primary);
+  background: var(--color-background-page);
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line);
 }
 
 * {
@@ -42,7 +140,7 @@ button {
   flex-direction: column;
   padding: 28px 18px 22px;
   color: #f7effb;
-  background: #25122f;
+  background: var(--purple-900);
 }
 
 .brand {
@@ -63,7 +161,7 @@ button {
   height: 36px;
   place-items: center;
   border-radius: 9px 9px 9px 3px;
-  color: #351641;
+  color: var(--purple-800);
   background: #d4b4e7;
   font-family: Georgia, serif;
   font-size: 21px;
@@ -115,7 +213,7 @@ button {
 .nav-item:hover,
 .nav-item.active {
   color: #fff;
-  background: #643080;
+  background: var(--color-brand-primary);
 }
 
 .nav-item b {
@@ -143,7 +241,7 @@ button {
   border: 1px solid #493353;
   border-radius: 10px;
   color: #d8cadd;
-  background: #2e1938;
+  background: rgba(255, 255, 255, 0.06);
   text-align: left;
 }
 
@@ -244,7 +342,7 @@ main {
   align-items: center;
   justify-content: space-between;
   padding: 0 36px;
-  border-bottom: 1px solid #e9e4ec;
+  border-bottom: 1px solid var(--color-border-default);
   background: rgb(255 255 255 / 94%);
   backdrop-filter: blur(12px);
 }
@@ -277,9 +375,9 @@ main {
   width: 36px;
   height: 36px;
   place-items: center;
-  border: 1px solid #e7e1e9;
+  border: 1px solid var(--color-border-default);
   border-radius: 9px;
-  color: #655c6a;
+  color: var(--color-text-secondary);
   background: white;
 }
 
@@ -295,7 +393,7 @@ main {
   height: 6px;
   border: 1px solid white;
   border-radius: 50%;
-  background: #873db0;
+  background: var(--color-brand-primary);
 }
 
 .notification-panel {
@@ -319,8 +417,8 @@ main {
   flex: 0 0 34px;
   place-items: center;
   border-radius: 8px;
-  color: #713292;
-  background: #f0e5f5;
+  color: var(--color-brand-primary);
+  background: var(--purple-100);
 }
 
 .notification-panel strong {
@@ -329,7 +427,7 @@ main {
 
 .notification-panel p {
   margin: 5px 0 0;
-  color: #8e8692;
+  color: var(--color-text-muted);
   font-size: 12px;
   line-height: 1.6;
 }
@@ -347,7 +445,7 @@ main {
 }
 
 .eyebrow {
-  color: #8344a2;
+  color: var(--color-brand-primary);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -367,7 +465,7 @@ h1 {
 
 .page-heading p {
   margin-bottom: 0;
-  color: #7f7485;
+  color: var(--color-text-muted);
   font-size: 15px;
 }
 
@@ -381,7 +479,7 @@ h1 {
   border: 0;
   border-radius: 9px;
   color: white;
-  background: #6e2d8f;
+  background: var(--color-action-primary);
   font-size: 14px;
   font-weight: 700;
   box-shadow: 0 8px 18px rgb(110 45 143 / 18%);
@@ -389,16 +487,16 @@ h1 {
 }
 
 .primary-button:hover {
-  background: #592173;
+  background: var(--color-action-primary-hover);
   transform: translateY(-1px);
 }
 
 .secondary-button {
   min-height: 46px;
   padding: 0 18px;
-  border: 1px solid #dcd4e0;
+  border: 1px solid var(--color-border-default);
   border-radius: 9px;
-  color: #5c4e62;
+  color: var(--color-text-secondary);
   background: white;
   font-size: 14px;
   font-weight: 600;
@@ -416,9 +514,9 @@ h1 {
   gap: 18px;
   margin: -8px 0 16px;
   padding: 0 18px;
-  border: 1px solid #e9e3eb;
+  border: 1px solid var(--color-border-default);
   border-radius: 10px;
-  color: #796f7c;
+  color: var(--color-text-muted);
   background: white;
   font-size: 14px;
 }
@@ -444,7 +542,7 @@ h1 {
   padding: 5px 8px;
   border-radius: 5px;
   color: #73597d;
-  background: #f3eff5;
+  background: var(--purple-100);
   font-family: monospace;
 }
 
@@ -458,7 +556,7 @@ h1 {
 .section-list,
 .config-editor,
 .config-preview {
-  border: 1px solid #e8e2ea;
+  border: 1px solid var(--color-border-default);
   border-radius: 11px;
   background: white;
 }
@@ -470,7 +568,7 @@ h1 {
 .section-list-heading {
   display: flex;
   padding: 16px 14px 12px;
-  border-bottom: 1px solid #ede9ef;
+  border-bottom: 1px solid var(--color-border-default);
   flex-direction: column;
 }
 
@@ -480,7 +578,7 @@ h1 {
 
 .section-list-heading small {
   margin-top: 4px;
-  color: #99919d;
+  color: var(--color-text-muted);
   font-size: 13px;
 }
 
@@ -499,15 +597,15 @@ h1 {
   padding: 8px 12px;
   border: 0;
   border-radius: 9px;
-  color: #807784;
+  color: var(--color-text-muted);
   background: transparent;
   text-align: left;
 }
 
 .section-list nav button:hover,
 .section-list nav button.active {
-  color: #672984;
-  background: #f3ebf6;
+  color: var(--color-brand-primary);
+  background: var(--purple-100);
 }
 
 .section-list nav button > span:first-child {
@@ -517,7 +615,7 @@ h1 {
   place-items: center;
   border-radius: 8px;
   color: #775483;
-  background: #f3eff5;
+  background: var(--purple-100);
   font-size: 13px;
   font-weight: 800;
 }
@@ -538,7 +636,7 @@ h1 {
 
 .section-list nav button small {
   margin-top: 2px;
-  color: #9c93a0;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -820,7 +918,7 @@ h1 {
 
 .repeatable-list article {
   overflow: hidden;
-  border: 1px solid #e7e1e9;
+  border: 1px solid var(--color-border-default);
   border-radius: 8px;
   background: #fdfcfd;
 }
@@ -1120,7 +1218,7 @@ h1 {
   align-items: center;
   gap: 11px;
   padding: 17px;
-  border: 1px solid #e9e4ec;
+  border: 1px solid var(--color-border-default);
   border-radius: 11px;
   background: white;
 }
@@ -1136,7 +1234,7 @@ h1 {
 
 .summary-icon--purple {
   color: #753696;
-  background: #f0e5f5;
+  background: var(--purple-100);
 }
 
 .summary-icon--green {
@@ -1543,7 +1641,7 @@ h1 {
 
 .rank-list small {
   margin-top: 3px;
-  color: #99919d;
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 400;
 }
@@ -1967,7 +2065,7 @@ tbody tr.row-selected {
   height: 27px;
   place-items: center;
   border-radius: 6px;
-  color: #8e8692;
+  color: var(--color-text-muted);
 }
 
 .row-actions button:hover {
@@ -2320,7 +2418,7 @@ tbody tr.row-selected {
    ========================================================================== */
 
 .ai-trigger-button {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
+  background: linear-gradient(135deg, var(--color-brand-primary) 0%, #a855f7 50%, #ec4899 100%);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -2344,7 +2442,7 @@ tbody tr.row-selected {
 
 .ai-section-button {
   background: #f5f0fb;
-  color: #7c3aed;
+  color: var(--color-brand-primary);
   border: 1px solid #e5d5f7;
   border-radius: 8px;
   padding: 8px 16px;
@@ -2401,7 +2499,7 @@ tbody tr.row-selected {
 
 .ai-modal-header {
   padding: 18px 24px;
-  border-bottom: 1px solid #f0eaf7;
+  border-bottom: 1px solid var(--purple-100);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2418,7 +2516,7 @@ tbody tr.row-selected {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  background: linear-gradient(135deg, var(--color-brand-primary), #ec4899);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -2430,13 +2528,13 @@ tbody tr.row-selected {
   margin: 0;
   font-size: 17px;
   font-weight: 700;
-  color: #211829;
+  color: var(--color-text-primary);
 }
 
 .ai-modal-title p {
   margin: 2px 0 0;
   font-size: 13px;
-  color: #7b7382;
+  color: var(--color-text-muted);
 }
 
 .ai-modal-body {
@@ -2463,7 +2561,7 @@ tbody tr.row-selected {
   align-items: center;
   gap: 8px;
   font-weight: 500;
-  color: #4b4156;
+  color: var(--color-text-secondary);
 }
 
 .engine-dot {
@@ -2484,7 +2582,7 @@ tbody tr.row-selected {
 .text-button {
   background: none;
   border: none;
-  color: #7c3aed;
+  color: var(--color-brand-primary);
   font-size: 12px;
   font-weight: 600;
   display: inline-flex;
@@ -2512,7 +2610,7 @@ tbody tr.row-selected {
 .ai-key-box label {
   font-size: 13px;
   font-weight: 600;
-  color: #4b4156;
+  color: var(--color-text-secondary);
 }
 
 .ai-key-box input {
@@ -2527,11 +2625,11 @@ tbody tr.row-selected {
 
 .ai-key-box small {
   font-size: 12px;
-  color: #7b7382;
+  color: var(--color-text-muted);
 }
 
 .link-highlight {
-  color: #7c3aed;
+  color: var(--color-brand-primary);
   text-decoration: underline;
   font-weight: 600;
 }
@@ -2566,8 +2664,8 @@ tbody tr.row-selected {
 }
 
 .scope-pill.active {
-  background: #7c3aed;
-  border-color: #7c3aed;
+  background: var(--color-brand-primary);
+  border-color: var(--color-brand-primary);
   color: #ffffff;
   font-weight: 600;
 }
@@ -2580,13 +2678,13 @@ tbody tr.row-selected {
 
 .ai-prompt-container label {
   font-size: 14px;
-  color: #211829;
+  color: var(--color-text-primary);
 }
 
 .ai-prompt-container textarea {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid #dcd3eb;
+  border: 1px solid var(--color-border-default);
   border-radius: 10px;
   font-size: 14px;
   line-height: 1.5;
@@ -2597,7 +2695,7 @@ tbody tr.row-selected {
 }
 
 .ai-prompt-container textarea:focus {
-  border-color: #7c3aed;
+  border-color: var(--color-brand-primary);
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
 }
 
@@ -2691,7 +2789,7 @@ tbody tr.row-selected {
 
 .ai-modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #f0eaf7;
+  border-top: 1px solid var(--purple-100);
   background: #fbf9fd;
   display: flex;
   align-items: center;
@@ -2699,7 +2797,7 @@ tbody tr.row-selected {
 }
 
 .ai-submit-button {
-  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%) !important;
+  background: linear-gradient(135deg, var(--color-brand-primary) 0%, #ec4899 100%) !important;
   color: #ffffff !important;
   padding: 0 20px;
   font-weight: 600;
@@ -2720,7 +2818,7 @@ tbody tr.row-selected {
 
 .item-image-field {
   background: #fbf9fd;
-  border: 1px dashed #dcd3eb;
+  border: 1px dashed var(--color-border-default);
   border-radius: 10px;
   padding: 12px 14px;
   display: flex;
@@ -2732,7 +2830,7 @@ tbody tr.row-selected {
 .item-image-label {
   font-size: 13px;
   font-weight: 600;
-  color: #4b4156;
+  color: var(--color-text-secondary);
 }
 
 .item-image-row {
@@ -2765,7 +2863,7 @@ tbody tr.row-selected {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  color: #7c3aed;
+  color: var(--color-brand-primary);
   font-size: 10px;
   text-align: center;
 }
@@ -2778,7 +2876,7 @@ tbody tr.row-selected {
 }
 
 .upload-btn {
-  background: #7c3aed;
+  background: var(--color-brand-primary);
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -2793,13 +2891,13 @@ tbody tr.row-selected {
 }
 
 .upload-btn:hover {
-  background: #6d28d9;
+  background: var(--color-action-primary-hover);
 }
 
 .secondary-btn-sm {
   background: #ffffff;
-  color: #4b4156;
-  border: 1px solid #dcd3eb;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-default);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 12px;
@@ -2811,7 +2909,7 @@ tbody tr.row-selected {
 .secondary-btn-sm:hover {
   background: #f8f6fc;
   border-color: #c4b5fd;
-  color: #7c3aed;
+  color: var(--color-brand-primary);
 }
 
 .danger-btn-sm {
@@ -2844,7 +2942,7 @@ tbody tr.row-selected {
   height: 32px;
   padding: 0 10px;
   font-size: 12px;
-  border: 1px solid #dcd3eb;
+  border: 1px solid var(--color-border-default);
   border-radius: 6px;
 }
 
@@ -2863,7 +2961,7 @@ tbody tr.row-selected {
   background: #ffffff;
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid #f0eaf7;
+  border: 1px solid var(--purple-100);
 }
 
 .mini-avatar {
@@ -2879,7 +2977,7 @@ tbody tr.row-selected {
   height: 32px;
   border-radius: 50%;
   background: #f3ebff;
-  color: #7c3aed;
+  color: var(--color-brand-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2889,11 +2987,24 @@ tbody tr.row-selected {
 .mini-team-item strong {
   display: block;
   font-size: 12px;
-  color: #211829;
+  color: var(--color-text-primary);
 }
 
 .mini-team-item small {
   display: block;
   font-size: 10px;
-  color: #7b7382;
+  color: var(--color-text-muted);
+}
+
+
+/* Focus accessibility ring from Design System */
+:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+  outline: 3px solid var(--color-focus-ring) !important;
+  outline-offset: 2px !important;
+}
+
+
+/* Ensure Vietnamese typography never clips tone marks */
+h1, h2, h3, h4, h5, h6, p, span, a, label {
+  overflow-wrap: break-word;
 }
