@@ -6163,3 +6163,86 @@ h1, h2, h3, h4, h5, h6, p, span, a, label {
 .primary-accent-btn:hover {
   background: #166534;
 }
+
+/* ==========================================================================
+   HEATMAP REAL-TIME STICKY TOOLBAR (Zero Layout Shift & Zero Jitter)
+   ========================================================================== */
+.heatmap-sticky-toolbar {
+  position: sticky;
+  top: 10px;
+  z-index: 45;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border-default, #e2e8f0);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+  border-radius: 14px;
+  height: 54px;
+  min-height: 54px;
+  max-height: 54px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  contain: layout;
+}
+
+.heatmap-sticky-toolbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.heatmap-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.heatmap-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Ensure ALL buttons inside the sticky toolbar maintain strict dimensions and zero layout shift */
+.heatmap-sticky-toolbar button,
+.heatmap-sticky-toolbar .primary-button,
+.heatmap-sticky-toolbar .secondary-button {
+  flex-shrink: 0 !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  transform: none !important; /* CRITICAL: Prevents 1px sub-pixel composite jitter on hover */
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  user-select: none !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.heatmap-sticky-toolbar .primary-button:hover,
+.heatmap-sticky-toolbar .secondary-button:hover {
+  transform: none !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+
+.heatmap-sticky-toolbar .primary-button:active,
+.heatmap-sticky-toolbar .secondary-button:active {
+  transform: none !important;
+}

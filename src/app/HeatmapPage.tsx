@@ -758,30 +758,9 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
       />
 
       {/* 2. FIXED / STICKY ACTION BAR - KHÓA CỐ ĐỊNH CHIỀU CAO & CHỐNG NHẢY DÒNG HOÀN TOÀN */}
-      <div
-        style={{
-          position: "sticky",
-          top: "10px",
-          zIndex: 45,
-          background: "rgba(255, 255, 255, 0.96)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid var(--border)",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-          borderRadius: "14px",
-          height: "54px",
-          minHeight: "54px",
-          maxHeight: "54px",
-          padding: "0 16px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: "12px",
-          overflowX: "auto",
-          whiteSpace: "nowrap",
-        }}
-      >
+      <div className="heatmap-sticky-toolbar">
         {/* Left: Real-time Status Badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <div className="heatmap-toolbar-left">
           <span
             style={{
               width: "10px",
@@ -790,43 +769,37 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
               background: "#10b981",
               boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
               display: "inline-block",
+              flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b", flexShrink: 0 }}>
             Real-time Tracking
           </span>
-          <span style={{ fontSize: "12px", color: "var(--muted)", display: "inline-block" }}>
+          <span style={{ fontSize: "12px", color: "var(--muted)", display: "inline-block", flexShrink: 0 }}>
             · {totalVisitors.toLocaleString()} khách · {totalInteractions.toLocaleString()} chạm
           </span>
         </div>
 
         {/* Right: Fixed Action Buttons (Exact height 36px, zero line-wrapping jumping) */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <div className="heatmap-toolbar-right">
           {/* Smart Test Simulation Button */}
           <button
             type="button"
             className="primary-button"
             onClick={() => setShowTestSimulatorModal(true)}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
               padding: "0 14px",
               fontSize: "13px",
               fontWeight: "600",
               background: "#50008b",
-              display: "inline-flex",
-              alignItems: "center",
               gap: "6px",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
           >
             <Icon name="sparkle" size={15} />
-            🧪 Chạy kiểm thử thông minh
+            <span>🧪 Chạy kiểm thử thông minh</span>
           </button>
 
-          {/* Copy Friction Report Shortcut */}
+          {/* Copy Friction Report Shortcut - Locked width 205px so changing text NEVER shifts neighboring buttons */}
           <button
             type="button"
             className="secondary-button"
@@ -835,25 +808,21 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
               handleCopyReport();
             }}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
-              padding: "0 14px",
+              width: "205px",
+              minWidth: "205px",
+              maxWidth: "205px",
+              padding: "0 10px",
               fontSize: "13px",
               fontWeight: "600",
-              color: "#c2410c",
-              borderColor: "#fed7aa",
-              background: "#fffbeb",
-              display: "inline-flex",
-              alignItems: "center",
+              color: copyReportSuccess ? "#15803d" : "#c2410c",
+              borderColor: copyReportSuccess ? "#86efac" : "#fed7aa",
+              background: copyReportSuccess ? "#f0fdf4" : "#fffbeb",
               gap: "6px",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
             title="Cuộn tới Báo cáo Điểm nghẽn và Sao chép toàn bộ text"
           >
             <Icon name={copyReportSuccess ? "check" : "copy"} size={15} />
-            <span>{copyReportSuccess ? "Đã copy báo cáo" : "Báo cáo Điểm nghẽn (Text)"}</span>
+            <span>{copyReportSuccess ? "✓ Đã copy báo cáo" : "Báo cáo Điểm nghẽn (Text)"}</span>
           </button>
 
           {/* Global Audit Modal */}
@@ -862,21 +831,14 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             className="secondary-button"
             onClick={() => setShowGlobalAuditModal(true)}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
               padding: "0 12px",
               fontSize: "13px",
               fontWeight: "600",
-              display: "inline-flex",
-              alignItems: "center",
               gap: "6px",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
           >
             <Icon name="chart" size={15} />
-            Đánh giá UX
+            <span>Đánh giá UX</span>
           </button>
 
           {/* Export CSV */}
@@ -885,48 +847,35 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             className="secondary-button"
             onClick={handleExportCsv}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
               padding: "0 12px",
               fontSize: "13px",
               fontWeight: "600",
-              display: "inline-flex",
-              alignItems: "center",
               gap: "6px",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
             title="Xuất bảng xếp hạng nút bấm ra file CSV"
           >
             <Icon name="download" size={15} />
-            Xuất CSV
+            <span>Xuất CSV</span>
           </button>
 
-          {/* Sync Button (Fixed width 100px so toggling loading text never jumps layout) */}
+          {/* Sync Button - Locked width 105px so toggling loading text never jumps layout */}
           <button
             type="button"
             className="secondary-button"
             onClick={fetchHeatmapData}
             disabled={loading}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
-              padding: "0 12px",
+              width: "105px",
               minWidth: "105px",
+              maxWidth: "105px",
+              padding: "0 10px",
               fontSize: "13px",
               fontWeight: "600",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
               gap: "6px",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
           >
             <Icon name="refresh" size={15} />
-            {loading ? "Đang tải..." : "Đồng bộ"}
+            <span>{loading ? "Đang tải..." : "Đồng bộ"}</span>
           </button>
 
           {/* Reset Button */}
@@ -935,21 +884,14 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             className="secondary-button"
             onClick={handleResetData}
             style={{
-              height: "36px",
-              minHeight: "36px",
-              maxHeight: "36px",
               padding: "0 12px",
               fontSize: "13px",
               fontWeight: "600",
               color: "#dc2626",
               borderColor: "rgba(220, 38, 38, 0.3)",
-              display: "inline-flex",
-              alignItems: "center",
-              whiteSpace: "nowrap",
-              boxSizing: "border-box",
             }}
           >
-            Đặt lại
+            <span>Đặt lại</span>
           </button>
         </div>
       </div>
@@ -1130,14 +1072,19 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
               onClick={handleCopyReport}
               style={{
                 height: "36px",
-                padding: "0 16px",
+                width: "235px",
+                minWidth: "235px",
+                maxWidth: "235px",
+                padding: "0 14px",
                 fontSize: "13px",
                 fontWeight: "700",
                 background: "#ea580c",
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "6px",
                 boxShadow: "0 2px 6px rgba(234, 88, 12, 0.3)",
+                flexShrink: 0,
               }}
             >
               <Icon name={copyReportSuccess ? "check" : "copy"} size={14} />

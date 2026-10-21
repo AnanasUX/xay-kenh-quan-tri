@@ -902,6 +902,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 type="button"
                 className="action-pill-btn"
                 onClick={handleCopyReport}
+                style={{ minWidth: "155px", justifyContent: "center" }}
                 title="Sao chép toàn bộ nội dung để dán vào Zalo/Tài liệu kỹ thuật"
               >
                 <Icon name={copySuccess ? "check" : "copy"} size={14} />
@@ -1079,7 +1080,12 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                   <h4>Bản Báo cáo Nâng cấp Tổng hợp (Văn bản thuần)</h4>
                   <p>Bạn có thể sao chép văn bản này để gửi cho đội kỹ thuật hoặc lưu trữ hồ sơ.</p>
                 </div>
-                <button type="button" className="action-pill-btn" onClick={handleCopyReport}>
+                <button
+                  type="button"
+                  className="action-pill-btn"
+                  onClick={handleCopyReport}
+                  style={{ minWidth: "185px", justifyContent: "center" }}
+                >
                   <Icon name={copySuccess ? "check" : "copy"} size={14} />
                   <span>{copySuccess ? "Đã sao chép toàn bộ" : "Sao chép toàn bộ văn bản"}</span>
                 </button>
