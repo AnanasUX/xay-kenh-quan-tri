@@ -35,6 +35,11 @@ export const DEFAULT_ACCOUNTS: AccountUser[] = [
   },
 ];
 
+// Hàm chuẩn hóa username (loại bỏ ký tự @ thừa, khoảng trắng đầu đuôi)
+export function normalizeUsername(user: string): string {
+  return (user || "").trim().replace(/^@+/, "");
+}
+
 // Kiểm tra xem trình duyệt hiện tại đã có session đang hoạt động chưa
 export function hasActiveSession(): boolean {
   try {
@@ -63,9 +68,14 @@ export function getAccounts(): AccountUser[] {
   }
 }
 
-// Lưu danh sách tài khoản
+// Lưu danh sách tài khoản và phát sự kiện đồng bộ
 export function saveAccounts(accounts: AccountUser[]): void {
-  localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
+  try {
+    localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
+  } catch {}
+  try {
+    window.dispatchEvent(new CustomEvent("aurora-accounts-changed", { detail: accounts }));
+  } catch {}
 }
 
 // Lấy tài khoản đang đăng nhập (trả về null nếu chưa có session)
@@ -102,18 +112,23 @@ export function setCurrentUser(user: AccountUser): void {
   } catch {}
 }
 
-// Đăng nhập
+// Đăng nhập hệ thống (chấp nhận cả có @ hoặc không @, không phân biệt hoa thường)
 export function login(username: string, password: string): { success: boolean; user?: AccountUser; message: string } {
   const accounts = getAccounts();
-  const cleanUser = username.trim().toLowerCase();
-  const found = accounts.find((a) => a.username.toLowerCase() === cleanUser);
+  const cleanUser = normalizeUsername(username).toLowerCase();
+
+  if (!cleanUser) {
+    return { success: false, message: "Vui lòng nhập tên đăng nhập." };
+  }
+
+  const found = accounts.find((a) => normalizeUsername(a.username).toLowerCase() === cleanUser);
 
   if (!found) {
-    return { success: false, message: "Tên đăng nhập không tồn tại trong hệ thống." };
+    return { success: false, message: `Tên đăng nhập "${username}" không tồn tại trong hệ thống.` };
   }
 
   if (found.password !== password) {
-    return { success: false, message: "Mật khẩu không chính xác." };
+    return { success: false, message: "Mật khẩu không chính xác. Vui lòng kiểm tra lại." };
   }
 
   // Cập nhật lastLogin
@@ -140,14 +155,14 @@ export function logout(): void {
 // Thêm tài khoản mới
 export function addAccount(accountData: Omit<AccountUser, "id" | "createdAt">): { success: boolean; account?: AccountUser; message: string } {
   const accounts = getAccounts();
-  const cleanUsername = accountData.username.trim().toLowerCase();
+  const cleanUsername = normalizeUsername(accountData.username);
 
   if (!cleanUsername) {
     return { success: false, message: "Tên đăng nhập không được để trống." };
   }
 
-  if (accounts.some((a) => a.username.toLowerCase() === cleanUsername)) {
-    return { success: false, message: `Tài khoản "${accountData.username}" đã tồn tại.` };
+  if (accounts.some((a) => normalizeUsername(a.username).toLowerCase() === cleanUsername.toLowerCase())) {
+    return { success: false, message: `Tài khoản "${cleanUsername}" đã tồn tại trên hệ thống.` };
   }
 
   if (!accountData.password || accountData.password.length < 3) {
@@ -156,9 +171,9 @@ export function addAccount(accountData: Omit<AccountUser, "id" | "createdAt">): 
 
   const newAccount: AccountUser = {
     id: "user_" + Math.random().toString(36).substring(2, 9),
-    username: accountData.username.trim(),
+    username: cleanUsername,
     password: accountData.password,
-    fullName: accountData.fullName.trim() || accountData.username.trim(),
+    fullName: (accountData.fullName || "").trim() || cleanUsername,
     role: accountData.role || "staff",
     createdAt: new Date().toISOString(),
     allowedSections: accountData.allowedSections || ["mission", "support", "process", "team", "gallery", "resources", "faq"],
@@ -179,20 +194,20 @@ export function updateAccount(id: string, patch: Partial<Omit<AccountUser, "id" 
   }
 
   const current = accounts[index];
+  const cleanUsername = patch.username !== undefined ? normalizeUsername(patch.username) : current.username;
 
   // Nếu đổi username, kiểm tra trùng lặp
-  if (patch.username && patch.username.trim().toLowerCase() !== current.username.toLowerCase()) {
-    const cleanNew = patch.username.trim().toLowerCase();
-    if (accounts.some((a) => a.id !== id && a.username.toLowerCase() === cleanNew)) {
-      return { success: false, message: `Tên đăng nhập "${patch.username}" đã được sử dụng.` };
+  if (cleanUsername.toLowerCase() !== normalizeUsername(current.username).toLowerCase()) {
+    if (accounts.some((a) => a.id !== id && normalizeUsername(a.username).toLowerCase() === cleanUsername.toLowerCase())) {
+      return { success: false, message: `Tên đăng nhập "${cleanUsername}" đã được sử dụng bởi tài khoản khác.` };
     }
   }
 
   accounts[index] = {
     ...current,
     ...patch,
-    username: patch.username ? patch.username.trim() : current.username,
-    fullName: patch.fullName ? patch.fullName.trim() : current.fullName,
+    username: cleanUsername,
+    fullName: patch.fullName !== undefined ? (patch.fullName || "").trim() || cleanUsername : current.fullName,
   };
 
   saveAccounts(accounts);

@@ -26,6 +26,7 @@ export default function Layout() {
   const [toast, setToast] = useState("");
   const [currentUser, setCurrentUserState] = useState<AccountUser | null>(getCurrentUser);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [accountsList, setAccountsList] = useState<AccountUser[]>(getAccounts);
 
   // Login form state
   const [loginUser, setLoginUser] = useState("admin");
@@ -41,8 +42,17 @@ export default function Layout() {
       const user = e.detail !== undefined ? e.detail : getCurrentUser();
       setCurrentUserState(user);
     };
+    const handleAccountsChanged = () => {
+      setAccountsList(getAccounts());
+    };
+
     window.addEventListener("aurora-auth-changed", handleAuthChange);
-    return () => window.removeEventListener("aurora-auth-changed", handleAuthChange);
+    window.addEventListener("aurora-accounts-changed", handleAccountsChanged);
+
+    return () => {
+      window.removeEventListener("aurora-auth-changed", handleAuthChange);
+      window.removeEventListener("aurora-accounts-changed", handleAccountsChanged);
+    };
   }, []);
 
   // Tự động chuyển hướng Nhân viên về Cấu hình trang nếu truy cập đường dẫn Quản trị viên
@@ -68,8 +78,8 @@ export default function Layout() {
     setCurrentUserState(acc);
     setShowProfileMenu(false);
     notify(`Đã chuyển phiên làm việc sang: ${acc.fullName} (${acc.role === "admin" ? "Quản trị viên" : "Nhân viên"})`);
-    if (acc.role === "staff" && location.pathname === "/tai-khoan") {
-      navigate("/cau-hinh-trang");
+    if (acc.role === "staff") {
+      navigate("/cau-hinh-trang", { replace: true });
     }
   };
 
@@ -83,12 +93,17 @@ export default function Layout() {
     }
     setCurrentUserState(res.user);
     notify(res.message);
+    if (res.user.role === "staff") {
+      navigate("/cau-hinh-trang", { replace: true });
+    }
   };
 
   const handleLogout = () => {
     logout();
     setShowProfileMenu(false);
     setCurrentUserState(null);
+    setLoginUser("");
+    setLoginPass("");
     setLoginError("");
   };
 
@@ -125,9 +140,12 @@ export default function Layout() {
               <span>Tên đăng nhập</span>
               <input
                 type="text"
-                placeholder="Nhập username (admin hoặc nhanvien)"
+                placeholder="Nhập tên đăng nhập (ví dụ: admin, nhanvien, hoặc tài khoản mới)..."
                 value={loginUser}
-                onChange={(e) => setLoginUser(e.target.value)}
+                onChange={(e) => {
+                  setLoginUser(e.target.value);
+                  if (loginError) setLoginError("");
+                }}
                 required
                 autoFocus
               />
@@ -140,7 +158,10 @@ export default function Layout() {
                   type={showLoginPass ? "text" : "password"}
                   placeholder="Nhập mật khẩu..."
                   value={loginPass}
-                  onChange={(e) => setLoginPass(e.target.value)}
+                  onChange={(e) => {
+                    setLoginPass(e.target.value);
+                    if (loginError) setLoginError("");
+                  }}
                   required
                 />
                 <button
@@ -154,7 +175,33 @@ export default function Layout() {
               </div>
             </label>
 
-
+            {/* Quick account selection chips */}
+            {accountsList.length > 0 && (
+              <div className="login-account-hints">
+                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
+                  Tài khoản có sẵn trong hệ thống:
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
+                  {accountsList.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      onClick={() => {
+                        setLoginUser(acc.username);
+                        setLoginPass(acc.password);
+                        setLoginError("");
+                      }}
+                      className="login-hint-chip"
+                      title={`Bấm để điền nhanh thông tin tài khoản @${acc.username}`}
+                    >
+                      <span className={`chip-dot ${acc.role === "admin" ? "chip-dot--admin" : "chip-dot--staff"}`} />
+                      <strong>@{acc.username}</strong>
+                      <small>({acc.role === "admin" ? "Admin" : "NV"})</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button type="submit" className="login-submit-btn">
               <Icon name="check" size={18} />
@@ -282,35 +329,44 @@ export default function Layout() {
 
                 <div className="dropdown-section-title">Chuyển nhanh tài khoản:</div>
                 <div className="dropdown-quick-switch">
-                  <button
-                    type="button"
-                    className={`quick-switch-item ${currentUser.username === "admin" ? "active" : ""}`}
-                    onClick={() => {
-                      const adm = getAccounts().find((a) => a.username === "admin");
-                      if (adm) handleSwitchUser(adm);
-                    }}
-                  >
-                    <span className="avatar avatar--admin-xs">AD</span>
-                    <div>
-                      <strong>admin</strong>
-                      <small>Quản trị viên (admin/admin)</small>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`quick-switch-item ${currentUser.username === "nhanvien" ? "active" : ""}`}
-                    onClick={() => {
-                      const st = getAccounts().find((a) => a.username === "nhanvien");
-                      if (st) handleSwitchUser(st);
-                    }}
-                  >
-                    <span className="avatar avatar--staff-xs">NV</span>
-                    <div>
-                      <strong>nhanvien</strong>
-                      <small>Nhân viên (nhanvien/admin)</small>
-                    </div>
-                  </button>
+                  {accountsList.map((acc) => {
+                    const isAccCurrent = acc.id === currentUser.id;
+                    const initials = acc.fullName
+                      ? acc.fullName.slice(0, 2).toUpperCase()
+                      : acc.username.slice(0, 2).toUpperCase();
+                    return (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        className={`quick-switch-item ${isAccCurrent ? "active" : ""}`}
+                        onClick={() => handleSwitchUser(acc)}
+                      >
+                        <span className={`avatar ${acc.role === "admin" ? "avatar--admin-xs" : "avatar--staff-xs"}`}>
+                          {initials}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <strong>@{acc.username}</strong>
+                            {isAccCurrent && (
+                              <span className="current-badge" style={{ fontSize: "10px", padding: "1px 5px" }}>
+                                Đang dùng
+                              </span>
+                            )}
+                          </div>
+                          <small
+                            style={{
+                              display: "block",
+                              textOverflow: "ellipsis",
+                              overflow: "hidden",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {acc.fullName} ({acc.role === "admin" ? "Quản trị" : "Nhân viên"})
+                          </small>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="dropdown-divider" />

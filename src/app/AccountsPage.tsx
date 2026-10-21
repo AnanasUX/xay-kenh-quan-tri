@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Navigate, useNavigate } from "react-router";
 import { useCms } from "./Layout";
 import {
   getAccounts,
@@ -7,6 +8,7 @@ import {
   addAccount,
   updateAccount,
   deleteAccount,
+  normalizeUsername,
   type AccountUser,
   type UserRole,
 } from "./authService";
@@ -25,6 +27,7 @@ const ALL_CONTENT_SECTIONS = [
 export function AccountsPage() {
   const { notify, currentUser, switchUser } = useCms();
   const [accounts, setAccounts] = useState<AccountUser[]>(getAccounts);
+  const navigate = useNavigate();
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,10 +55,19 @@ export function AccountsPage() {
     "resources",
     "faq",
   ]);
+  const [formErrors, setFormErrors] = useState<{ username?: string; fullName?: string; password?: string }>({});
 
   const refreshAccounts = () => {
     setAccounts(getAccounts());
   };
+
+  useEffect(() => {
+    const handleAccountsChanged = () => {
+      setAccounts(getAccounts());
+    };
+    window.addEventListener("aurora-accounts-changed", handleAccountsChanged);
+    return () => window.removeEventListener("aurora-accounts-changed", handleAccountsChanged);
+  }, []);
 
   const togglePasswordVisibility = (id: string) => {
     setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -71,6 +83,7 @@ export function AccountsPage() {
     setFormRole("staff");
     setFormAllowedSections(["mission", "support", "process", "team", "gallery", "resources", "faq"]);
     setShowFormPassword(false);
+    setFormErrors({});
   };
 
   // Open Edit Modal
@@ -85,53 +98,66 @@ export function AccountsPage() {
       acc.allowedSections || ["mission", "support", "process", "team", "gallery", "resources", "faq"]
     );
     setShowFormPassword(false);
+    setFormErrors({});
   };
 
   // Handle Save (Create / Update)
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanUser = normalizeUsername(formUsername);
+    const errors: { username?: string; fullName?: string; password?: string } = {};
 
-    if (!formUsername.trim()) {
-      alert("Vui lòng nhập tên đăng nhập.");
-      return;
+    if (!cleanUser) {
+      errors.username = "Vui lòng nhập tên đăng nhập.";
+    }
+
+    if (!formFullName.trim()) {
+      errors.fullName = "Vui lòng nhập họ và tên hiển thị.";
     }
 
     if (!formPassword || formPassword.length < 3) {
-      alert("Mật khẩu phải từ 3 ký tự trở lên.");
+      errors.password = "Mật khẩu phải từ 3 ký tự trở lên.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
 
     if (modalMode === "create") {
       const res = addAccount({
-        username: formUsername,
+        username: cleanUser,
         password: formPassword,
-        fullName: formFullName,
+        fullName: formFullName.trim(),
         role: formRole,
         allowedSections: formAllowedSections,
       });
 
       if (!res.success) {
-        alert(res.message);
+        setFormErrors({ username: res.message });
+        notify(res.message);
         return;
       }
       notify(res.message);
     } else if (modalMode === "edit" && editingAccountId) {
       const res = updateAccount(editingAccountId, {
-        username: formUsername,
+        username: cleanUser,
         password: formPassword,
-        fullName: formFullName,
+        fullName: formFullName.trim(),
         role: formRole,
         allowedSections: formAllowedSections,
       });
 
       if (!res.success) {
-        alert(res.message);
+        setFormErrors({ username: res.message });
+        notify(res.message);
         return;
       }
       notify(res.message);
     }
 
     setModalMode(null);
+    setFormErrors({});
     refreshAccounts();
   };
 
@@ -159,44 +185,17 @@ export function AccountsPage() {
   // Quick switch active user
   const handleSwitchUser = (acc: AccountUser) => {
     switchUser(acc);
-    refreshAccounts();
+    if (acc.role === "staff") {
+      navigate("/cau-hinh-trang", { replace: true });
+    } else {
+      refreshAccounts();
+    }
   };
 
   // Check role: Staff cannot access this page!
+  // Thay vì hiện màn hình khóa "Khu vực giới hạn quyền hạn" (báo lỗi), tự động chuyển hướng Nhân viên về Cấu hình trang
   if (currentUser.role !== "admin") {
-    return (
-      <div className="account-access-denied">
-        <div className="denied-box">
-          <span className="denied-icon">
-            <Icon name="lock" size={36} />
-          </span>
-          <h2>Khu vực giới hạn quyền hạn</h2>
-          <p>
-            Bạn đang đăng nhập bằng tài khoản <strong>{currentUser.fullName} ({currentUser.username})</strong> với vai trò{" "}
-            <span className="role-badge role-staff">Nhân viên</span>.
-          </p>
-          <p className="denied-desc">
-            Trang <strong>Quản lý tài khoản & Phân quyền</strong> chỉ dành riêng cho <strong>Quản trị viên (Admin)</strong>.
-          </p>
-          <div className="denied-actions">
-            <button
-              type="button"
-              className="primary-button"
-              onClick={() => {
-                const adminAcc = accounts.find((a) => a.role === "admin");
-                if (adminAcc) handleSwitchUser(adminAcc);
-              }}
-            >
-              <Icon name="shield" size={16} />
-              Chuyển sang tài khoản Quản trị viên (admin)
-            </button>
-            <a href="#/cau-hinh-trang" className="secondary-button" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
-              Quay lại Cấu hình trang
-            </a>
-          </div>
-        </div>
-      </div>
-    );
+    return <Navigate to="/cau-hinh-trang" replace />;
   }
 
   const filteredAccounts = accounts.filter((acc) => {
@@ -451,38 +450,66 @@ export function AccountsPage() {
             <form onSubmit={handleSaveForm}>
               <div className="account-modal-body">
                 <div className="form-group-row">
-                  <label>
-                    Tên đăng nhập (Username) *
-                    <input
-                      type="text"
-                      placeholder="admin, nhanvien, linhhoang..."
-                      value={formUsername}
-                      onChange={(e) => setFormUsername(e.target.value)}
-                      required
-                    />
-                  </label>
+                  <div className="form-group">
+                    <label>
+                      <span>Tên đăng nhập (Username) *</span>
+                      <input
+                        type="text"
+                        className={formErrors.username ? "input-has-error" : ""}
+                        placeholder="admin, nhanvien, vannam..."
+                        value={formUsername}
+                        onChange={(e) => {
+                          setFormUsername(e.target.value);
+                          if (formErrors.username) setFormErrors((p) => ({ ...p, username: "" }));
+                        }}
+                        required
+                      />
+                      {formErrors.username && (
+                        <span className="field-error-text">
+                          <Icon name="close" size={13} />
+                          {formErrors.username}
+                        </span>
+                      )}
+                    </label>
+                  </div>
 
-                  <label>
-                    Họ và tên hiển thị *
-                    <input
-                      type="text"
-                      placeholder="Nguyễn Văn A, Hoàng Linh..."
-                      value={formFullName}
-                      onChange={(e) => setFormFullName(e.target.value)}
-                      required
-                    />
-                  </label>
+                  <div className="form-group">
+                    <label>
+                      <span>Họ và tên hiển thị *</span>
+                      <input
+                        type="text"
+                        className={formErrors.fullName ? "input-has-error" : ""}
+                        placeholder="Nguyễn Văn A, Hoàng Linh..."
+                        value={formFullName}
+                        onChange={(e) => {
+                          setFormFullName(e.target.value);
+                          if (formErrors.fullName) setFormErrors((p) => ({ ...p, fullName: "" }));
+                        }}
+                        required
+                      />
+                      {formErrors.fullName && (
+                        <span className="field-error-text">
+                          <Icon name="close" size={13} />
+                          {formErrors.fullName}
+                        </span>
+                      )}
+                    </label>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label>
-                    Mật khẩu tài khoản *
+                    <span>Mật khẩu tài khoản *</span>
                     <div className="input-with-eye">
                       <input
                         type={showFormPassword ? "text" : "password"}
+                        className={formErrors.password ? "input-has-error" : ""}
                         placeholder="Nhập mật khẩu (tối thiểu 3 ký tự)..."
                         value={formPassword}
-                        onChange={(e) => setFormPassword(e.target.value)}
+                        onChange={(e) => {
+                          setFormPassword(e.target.value);
+                          if (formErrors.password) setFormErrors((p) => ({ ...p, password: "" }));
+                        }}
                         required
                       />
                       <button
@@ -494,11 +521,19 @@ export function AccountsPage() {
                         <Icon name={showFormPassword ? "eyeOff" : "eye"} size={16} />
                       </button>
                     </div>
+                    {formErrors.password && (
+                      <span className="field-error-text">
+                        <Icon name="close" size={13} />
+                        {formErrors.password}
+                      </span>
+                    )}
                   </label>
                 </div>
 
                 <div className="form-group">
-                  <label>Vai trò & Phân quyền truy cập *</label>
+                  <label>
+                    <span>Vai trò & Phân quyền truy cập *</span>
+                  </label>
                   <div className="role-selection-grid">
                     <label className={`role-radio-card ${formRole === "admin" ? "selected" : ""}`}>
                       <input
