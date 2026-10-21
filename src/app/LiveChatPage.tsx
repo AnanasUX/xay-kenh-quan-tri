@@ -794,9 +794,11 @@ export function LiveChatPage() {
 
       {/* MAIN CHAT WORKSPACE (2 COLUMNS) */}
       <div
+        className="live-chat-workspace-grid"
         style={{
           display: "grid",
-          gridTemplateColumns: "340px 1fr",
+          // Dynamic responsive workspace
+          gridTemplateColumns: "minmax(280px, 340px) 1fr",
           gap: 20,
           minHeight: 650,
           height: "calc(100vh - 280px)",

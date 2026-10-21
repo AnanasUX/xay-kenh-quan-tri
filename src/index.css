@@ -6272,3 +6272,91 @@ select::placeholder {
   opacity: 1 !important;
   font-weight: 400 !important;
 }
+
+/* ========================================================================= */
+/* RESPONSIVE SYSTEM POLISH - ĐA MÀN HÌNH (TABLET & MOBILE)                   */
+/* ========================================================================= */
+.accounts-table-card {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.accounts-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.live-chat-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 980px) {
+  .live-chat-workspace-grid {
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    height: 58px;
+    padding: 0 12px;
+  }
+
+  .topbar-user-name {
+    display: none;
+  }
+
+  .content {
+    padding: 18px 12px 36px;
+  }
+
+  .page-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-heading .flex {
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .page-heading .flex button {
+    flex: 1 1 auto;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Modal responsive on mobile screens */
+  .account-modal,
+  [role="dialog"] > div {
+    max-width: 95vw !important;
+    width: 95vw !important;
+    margin: 10px auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-actions .topbar-user-pill {
+    padding: 4px 8px;
+  }
+
+  .role-badge {
+    display: none;
+  }
+}

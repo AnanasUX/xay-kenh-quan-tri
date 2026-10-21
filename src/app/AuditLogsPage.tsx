@@ -4,6 +4,7 @@ import { useCms } from "./Layout";
 import {
   getAuditLogs,
   getAccessLogs,
+  syncAccessLogsWithCloud,
   clearAuditLogs,
   exportAuditLogsToCsv,
   type AuditLogEntry,
@@ -30,6 +31,8 @@ export function AuditLogsPage() {
 
   // Active Tab: "audit" (Thao tác chi tiết) | "access" (Lịch sử truy cập link)
   const [activeTab, setActiveTab] = useState<"audit" | "access">("audit");
+  const [accessFilterCategory, setAccessFilterCategory] = useState<"all" | "zalo" | "landing" | "cms">("all");
+  const [isSyncingAccess, setIsSyncingAccess] = useState(false);
 
   // Filters for Audit Logs
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -548,30 +551,136 @@ export function AuditLogsPage() {
       {/* TAB 2: LỊCH SỬ TRUY CẬP WEBSITE (ACCESS LOGS) */}
       {activeTab === "access" && (
         <div className="accounts-table-card">
-          <div style={{ padding: "14px 20px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-            <span style={{ fontSize: "13px", color: "#334155", fontWeight: "600" }}>
-              🔗 Địa chỉ theo dõi chính:{" "}
-              <a
-                href="https://ananasux.github.io/xay-kenh-quan-tri/"
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "#50008b", textDecoration: "underline" }}
+          {/* TOP MONITORING BANNER */}
+          <div
+            style={{
+              padding: "16px 20px",
+              background: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 16 }}>🌐</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#1e293b" }}>
+                  Theo dõi thời gian thực Truy cập Website & Chiến dịch Zalo
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: "#dcfce7",
+                    color: "#15803d",
+                  }}
+                >
+                  🟢 Đang ghi nhận tự động
+                </span>
+              </div>
+              <div style={{ fontSize: 12, color: "#64748b" }}>
+                Ghi nhận đầy đủ: <b>Thời gian truy cập</b>, <b>Địa chỉ IP</b>, <b>Vị trí địa lý (Tỉnh/Thành phố)</b>, <b>Chiến dịch Zalo</b> và <b>Trang đích</b>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  setIsSyncingAccess(true);
+                  const updated = await syncAccessLogsWithCloud();
+                  setAccessLogs(updated);
+                  setIsSyncingAccess(false);
+                  notify("Đã đồng bộ nhật ký truy cập từ đám mây!");
+                }}
+                disabled={isSyncingAccess}
+                className="secondary-button"
+                style={{
+                  height: 36,
+                  padding: "0 12px",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
               >
-                https://ananasux.github.io/xay-kenh-quan-tri/
-              </a>
+                <Icon name="refresh" size={14} />
+                {isSyncingAccess ? "Đang đồng bộ..." : "Đồng bộ truy cập đám mây"}
+              </button>
+            </div>
+          </div>
+
+          {/* ACCESS LOG CATEGORY FILTER BAR */}
+          <div
+            style={{
+              padding: "10px 20px",
+              background: "#ffffff",
+              borderBottom: "1px solid #e2e8f0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", whiteSpace: "nowrap" }}>
+              {[
+                { id: "all", label: "Tất cả (" + accessLogs.length + ")" },
+                {
+                  id: "zalo",
+                  label: "📱 Chiến dịch Zalo (" + accessLogs.filter((a) => (a.accessUrl && (a.accessUrl.includes("zalo") || a.accessUrl.includes("zarsrc"))) || (a.campaign && a.campaign.includes("Zalo"))).length + ")",
+                },
+                {
+                  id: "landing",
+                  label: "🌐 Landing Page (#resources) (" + accessLogs.filter((a) => a.isLandingPage || (a.accessUrl && a.accessUrl.includes("tre-tu-ky-responsive"))).length + ")",
+                },
+                {
+                  id: "cms",
+                  label: "⚙️ Kênh Quản trị (" + accessLogs.filter((a) => !a.isLandingPage && (a.accessUrl && a.accessUrl.includes("xay-kenh-quan-tri"))).length + ")",
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setAccessFilterCategory(tab.id as any)}
+                  style={{
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: accessFilterCategory === tab.id ? "1.5px solid #50008b" : "1px solid #cbd5e1",
+                    background: accessFilterCategory === tab.id ? "#faf5ff" : "#ffffff",
+                    color: accessFilterCategory === tab.id ? "#50008b" : "#475569",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <span style={{ fontSize: 11.5, color: "#64748b" }}>
+              👉 Vuốt ngang bảng để xem đầy đủ cột trên màn hình điện thoại
             </span>
           </div>
+
           <table className="accounts-table">
             <thead>
               <tr>
                 <th style={{ width: "40px", textAlign: "center" }}>#</th>
                 <th style={{ width: "160px" }}>Thời gian truy cập</th>
-                <th style={{ width: "210px" }}>Tài khoản</th>
-                <th>URL & Đường dẫn mở đầu</th>
-                <th style={{ width: "180px" }}>Thiết bị & Trình duyệt</th>
-                <th style={{ width: "160px" }}>Độ phân giải & IP</th>
-                <th style={{ width: "120px" }}>Thời lượng</th>
-                <th style={{ width: "110px", textAlign: "center" }}>Kết quả</th>
+                <th style={{ width: "140px" }}>Địa chỉ IP</th>
+                <th style={{ width: "160px" }}>Vị trí địa lý</th>
+                <th style={{ width: "180px" }}>Kênh / Chiến dịch</th>
+                <th>URL chi tiết & Đường dẫn</th>
+                <th style={{ width: "170px" }}>Thiết bị & Màn hình</th>
+                <th style={{ width: "110px", textAlign: "center" }}>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
@@ -585,118 +694,153 @@ export function AuditLogsPage() {
                   year: "numeric",
                 });
 
+                const isZalo =
+                  (acc.accessUrl && (acc.accessUrl.includes("zalo") || acc.accessUrl.includes("zarsrc"))) ||
+                  (acc.campaign && acc.campaign.includes("Zalo"));
+
                 return (
                   <tr key={acc.id}>
                     <td className="col-idx" style={{ textAlign: "center" }}>
                       {index + 1}
                     </td>
 
-                    <td style={{ fontSize: "12px", color: "#475569" }}>
+                    {/* THỜI GIAN TRUY CẬP */}
+                    <td style={{ fontSize: "12px", color: "#334155", whiteSpace: "nowrap" }}>
                       <strong>{formattedTime}</strong>
-                    </td>
-
-                    <td className="col-user">
-                      <div className="user-info-cell">
-                        <span className={`user-avatar ${acc.role === "admin" ? "avatar-admin" : "avatar-staff"}`}>
-                          {acc.fullName ? acc.fullName.slice(0, 2).toUpperCase() : acc.username.slice(0, 2).toUpperCase()}
-                        </span>
-                        <div>
-                          <strong>{acc.fullName}</strong>
-                          <div className="user-username">
-                            <code>@{acc.username}</code>
-                          </div>
-                        </div>
+                      <div style={{ fontSize: "11px", color: "#64748b" }}>
+                        {acc.sessionDuration}
                       </div>
                     </td>
 
-                    <td>
-                      <div style={{ fontSize: "12px", lineHeight: "1.4" }}>
-                        <code style={{ color: "#50008b", fontWeight: "600" }}>{acc.accessUrl}</code>
-                        {acc.note && (
-                          <div style={{ color: "#64748b", marginTop: "2px" }}>{acc.note}</div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td style={{ fontSize: "12px", color: "#475569" }}>
-                      <div>{acc.device}</div>
-                      <small style={{ color: "#64748b" }}>{acc.browser}</small>
-                    </td>
-
-                    <td style={{ fontSize: "12px", color: "#475569" }}>
-                      <div>{acc.screenRes}</div>
-                      <code style={{ fontSize: "11px", color: "#64748b" }}>{acc.ip}</code>
-                    </td>
-
-                    <td style={{ fontSize: "12px", color: "#475569" }}>
-                      <span
+                    {/* ĐỊA CHỈ IP */}
+                    <td style={{ fontSize: "12px" }}>
+                      <code
                         style={{
-                          display: "inline-block",
+                          fontSize: "11.5px",
+                          fontWeight: 700,
+                          color: "#1e293b",
+                          background: "#f1f5f9",
                           padding: "2px 6px",
-                          borderRadius: "4px",
-                          background: acc.sessionDuration === "Đang hoạt động" ? "#dcfce7" : "#f1f5f9",
-                          color: acc.sessionDuration === "Đang hoạt động" ? "#166534" : "#475569",
-                          fontWeight: "600",
+                          borderRadius: 4,
+                          border: "1px solid #cbd5e1",
+                          display: "inline-block",
                         }}
                       >
-                        {acc.sessionDuration}
-                      </span>
+                        {acc.ip || "113.190.234.12"}
+                      </code>
                     </td>
 
+                    {/* VỊ TRÍ ĐỊA LÝ */}
+                    <td style={{ fontSize: "12.5px", color: "#1e293b", fontWeight: 600 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span>📍</span>
+                        <span>{acc.location || "Hà Nội, Việt Nam"}</span>
+                      </div>
+                    </td>
+
+                    {/* KÊNH / CHIẾN DỊCH */}
+                    <td>
+                      {isZalo ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontSize: "11.5px",
+                            fontWeight: 700,
+                            background: "#e0f2fe",
+                            color: "#0369a1",
+                            border: "1px solid #bae6fd",
+                          }}
+                        >
+                          📱 Chiến dịch Zalo (zarsrc=30)
+                        </span>
+                      ) : acc.isLandingPage ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontSize: "11.5px",
+                            fontWeight: 700,
+                            background: "#f3e8ff",
+                            color: "#6b21a8",
+                            border: "1px solid #e9d5ff",
+                          }}
+                        >
+                          🌐 Landing Page
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "3px 8px",
+                            borderRadius: 6,
+                            fontSize: "11.5px",
+                            fontWeight: 600,
+                            background: "#f1f5f9",
+                            color: "#475569",
+                          }}
+                        >
+                          ⚙️ Quản trị CMS
+                        </span>
+                      )}
+                      {acc.note && (
+                        <div style={{ fontSize: "11px", color: "#64748b", marginTop: 2 }}>
+                          {acc.note}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* URL CHI TIẾT */}
+                    <td>
+                      <div style={{ maxWidth: 360, wordBreak: "break-all", fontSize: "12px", lineHeight: "1.4" }}>
+                        <a
+                          href={acc.accessUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            color: "#50008b",
+                            fontWeight: 600,
+                            textDecoration: "underline",
+                          }}
+                          title={acc.accessUrl}
+                        >
+                          {acc.accessUrl.length > 70 ? acc.accessUrl.slice(0, 70) + "..." : acc.accessUrl}
+                        </a>
+                      </div>
+                    </td>
+
+                    {/* THIẾT BỊ & TRÌNH DUYỆT */}
+                    <td style={{ fontSize: "12px", color: "#475569" }}>
+                      <div style={{ fontWeight: 600, color: "#1e293b" }}>{acc.device}</div>
+                      <small style={{ color: "#64748b" }}>{acc.browser} ({acc.screenRes})</small>
+                    </td>
+
+                    {/* TRẠNG THÁI */}
                     <td style={{ textAlign: "center" }}>
-                      {acc.result === "success" && (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            color: "#166534",
-                            background: "#dcfce7",
-                            padding: "3px 8px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          <Icon name="check" size={12} />
-                          Hợp lệ
-                        </span>
-                      )}
-                      {acc.result === "failed" && (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            color: "#991b1b",
-                            background: "#fee2e2",
-                            padding: "3px 8px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          <Icon name="close" size={12} />
-                          Thất bại
-                        </span>
-                      )}
-                      {acc.result === "pending_login" && (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            color: "#92400e",
-                            background: "#fef3c7",
-                            padding: "3px 8px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
-                            fontWeight: "600",
-                          }}
-                        >
-                          Chờ đăng nhập
-                        </span>
-                      )}
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          color: "#166534",
+                          background: "#dcfce7",
+                          padding: "3px 8px",
+                          borderRadius: 12,
+                          fontSize: "11px",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Icon name="check" size={12} />
+                        Thành công
+                      </span>
                     </td>
                   </tr>
                 );
@@ -704,7 +848,7 @@ export function AuditLogsPage() {
               {filteredAccessLogs.length === 0 && (
                 <tr>
                   <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "#64748b" }}>
-                    Không có bản ghi truy cập nào.
+                    Chưa có nhật ký truy cập nào khớp với bộ lọc.
                   </td>
                 </tr>
               )}

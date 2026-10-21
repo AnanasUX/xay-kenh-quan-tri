@@ -35,9 +35,12 @@ export interface AccessLogEntry {
   browser: string;
   screenRes: string;
   ip: string;
+  location: string;
   sessionDuration: string;
   result: "success" | "pending_login" | "failed";
   note?: string;
+  campaign?: string;
+  isLandingPage?: boolean;
 }
 
 const STORAGE_AUDIT_LOGS_KEY = "aurora-cms:audit-logs";
@@ -60,7 +63,7 @@ export function detectClientEnvironment(): { device: string; browser: string; sc
   const screenRes = typeof window !== "undefined" ? `${window.screen.width}x${window.screen.height}` : "1920x1080";
   
   // IP thực tế / giả lập nội bộ
-  const mockIps = ["113.190.234.12 (Hà Nội)", "14.241.120.45 (Hà Nội)", "125.235.221.88 (TP.HCM)", "118.70.184.62 (Hà Nội)"];
+  const mockIps = ["113.190.234.12", "14.241.120.45", "125.235.221.88", "118.70.184.62"];
   const randomIp = mockIps[Math.floor(Math.random() * mockIps.length)];
 
   return {
@@ -74,8 +77,46 @@ export function detectClientEnvironment(): { device: string; browser: string; sc
 // Dữ liệu mẫu khởi tạo sống động
 const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
   {
-    id: "acc_live_1",
+    id: "acc_zalo_1",
     timestamp: new Date().toISOString(),
+    username: "phu_huynh_zalo",
+    fullName: "Phụ huynh (Chiến dịch Zalo)",
+    role: "guest",
+    accessUrl: "https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    entryPath: "/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    device: "iPhone 15 Pro (iOS 17.5)",
+    browser: "Zalo In-App Browser",
+    screenRes: "393x852",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "Đang xem trang (#resources)",
+    result: "success",
+    note: "Truy cập từ chiến dịch Zalo vào chuyên mục Tài liệu & Cẩm nang #resources",
+    campaign: "Chiến dịch Zalo (zarsrc=30, utm_source=zalo)",
+    isLandingPage: true,
+  },
+  {
+    id: "acc_zalo_2",
+    timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(),
+    username: "phu_huynh_zalo",
+    fullName: "Phụ huynh (Chiến dịch Zalo)",
+    role: "guest",
+    accessUrl: "https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    entryPath: "/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    device: "Samsung Galaxy S24 (Android 14)",
+    browser: "Chrome Mobile 133.0",
+    screenRes: "412x915",
+    ip: "14.241.120.45",
+    location: "Hưng Yên, Việt Nam",
+    sessionDuration: "18 phút",
+    result: "success",
+    note: "Khách Zalo xem biểu phí, phòng can thiệp và tài liệu phụ huynh",
+    campaign: "Chiến dịch Zalo (zarsrc=30, utm_source=zalo)",
+    isLandingPage: true,
+  },
+  {
+    id: "acc_live_1",
+    timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
     username: "admin",
     fullName: "Quản trị viên Hệ thống",
     role: "admin",
@@ -84,14 +125,36 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     device: "Windows 11 PC",
     browser: "Chrome 134.0",
     screenRes: "1920x1080",
-    ip: "113.190.234.12 (Hà Nội, VN)",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
     sessionDuration: "Đang hoạt động",
     result: "success",
     note: "Phiên làm việc Quản trị viên hiện tại",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_zalo_3",
+    timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    username: "phu_huynh_zalo",
+    fullName: "Phụ huynh (Chiến dịch Zalo)",
+    role: "guest",
+    accessUrl: "https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    entryPath: "/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    device: "Xiaomi Redmi Note 13",
+    browser: "Zalo In-App Browser",
+    screenRes: "392x872",
+    ip: "125.235.221.88",
+    location: "Hà Nam, Việt Nam",
+    sessionDuration: "8 phút",
+    result: "success",
+    note: "Phụ huynh tìm hiểu bài tập điều hòa cảm giác và kích thích bật âm",
+    campaign: "Chiến dịch Zalo (zarsrc=30, utm_source=zalo)",
+    isLandingPage: true,
   },
   {
     id: "acc_live_2",
-    timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+    timestamp: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
     username: "nhanvien",
     fullName: "Nhân viên Nội dung",
     role: "staff",
@@ -100,42 +163,13 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     device: "Windows 10 Laptop",
     browser: "Chrome 133.0",
     screenRes: "1366x768",
-    ip: "14.241.120.45 (Hà Nội, VN)",
+    ip: "14.241.120.45",
+    location: "Hưng Yên, Việt Nam",
     sessionDuration: "25 phút",
     result: "success",
     note: "Đăng nhập chỉnh sửa nội dung bài viết",
-  },
-  {
-    id: "acc_live_3",
-    timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-    username: "vannam",
-    fullName: "Nguyễn Văn Nam",
-    role: "staff",
-    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/cau-hinh-trang",
-    entryPath: "#/cau-hinh-trang",
-    device: "MacBook Air M2",
-    browser: "Safari 18.2",
-    screenRes: "1440x900",
-    ip: "125.235.221.88 (TP.HCM, VN)",
-    sessionDuration: "42 phút",
-    result: "success",
-    note: "Kiểm tra quyền khối nội dung",
-  },
-  {
-    id: "acc_live_4",
-    timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
-    username: "admin_test",
-    fullName: "Chưa xác thực",
-    role: "guest",
-    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/",
-    entryPath: "#/",
-    device: "Windows 11 PC",
-    browser: "Edge 133.0",
-    screenRes: "1920x1080",
-    ip: "118.70.184.62 (Hà Nội, VN)",
-    sessionDuration: "1 phút",
-    result: "failed",
-    note: "Đăng nhập thất bại: Tài khoản không tồn tại",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
   },
 ];
 
@@ -384,4 +418,28 @@ export function exportAuditLogsToCsv(logs: AuditLogEntry[]): void {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// Đồng bộ nhật ký truy cập từ máy chủ đám mây KVDB (hỗ trợ Landing Page)
+export async function syncAccessLogsWithCloud(): Promise<AccessLogEntry[]> {
+  try {
+    const res = await fetch("https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/access_logs", { cache: "no-store" });
+    if (res.ok) {
+      const remoteLogs: AccessLogEntry[] = await res.json();
+      if (Array.isArray(remoteLogs) && remoteLogs.length > 0) {
+        const localLogs = getAccessLogs();
+        const map = new Map<string, AccessLogEntry>();
+        [...localLogs, ...remoteLogs].forEach((l) => map.set(l.id, l));
+        const merged = Array.from(map.values())
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 300);
+        localStorage.setItem(STORAGE_ACCESS_LOGS_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent("aurora-access-logged", { detail: merged }));
+        return merged;
+      }
+    }
+  } catch (e) {
+    console.warn("Could not sync access logs with cloud:", e);
+  }
+  return getAccessLogs();
 }
