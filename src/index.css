@@ -111,10 +111,20 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 button,

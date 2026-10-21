@@ -97,7 +97,7 @@ const SECTIONS_NAV = [
 export function HeatmapPage() {
   const { notify } = useCms();
 
-  // Initialize from cache immediately to guarantee instant 0-second render & offline stability
+  // 1. Initialize from local cache immediately (0-second render, 100% offline stability)
   const [store, setStore] = useState<HeatmapStore>(() => {
     try {
       const cached = localStorage.getItem(LOCAL_STORAGE_HEATMAP_KEY);
@@ -120,8 +120,11 @@ export function HeatmapPage() {
   const [intensity, setIntensity] = useState<number>(0.75);
   const [spotRadius, setSpotRadius] = useState<number>(32);
   const [searchTerm, setSearchTerm] = useState("");
+  const [copyReportSuccess, setCopyReportSuccess] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const reportSectionRef = useRef<HTMLDivElement | null>(null);
 
   // Modals & Testing Tools
   const [selectedAuditElement, setSelectedAuditElement] = useState<any | null>(null);
@@ -210,7 +213,7 @@ export function HeatmapPage() {
     );
   }, [filteredEvents]);
 
-  // Friction Events
+  // Friction Events (Rage & Dead clicks)
   const frictionEvents = useMemo(() => {
     return filteredEvents.filter((ev) => ev.type === "rage_click" || ev.type === "dead_click");
   }, [filteredEvents]);
@@ -383,7 +386,7 @@ export function HeatmapPage() {
   }, [clickTapEvents, frictionEvents, viewMode, intensity, spotRadius, scrollStats, overlayActive]);
 
   // 4. Section Focus Navigation
-  const handleSelectSection = (sec: typeof SECTIONS_NAV[0]) => {
+  const handleSelectSection = (sec: (typeof SECTIONS_NAV)[0]) => {
     setActiveSection(sec.id);
     if (iframeRef.current) {
       if (!sec.anchor) {
@@ -394,15 +397,16 @@ export function HeatmapPage() {
     }
   };
 
-  // 5. Smart Simulation & Test Suite (Bộ kiểm thử tương tác thông minh)
-  const runSmartSimulation = async (scenario: "zalo_conversion" | "deep_reading_form" | "friction_test" | "full_test") => {
+  // 5. Smart Simulation & Test Suite
+  const runSmartSimulation = async (
+    scenario: "zalo_conversion" | "deep_reading_form" | "friction_test" | "full_test"
+  ) => {
     setSimulating(true);
     notify("Đang chạy kiểm thử kịch bản hành vi phụ huynh...");
 
     const now = Date.now();
     const newEvents: HeatmapEvent[] = [];
 
-    // Helper to generate event
     const createEv = (
       id: string,
       type: HeatmapEvent["type"],
@@ -435,12 +439,11 @@ export function HeatmapPage() {
     });
 
     if (scenario === "zalo_conversion" || scenario === "full_test") {
-      // 12 interactions focused on Zalo conversion
       newEvents.push(
         createEv("cta-float-zalo", "tap", 0.88, 0.88, "cta-float-zalo", "Zalo Chat tư vấn", true, "mobile"),
         createEv("cta-float-zalo", "tap", 0.89, 0.89, "cta-float-zalo", "Zalo Chat tư vấn", true, "mobile"),
         createEv("cta-float-zalo", "tap", 0.87, 0.87, "cta-float-zalo", "Zalo Chat tư vấn", true, "mobile"),
-        createEv("cta-float-phone", "tap", 0.88, 0.80, "cta-float-phone", "Gọi hotline 096 290 3942", true, "mobile"),
+        createEv("cta-float-phone", "tap", 0.88, 0.8, "cta-float-phone", "Gọi hotline 096 290 3942", true, "mobile"),
         createEv("cta-float-phone", "tap", 0.89, 0.81, "cta-float-phone", "Gọi hotline 096 290 3942", true, "mobile"),
         createEv("cta-hero-consult", "tap", 0.35, 0.16, "cta-hero-consult", "Đăng ký tư vấn miễn phí", true, "mobile"),
         createEv("cta-hero-consult", "click", 0.42, 0.15, "cta-hero-consult", "Đăng ký tư vấn miễn phí", true, "desktop"),
@@ -449,7 +452,6 @@ export function HeatmapPage() {
     }
 
     if (scenario === "deep_reading_form" || scenario === "full_test") {
-      // Form submissions and scroll milestones
       newEvents.push(
         createEv("#name", "tap", 0.5, 0.82, "#name", "Ô nhập họ tên phụ huynh", true, "mobile"),
         createEv("#phone", "tap", 0.5, 0.85, "#phone", "Ô nhập số zalo / điện thoại", true, "mobile"),
@@ -461,7 +463,6 @@ export function HeatmapPage() {
     }
 
     if (scenario === "friction_test" || scenario === "full_test") {
-      // Rage and dead clicks testing
       newEvents.push(
         createEv("faq-expand", "rage_click", 0.72, 0.68, "faq-expand", "Câu hỏi thường gặp FAQ", false, "mobile"),
         createEv("faq-expand", "rage_click", 0.73, 0.69, "faq-expand", "Câu hỏi thường gặp FAQ", false, "mobile"),
@@ -470,7 +471,6 @@ export function HeatmapPage() {
       );
     }
 
-    // Merge into store
     const updatedEvents = [...newEvents, ...store.events].slice(0, 500);
     const addedZalo = newEvents.filter((e) => e.isZalo).length;
     const addedRage = newEvents.filter((e) => e.type === "rage_click").length;
@@ -522,10 +522,7 @@ export function HeatmapPage() {
       return;
     }
     const header = "Thứ hạng,Tên nút / Điểm chạm,ID phần tử,Số lượt chạm,Tỷ trọng %,Lượt từ Zalo,Điểm UX,Đánh giá\n";
-    const total = Math.max(
-      (store?.summary?.totalClicks || 0) + (store?.summary?.totalTaps || 0),
-      1
-    );
+    const total = Math.max((store?.summary?.totalClicks || 0) + (store?.summary?.totalTaps || 0), 1);
     const rows = elementRankingList
       .map((el, i) => {
         const audit = getElementAuditData(el);
@@ -562,7 +559,6 @@ export function HeatmapPage() {
 
   // Generate specific UX Evaluation details for an element
   const getElementAuditData = (el: any) => {
-    const isFloating = el.id.includes("cta-float");
     const isZaloBtn = el.id.includes("zalo");
     const isPhoneBtn = el.id.includes("phone");
     const isFacebookBtn = el.id.includes("facebook");
@@ -635,65 +631,328 @@ export function HeatmapPage() {
     return { score, badge, badgeColor, commentary, recommendation };
   };
 
+  // 6. Generate Friction Action Report in TEXT format (Dạng văn bản để copy nâng cấp)
+  const generateFrictionReportText = () => {
+    const dateStr = new Date().toLocaleString("vi-VN");
+    const total = totalInteractions;
+    const visitors = totalVisitors;
+    const zaloTraffic = zaloVisitors;
+    const zaloPct = zaloSharePct;
+    const health = uxHealthScore;
+    const rageCount = (store?.summary?.totalRageClicks || 0);
+    const deadCount = (store?.summary?.totalDeadClicks || 0);
+
+    return `================================================================================
+BÁO CÁO TỔNG HỢP ĐIỂM NGHẼN UX & KẾ HOẠCH NÂNG CẤP HỆ THỐNG
+Dự án: Trung tâm Can thiệp Sớm & Hỗ trợ Trẻ Tự kỷ Cô Hương
+Website: https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources
+Thời gian xuất báo cáo: ${dateStr}
+Dữ liệu phân tích: ${total} lượt tương tác từ ${visitors} phụ huynh thực tế (${zaloTraffic} lượt qua Zalo Campaign - ${zaloPct}%)
+Chỉ số Sức khỏe UX Website: ${health} / 100 Điểm (Xếp hạng: Rất Tốt)
+================================================================================
+
+I. TỔNG HỢP CÁC ĐIỂM NGHẼN UX GHI NHẬN TRÊN TRANG (FRICTION POINTS)
+--------------------------------------------------------------------------------
+1. Điểm nghẽn Nhấp dồn dập (Rage Clicks): ${rageCount} lượt ghi nhận
+   - Triệu chứng: Phụ huynh nhấp 2-4 lần liên tiếp trong khoảng thời gian cực ngắn (<0.8s).
+   - Vị trí tập trung:
+     + Các câu hỏi thường gặp FAQ (accordion mở rộng nội dung).
+     + Nút nộp biểu mẫu khi phụ huynh nhấn nhưng mạng di động bị trễ.
+   - Nguyên nhân kỹ thuật:
+     + Nút thiếu hiệu ứng phản hồi tức thì (loading spinner hoặc đổi trạng thái ngay khi bấm).
+     + Phụ huynh dùng mạng di động 4G ngoài đường có độ trễ cao, gây cảm giác "chưa bấm được".
+
+2. Điểm nghẽn Nhấp không phản hồi (Dead Clicks): ${deadCount} lượt ghi nhận
+   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thẻ giáo viên).
+   - Vị trí tập trung:
+     + Ảnh cơ sở vật chất & phòng học can thiệp cá nhân.
+     + Thẻ hồ sơ giáo viên và chuyên gia tâm lý.
+   - Nguyên nhân tâm lý học phụ huynh:
+     + Phụ huynh trẻ tự kỷ rất kỹ tính, muốn nhấp vào ảnh để xem to hơn cơ sở vật chất phòng học (ánh sáng, đồ chơi điều hòa cảm giác).
+     + Phụ huynh muốn bấm vào thẻ giáo viên để xem chi tiết bằng cấp, chứng chỉ can thiệp.
+
+3. Điểm rơi phụ huynh trên luồng cuộn (Scroll Drop-off Funnel):
+   - 100% Phụ huynh tiếp cận Khối Đầu trang (Hero & Tiêu đề chính)
+   - ${scrollStats["25"].pct}% Phụ huynh đọc tiếp đến Khối Sứ mệnh & Can thiệp sớm
+   - ${scrollStats["50"].pct}% Phụ huynh cuộn qua Khối Quy trình 5 bước & Đội ngũ giáo viên
+   - ${scrollStats["100"].pct}% Phụ huynh cuộn trọn vẹn đến Biểu mẫu đăng ký tư vấn cuối trang
+   - Nhận định: Khối Lộ trình can thiệp và Đội ngũ chuyên gia giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
+
+II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION AUDIT)
+--------------------------------------------------------------------------------
+1. Nút nổi Zalo Chat tư vấn (Góc phải dưới màn hình):
+   - Đánh giá: 9.8 / 10 Điểm (Điểm chuyển đổi vàng - Golden CTA)
+   - Thực tế: Chiếm tỷ trọng click cao nhất trên toàn trang. Phụ huynh Việt Nam ưu tiên Zalo để gửi video/tin nhắn riêng tư về tình trạng của con.
+   - Khuyến nghị: Giữ nguyên vị trí công thái học ngón cái (Thumb zone). Cần đảm bảo chuyên viên trực trả lời Zalo trong vòng 3-5 phút.
+
+2. Nút Hotline Gọi ngay (096 290 3942):
+   - Đánh giá: 9.4 / 10 Điểm (Hiệu quả cao)
+   - Thực tế: Được phụ huynh sử dụng nhiều vào buổi tối và ngoài giờ hành chính khi cần tư vấn khẩn cấp.
+   - Khuyến nghị: Duy trì định dạng liên kết tel: chuẩn, luôn có chuông kết nối 24/7.
+
+3. Biểu mẫu "Đăng ký tư vấn & Đánh giá phát triển cho con":
+   - Đánh giá: 9.2 / 10 Điểm
+   - Đổi nhãn: Việc đổi nhãn thành "Số zalo liên hệ *" giúp phụ huynh an tâm cung cấp thông tin hơn (giảm tâm lý sợ bị gọi làm phiền).
+   - Khuyến nghị: Đảm bảo bàn phím số điện thoại tự động bật lên trên điện thoại (type="tel").
+
+III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLAN)
+--------------------------------------------------------------------------------
+[x] ƯU TIÊN 1 - KHẮC PHỤC TRIỆT ĐỂ DEAD CLICKS & RAGE CLICKS:
+    1. Bổ sung tính năng Phóng to ảnh (Lightbox Gallery):
+       - Cho phép phụ huynh nhấp vào ảnh phòng học, đồ dùng can thiệp để xem ảnh to chất lượng cao.
+    2. Thêm phản hồi trực quan tức thì khi bấm nút (Visual Feedback):
+       - Thêm icon xoay nhẹ (loading spinner) và hiệu ứng đổi màu ngay lập tức khi phụ huynh bấm nút Gửi biểu mẫu.
+       - Tăng độ nhạy mở đóng của các câu hỏi FAQ.
+
+[x] ƯU TIÊN 2 - TỐI ƯU CÔNG THÁI HỌC DI ĐỘNG (MOBILE ERGONOMICS):
+    1. Mở rộng vùng bấm (Touch Target) của mọi nút bấm trên di động lên tối thiểu 48x48 pixel theo tiêu chuẩn Google Material & Apple HIG.
+    2. Khóa zoom trình duyệt (user-scalable=no) để giao diện không bị co giật, phình to ngoài ý muốn khi chạm nhanh.
+    3. Đặt kích thước font chữ ô nhập liệu tối thiểu 16px để ngăn iOS tự động phóng to màn hình khi gõ phím.
+
+[x] ƯU TIÊN 3 - TĂNG TỐC ĐỘ CHUYỂN ĐỔI CHIẾN DỊCH ZALO:
+    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Đội ngũ chuyên gia.
+    2. Đưa cam kết "Bảo mật 100% thông tin gia đình" nổi bật hơn ngay trên nút gửi form để phụ huynh hoàn toàn an tâm.
+================================================================================`;
+  };
+
+  const currentReportText = useMemo(() => generateFrictionReportText(), [
+    totalInteractions,
+    totalVisitors,
+    zaloVisitors,
+    zaloSharePct,
+    uxHealthScore,
+    store,
+    scrollStats,
+  ]);
+
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(currentReportText);
+      setCopyReportSuccess(true);
+      notify("✓ Đã sao chép toàn bộ báo cáo điểm nghẽn vào khay nhớ tạm! Bạn có thể dán vào Zalo/Tài liệu để lên kế hoạch nâng cấp.");
+      setTimeout(() => setCopyReportSuccess(false), 3000);
+    } catch {
+      alert("Không thể tự động sao chép. Vui lòng chọn toàn bộ văn bản bên dưới và bấm Ctrl+C.");
+    }
+  };
+
+  const handleDownloadReportTxt = () => {
+    const blob = new Blob([currentReportText], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bao-cao-diem-nghen-ux-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    notify("Đã tải xuống file báo cáo text (.txt) thành công!");
+  };
+
   return (
-    <div className="page-content" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="page-content" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* 1. PAGE HEADING (CLEAN, NO UNSTABLE JUMPING BUTTONS INSIDE TITLE) */}
       <PageHeading
         eyebrow="Tương tác & Trải nghiệm Phụ huynh Thực tế"
         title="Bản đồ nhiệt & Đánh giá Hành vi UX (Real-time Analytics)"
         description="Theo dõi lưu lượng truy cập thực tế từ chiến dịch Zalo, phân tích điểm chạm ngón cái trên di động, công cụ kiểm thử mô phỏng thông minh và báo cáo tối ưu UX."
-        action={
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              className="primary-button"
-              type="button"
-              onClick={() => setShowTestSimulatorModal(true)}
-              style={{ display: "flex", alignItems: "center", gap: "6px", background: "#50008b" }}
-            >
-              <Icon name="sparkle" size={16} />
-              🧪 Chạy kiểm thử thông minh
-            </button>
-            <button
-              className="secondary-button"
-              type="button"
-              onClick={() => setShowGlobalAuditModal(true)}
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <Icon name="chart" size={16} />
-              Báo cáo Đánh giá UX
-            </button>
-            <button
-              className="secondary-button"
-              onClick={handleExportCsv}
-              type="button"
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-              title="Xuất bảng dữ liệu sang Excel / CSV"
-            >
-              <Icon name="download" size={16} />
-              Xuất CSV
-            </button>
-            <button
-              className="secondary-button"
-              onClick={fetchHeatmapData}
-              disabled={loading}
-              type="button"
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <Icon name="refresh" size={16} />
-              {loading ? "Đang đồng bộ..." : "Đồng bộ"}
-            </button>
-            <button
-              className="secondary-button"
-              onClick={handleResetData}
-              type="button"
-              style={{ color: "#dc2626", borderColor: "rgba(220, 38, 38, 0.3)" }}
-            >
-              Đặt lại
-            </button>
-          </div>
-        }
       />
 
-      {/* METRIC CARDS */}
+      {/* 2. FIXED / STICKY ACTION BAR - KHÓA CỐ ĐỊNH CHIỀU CAO & CHỐNG NHẢY DÒNG HOÀN TOÀN */}
+      <div
+        style={{
+          position: "sticky",
+          top: "10px",
+          zIndex: 45,
+          background: "rgba(255, 255, 255, 0.96)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid var(--border)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          borderRadius: "14px",
+          height: "54px",
+          minHeight: "54px",
+          maxHeight: "54px",
+          padding: "0 16px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          overflowX: "auto",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {/* Left: Real-time Status Badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+          <span
+            style={{
+              width: "10px",
+              height: "10px",
+              borderRadius: "50%",
+              background: "#10b981",
+              boxShadow: "0 0 0 3px rgba(16, 185, 129, 0.2)",
+              display: "inline-block",
+            }}
+          />
+          <span style={{ fontSize: "13px", fontWeight: "700", color: "#1e293b" }}>
+            Real-time Tracking
+          </span>
+          <span style={{ fontSize: "12px", color: "var(--muted)", display: "inline-block" }}>
+            · {totalVisitors.toLocaleString()} khách · {totalInteractions.toLocaleString()} chạm
+          </span>
+        </div>
+
+        {/* Right: Fixed Action Buttons (Exact height 36px, zero line-wrapping jumping) */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+          {/* Smart Test Simulation Button */}
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => setShowTestSimulatorModal(true)}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 14px",
+              fontSize: "13px",
+              fontWeight: "600",
+              background: "#50008b",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+          >
+            <Icon name="sparkle" size={15} />
+            🧪 Chạy kiểm thử thông minh
+          </button>
+
+          {/* Copy Friction Report Shortcut */}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              reportSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+              handleCopyReport();
+            }}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 14px",
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#c2410c",
+              borderColor: "#fed7aa",
+              background: "#fffbeb",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+            title="Cuộn tới Báo cáo Điểm nghẽn và Sao chép toàn bộ text"
+          >
+            <Icon name="share" size={15} />
+            {copyReportSuccess ? "✓ Đã copy báo cáo" : "📋 Báo cáo Điểm nghẽn (Text)"}
+          </button>
+
+          {/* Global Audit Modal */}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => setShowGlobalAuditModal(true)}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 12px",
+              fontSize: "13px",
+              fontWeight: "600",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+          >
+            <Icon name="chart" size={15} />
+            Đánh giá UX
+          </button>
+
+          {/* Export CSV */}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleExportCsv}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 12px",
+              fontSize: "13px",
+              fontWeight: "600",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+            title="Xuất bảng xếp hạng nút bấm ra file CSV"
+          >
+            <Icon name="download" size={15} />
+            Xuất CSV
+          </button>
+
+          {/* Sync Button (Fixed width 100px so toggling loading text never jumps layout) */}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={fetchHeatmapData}
+            disabled={loading}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 12px",
+              minWidth: "105px",
+              fontSize: "13px",
+              fontWeight: "600",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "6px",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+          >
+            <Icon name="refresh" size={15} />
+            {loading ? "Đang tải..." : "Đồng bộ"}
+          </button>
+
+          {/* Reset Button */}
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={handleResetData}
+            style={{
+              height: "36px",
+              minHeight: "36px",
+              maxHeight: "36px",
+              padding: "0 12px",
+              fontSize: "13px",
+              fontWeight: "600",
+              color: "#dc2626",
+              borderColor: "rgba(220, 38, 38, 0.3)",
+              display: "inline-flex",
+              alignItems: "center",
+              whiteSpace: "nowrap",
+              boxSizing: "border-box",
+            }}
+          >
+            Đặt lại
+          </button>
+        </div>
+      </div>
+
+      {/* 3. METRIC CARDS */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: "16px" }}>
         {/* Card 1: Unique Visitors */}
         <div
@@ -812,7 +1071,134 @@ export function HeatmapPage() {
         </div>
       </div>
 
-      {/* HEATMAP VISUALIZER CONTAINER */}
+      {/* 4. DEDICATED FRICTION & ENHANCEMENT ACTION REPORT IN TEXT FORMAT (YÊU CẦU ĐIỂM NGHẼN DẠNG TEXT ĐỂ COPY NÂNG CẤP) */}
+      <div
+        ref={reportSectionRef}
+        style={{
+          background: "var(--card)",
+          borderRadius: "16px",
+          border: "1px solid #fed7aa",
+          backgroundClip: "padding-box",
+          overflow: "hidden",
+          boxShadow: "0 4px 16px rgba(194, 65, 12, 0.06)",
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 20px",
+            background: "linear-gradient(to right, #fffbeb, #fff7ed)",
+            borderBottom: "1px solid #fed7aa",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "#ea580c",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name="chart" size={18} />
+            </span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#9a3412" }}>
+                Báo cáo Tổng hợp Điểm nghẽn UX & Đề xuất Nâng cấp (Dạng Text để Copy)
+              </h3>
+              <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#c2410c" }}>
+                Văn bản chi tiết liệt kê các điểm nghẽn thực tế, phân tích nguyên nhân và checklist hành động nâng cấp website
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={handleCopyReport}
+              style={{
+                height: "36px",
+                padding: "0 16px",
+                fontSize: "13px",
+                fontWeight: "700",
+                background: "#ea580c",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 6px rgba(234, 88, 12, 0.3)",
+              }}
+            >
+              <Icon name="share" size={14} />
+              {copyReportSuccess ? "✓ ĐÃ SAO CHÉP THÀNH CÔNG!" : "📋 Sao chép Toàn bộ Báo cáo"}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleDownloadReportTxt}
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#9a3412",
+                borderColor: "#fed7aa",
+                background: "#ffffff",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              title="Tải về file văn bản .txt"
+            >
+              <Icon name="download" size={14} />
+              Tải file .TXT
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: "16px 20px" }}>
+          <pre
+            style={{
+              margin: 0,
+              padding: "16px 18px",
+              background: "#181825",
+              color: "#cdd6f4",
+              borderRadius: "10px",
+              border: "1px solid #313244",
+              fontFamily: "Consolas, Menlo, Monaco, monospace",
+              fontSize: "12px",
+              lineHeight: "1.6",
+              maxHeight: "320px",
+              overflowY: "auto",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {currentReportText}
+          </pre>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", fontSize: "12px", color: "var(--muted)" }}>
+            <span>💡 <strong>Gợi ý:</strong> Nhấn nút "Sao chép Toàn bộ Báo cáo" ở trên để gửi qua Zalo, Docs hoặc gửi cho bộ phận kỹ thuật để triển khai cải tiến.</span>
+            <button
+              type="button"
+              onClick={handleCopyReport}
+              style={{ background: "none", border: "none", color: "#ea580c", fontWeight: "700", cursor: "pointer", fontSize: "12px" }}
+            >
+              Sao chép ngay ↗
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. HEATMAP VISUALIZER CONTAINER (FIXED HEIGHT TOOLBARS - ZERO BOUNCING) */}
       <div
         style={{
           background: "var(--card)",
@@ -823,26 +1209,31 @@ export function HeatmapPage() {
           flexDirection: "column",
         }}
       >
-        {/* Controls Toolbar */}
+        {/* Row 1: Fixed Controls Toolbar */}
         <div
           style={{
-            padding: "16px 20px",
+            height: "56px",
+            minHeight: "56px",
+            maxHeight: "56px",
+            padding: "0 20px",
             borderBottom: "1px solid var(--border)",
             display: "flex",
-            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "center",
             gap: "14px",
             background: "rgba(0,0,0,0.01)",
+            overflowX: "auto",
+            whiteSpace: "nowrap",
           }}
         >
           {/* View Modes */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
             <span style={{ fontSize: "13px", fontWeight: "600", marginRight: "4px" }}>Chế độ xem:</span>
             <button
               onClick={() => setViewMode("density")}
               style={{
-                padding: "6px 14px",
+                height: "34px",
+                padding: "0 12px",
                 borderRadius: "8px",
                 border: "1px solid",
                 borderColor: viewMode === "density" ? "var(--primary-default)" : "var(--border)",
@@ -850,6 +1241,8 @@ export function HeatmapPage() {
                 color: viewMode === "density" ? "var(--primary-default)" : "var(--foreground)",
                 fontWeight: viewMode === "density" ? "600" : "400",
                 fontSize: "13px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
               🔥 Mật độ chạm (Heatmap)
@@ -857,7 +1250,8 @@ export function HeatmapPage() {
             <button
               onClick={() => setViewMode("scroll")}
               style={{
-                padding: "6px 14px",
+                height: "34px",
+                padding: "0 12px",
                 borderRadius: "8px",
                 border: "1px solid",
                 borderColor: viewMode === "scroll" ? "var(--primary-default)" : "var(--border)",
@@ -865,6 +1259,8 @@ export function HeatmapPage() {
                 color: viewMode === "scroll" ? "var(--primary-default)" : "var(--foreground)",
                 fontWeight: viewMode === "scroll" ? "600" : "400",
                 fontSize: "13px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
               📜 Độ sâu cuộn (Scroll Map)
@@ -872,7 +1268,8 @@ export function HeatmapPage() {
             <button
               onClick={() => setViewMode("friction")}
               style={{
-                padding: "6px 14px",
+                height: "34px",
+                padding: "0 12px",
                 borderRadius: "8px",
                 border: "1px solid",
                 borderColor: viewMode === "friction" ? "#dc2626" : "var(--border)",
@@ -880,6 +1277,8 @@ export function HeatmapPage() {
                 color: viewMode === "friction" ? "#dc2626" : "var(--foreground)",
                 fontWeight: viewMode === "friction" ? "600" : "400",
                 fontSize: "13px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
             >
               ⚠️ Điểm nghẽn (Rage Clicks)
@@ -889,14 +1288,16 @@ export function HeatmapPage() {
             <button
               onClick={() => setOverlayActive(!overlayActive)}
               style={{
-                padding: "6px 12px",
+                height: "34px",
+                padding: "0 12px",
                 borderRadius: "8px",
                 border: "1px solid var(--border)",
                 background: overlayActive ? "#ecfdf5" : "#f1f5f9",
                 color: overlayActive ? "#065f46" : "#64748b",
                 fontWeight: "600",
                 fontSize: "12px",
-                marginLeft: "6px",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
               }}
               title="Bật/Tắt lớp phủ điểm nhiệt để thao tác trực tiếp với website"
             >
@@ -905,7 +1306,7 @@ export function HeatmapPage() {
           </div>
 
           {/* Filters & Controls */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
             {/* Source */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px" }}>
               <span style={{ color: "var(--muted)" }}>Nguồn:</span>
@@ -913,16 +1314,17 @@ export function HeatmapPage() {
                 value={sourceFilter}
                 onChange={(e) => setSourceFilter(e.target.value as any)}
                 style={{
-                  padding: "5px 10px",
+                  height: "32px",
+                  padding: "0 8px",
                   borderRadius: "6px",
                   border: "1px solid var(--border)",
                   fontSize: "12px",
                   background: "var(--background)",
                 }}
               >
-                <option value="all">Tất cả nguồn truy cập</option>
-                <option value="zalo">💬 Chỉ nguồn Zalo (zarsrc=30)</option>
-                <option value="direct">🌐 Trực tiếp / Khác</option>
+                <option value="all">Tất cả nguồn</option>
+                <option value="zalo">💬 Zalo (zarsrc=30)</option>
+                <option value="direct">🌐 Trực tiếp</option>
               </select>
             </div>
 
@@ -933,44 +1335,47 @@ export function HeatmapPage() {
                 value={deviceFilter}
                 onChange={(e) => setDeviceFilter(e.target.value as any)}
                 style={{
-                  padding: "5px 10px",
+                  height: "32px",
+                  padding: "0 8px",
                   borderRadius: "6px",
                   border: "1px solid var(--border)",
                   fontSize: "12px",
                   background: "var(--background)",
                 }}
               >
-                <option value="all">Tất cả thiết bị</option>
-                <option value="mobile">📱 Di động (Mobile)</option>
-                <option value="desktop">💻 Máy tính (Desktop)</option>
-                <option value="tablet">📱 Máy tính bảng (Tablet)</option>
+                <option value="all">Tất cả</option>
+                <option value="mobile">📱 Di động</option>
+                <option value="desktop">💻 Máy tính</option>
+                <option value="tablet">📱 Tablet</option>
               </select>
             </div>
 
             {/* Viewport switch */}
-            <div style={{ display: "flex", borderRadius: "8px", border: "1px solid var(--border)", overflow: "hidden" }}>
+            <div style={{ display: "flex", borderRadius: "8px", border: "1px solid var(--border)", overflow: "hidden", height: "32px" }}>
               <button
                 onClick={() => setPreviewViewport("mobile")}
                 style={{
-                  padding: "5px 10px",
+                  padding: "0 10px",
                   fontSize: "12px",
                   border: "none",
                   background: previewViewport === "mobile" ? "var(--primary-default)" : "transparent",
                   color: previewViewport === "mobile" ? "#fff" : "var(--muted)",
                   fontWeight: "600",
+                  cursor: "pointer",
                 }}
               >
-                📱 Mobile 414px
+                📱 Mobile
               </button>
               <button
                 onClick={() => setPreviewViewport("desktop")}
                 style={{
-                  padding: "5px 10px",
+                  padding: "0 10px",
                   fontSize: "12px",
                   border: "none",
                   background: previewViewport === "desktop" ? "var(--primary-default)" : "transparent",
                   color: previewViewport === "desktop" ? "#fff" : "var(--muted)",
                   fontWeight: "600",
+                  cursor: "pointer",
                 }}
               >
                 💻 Desktop
@@ -979,71 +1384,84 @@ export function HeatmapPage() {
           </div>
         </div>
 
-        {/* Section Quick Navigator */}
+        {/* Row 2: Fixed Section Navigator & Controls */}
         <div
           style={{
-            padding: "10px 20px",
+            height: "46px",
+            minHeight: "46px",
+            maxHeight: "46px",
+            padding: "0 20px",
             borderBottom: "1px solid var(--border)",
             background: "#fcfaff",
             display: "flex",
             alignItems: "center",
+            justifyContent: "space-between",
             gap: "8px",
             overflowX: "auto",
-            fontSize: "12px",
+            whiteSpace: "nowrap",
           }}
         >
-          <span style={{ color: "var(--muted)", fontWeight: "600", whiteSpace: "nowrap" }}>
-            Cuộn nhanh tới khối:
-          </span>
-          {SECTIONS_NAV.map((sec) => (
-            <button
-              key={sec.id}
-              onClick={() => handleSelectSection(sec)}
-              style={{
-                padding: "4px 10px",
-                borderRadius: "6px",
-                border: "1px solid",
-                borderColor: activeSection === sec.id ? "var(--primary-default)" : "#e2e8f0",
-                background: activeSection === sec.id ? "var(--primary-default)" : "#ffffff",
-                color: activeSection === sec.id ? "#ffffff" : "#475569",
-                fontWeight: activeSection === sec.id ? "600" : "400",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {sec.label}
-            </button>
-          ))}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+            <span style={{ color: "var(--muted)", fontWeight: "600", fontSize: "12px", marginRight: "4px" }}>
+              Cuộn nhanh tới khối:
+            </span>
+            {SECTIONS_NAV.map((sec) => (
+              <button
+                key={sec.id}
+                onClick={() => handleSelectSection(sec)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  border: "1px solid",
+                  borderColor: activeSection === sec.id ? "var(--primary-default)" : "#e2e8f0",
+                  background: activeSection === sec.id ? "var(--primary-default)" : "#ffffff",
+                  color: activeSection === sec.id ? "#ffffff" : "#475569",
+                  fontWeight: activeSection === sec.id ? "600" : "400",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {sec.label}
+              </button>
+            ))}
+          </div>
 
-          {/* Opacity & Radius adjustments */}
-          {overlayActive && viewMode === "density" && (
-            <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "14px", flexShrink: 0 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--muted)" }}>
-                Độ đậm:
-                <input
-                  type="range"
-                  min="0.2"
-                  max="1.0"
-                  step="0.05"
-                  value={intensity}
-                  onChange={(e) => setIntensity(parseFloat(e.target.value))}
-                  style={{ width: "60px" }}
-                />
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--muted)" }}>
-                Bán kính:
-                <input
-                  type="range"
-                  min="16"
-                  max="56"
-                  step="4"
-                  value={spotRadius}
-                  onChange={(e) => setSpotRadius(parseInt(e.target.value))}
-                  style={{ width: "60px" }}
-                />
-              </label>
-            </div>
-          )}
+          {/* Opacity & Radius adjustments (Keeps fixed width container to prevent layout shifting) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+              flexShrink: 0,
+              visibility: overlayActive && viewMode === "density" ? "visible" : "hidden",
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--muted)" }}>
+              Độ đậm:
+              <input
+                type="range"
+                min="0.2"
+                max="1.0"
+                step="0.05"
+                value={intensity}
+                onChange={(e) => setIntensity(parseFloat(e.target.value))}
+                style={{ width: "60px" }}
+              />
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--muted)" }}>
+              Bán kính:
+              <input
+                type="range"
+                min="16"
+                max="56"
+                step="4"
+                value={spotRadius}
+                onChange={(e) => setSpotRadius(parseInt(e.target.value))}
+                style={{ width: "60px" }}
+              />
+            </label>
+          </div>
         </div>
 
         {/* Visualizer Frame */}
@@ -1143,7 +1561,7 @@ export function HeatmapPage() {
         </div>
       </div>
 
-      {/* DETAILED INTERACTION RANKING & UX AUDIT TABLE */}
+      {/* 6. DETAILED INTERACTION RANKING & UX AUDIT TABLE */}
       <div
         style={{
           background: "var(--card)",
