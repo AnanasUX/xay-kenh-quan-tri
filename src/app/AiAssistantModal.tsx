@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { generateLandingConfigWithAI, type AiGenerateResult } from "./aiService";
+import { generateLandingConfigWithAI, testGeminiApiKey, type AiGenerateResult } from "./aiService";
 import { type LandingPageConfig, type LandingSectionId } from "./landingPage";
 import { Icon } from "./ui";
 
@@ -49,6 +49,8 @@ export function AiAssistantModal({
   const [showKeyInput, setShowKeyInput] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AiGenerateResult | null>(null);
+  const [testingKey, setTestingKey] = useState(false);
+  const [keyTestStatus, setKeyTestStatus] = useState<{ ok: boolean; message: string } | null>(null);
 
   if (!isOpen) return null;
 
@@ -57,6 +59,36 @@ export function AiAssistantModal({
   const handleSaveKey = (key: string) => {
     setApiKey(key);
     localStorage.setItem(API_KEY_STORAGE, key.trim());
+  };
+
+  const handleTestKey = async () => {
+    if (!apiKey.trim()) {
+      setKeyTestStatus({ ok: false, message: "Vui lòng nhập API Key trước khi kiểm tra." });
+      return;
+    }
+    setTestingKey(true);
+    setKeyTestStatus(null);
+    try {
+      const res = await testGeminiApiKey(apiKey.trim());
+      if (res.ok) {
+        setKeyTestStatus({
+          ok: true,
+          message: `Kết nối thành công tới Google AI Studio! Đang hoạt động trên mô hình: ${res.model}`,
+        });
+      } else {
+        setKeyTestStatus({
+          ok: false,
+          message: `Không thể kết nối tới Google Gemini: ${res.error || "Key không hợp lệ hoặc hết hạn mức."}`,
+        });
+      }
+    } catch (err: any) {
+      setKeyTestStatus({
+        ok: false,
+        message: `Lỗi kết nối: ${err?.message || "Kiểm tra kết nối mạng của bạn."}`,
+      });
+    } finally {
+      setTestingKey(false);
+    }
   };
 
   const handleGenerate = async () => {
@@ -108,7 +140,7 @@ export function AiAssistantModal({
               <span className={`engine-dot ${apiKey.trim() ? "engine-gemini" : "engine-builtin"}`} />
               <span>
                 {apiKey.trim()
-                  ? "Động cơ: Google Gemini 3.8 Flash (Đã kết nối API)"
+                  ? "Động cơ: Google Gemini (Google AI Studio)"
                   : "Động cơ: AI Thông minh tích hợp (Sẵn sàng - Không cần key)"}
               </span>
             </div>
@@ -118,23 +150,57 @@ export function AiAssistantModal({
               onClick={() => setShowKeyInput(!showKeyInput)}
             >
               <Icon name="key" size={14} />
-              {showKeyInput ? "Ẩn cấu hình Key" : apiKey.trim() ? "Đổi Gemini Key" : "Thêm Gemini Key"}
+              {showKeyInput ? "Ẩn cấu hình Key" : apiKey.trim() ? "Đổi / Kiểm tra Key" : "Thêm Gemini Key"}
             </button>
           </div>
 
           {showKeyInput && (
             <div className="ai-key-box">
               <label>
-                Google Gemini API Key (Tùy chọn)
-                <input
-                  type="password"
-                  placeholder="AIzaSy..."
-                  value={apiKey}
-                  onChange={(e) => handleSaveKey(e.target.value)}
-                />
+                Google Gemini API Key (Google AI Studio)
+                <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                  <input
+                    type="password"
+                    placeholder="AIzaSy..."
+                    value={apiKey}
+                    onChange={(e) => {
+                      handleSaveKey(e.target.value);
+                      setKeyTestStatus(null);
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{ whiteSpace: "nowrap", height: "36px", padding: "0 12px", fontSize: "13px" }}
+                    onClick={handleTestKey}
+                    disabled={testingKey || !apiKey.trim()}
+                  >
+                    {testingKey ? "Đang kiểm tra..." : "Kiểm tra kết nối"}
+                  </button>
+                </div>
               </label>
+
+              {keyTestStatus && (
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    lineHeight: "1.4",
+                    fontWeight: 500,
+                    backgroundColor: keyTestStatus.ok ? "#ecfdf5" : "#fef2f2",
+                    color: keyTestStatus.ok ? "#065f46" : "#b91c1c",
+                    border: `1px solid ${keyTestStatus.ok ? "#a7f3d0" : "#fecaca"}`,
+                  }}
+                >
+                  {keyTestStatus.ok ? "✓ " : "✕ "}
+                  {keyTestStatus.message}
+                </div>
+              )}
+
               <small>
-                Khóa được lưu cục bộ trên trình duyệt của bạn.{" "}
+                Khóa được lưu cục bộ trên trình duyệt (localStorage). Tương thích với các model: gemini-2.5-flash, gemini-1.5-flash, gemini-2.0-flash.{" "}
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"

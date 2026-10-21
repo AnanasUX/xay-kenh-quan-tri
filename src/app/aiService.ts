@@ -8,6 +8,74 @@ export type AiGenerateResult = {
   error?: string;
 };
 
+// Hàm trích xuất JSON an toàn từ phản hồi của AI
+export function extractJsonFromText(text: string): any {
+  if (!text) throw new Error("AI không trả về nội dung");
+  const trimmed = text.trim();
+
+  // 1. Thử parse trực tiếp
+  try {
+    return JSON.parse(trimmed);
+  } catch {}
+
+  // 2. Thử bóc tách code block ```json ... ``` hoặc ``` ... ```
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+  let match;
+  while ((match = codeBlockRegex.exec(trimmed)) !== null) {
+    try {
+      return JSON.parse(match[1].trim());
+    } catch {}
+  }
+
+  // 3. Thử tìm khối {...} ngoài cùng
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const candidate = trimmed.substring(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate);
+    } catch {}
+  }
+
+  throw new Error("Không thể phân tích dữ liệu JSON từ phản hồi của AI.");
+}
+
+// Kiểm tra tính hợp lệ của API Key Google AI Studio
+export async function testGeminiApiKey(
+  apiKey: string
+): Promise<{ ok: boolean; model?: string; error?: string }> {
+  if (!apiKey || apiKey.trim().length < 15) {
+    return { ok: false, error: "API Key quá ngắn hoặc không đúng định dạng." };
+  }
+
+  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+  let lastError = "";
+
+  for (const model of models) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: "ping" }] }],
+        }),
+      });
+
+      if (res.ok) {
+        return { ok: true, model };
+      }
+
+      const errJson = await res.json().catch(() => ({}));
+      lastError = errJson?.error?.message || `HTTP ${res.status}`;
+    } catch (e: any) {
+      lastError = e?.message || "Lỗi kết nối mạng (CORS/Network)";
+    }
+  }
+
+  return { ok: false, error: lastError };
+}
+
 // 1. Phân tích ngữ nghĩa thông minh cục bộ (Built-in AI Generator - Không cần API Key)
 export function smartLocalAiGenerator(
   prompt: string,
@@ -20,14 +88,21 @@ export function smartLocalAiGenerator(
   // Tạo bản sao từ cấu hình hiện tại
   const newConfig: LandingPageConfig = JSON.parse(JSON.stringify(currentConfig));
 
-  // Trích xuất số điện thoại
-  const phoneMatch = p.match(/(0\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3,4})/);
+  // 1. Trích xuất số điện thoại / hotline
+  const phoneMatch = p.match(/(?:hotline|sđt|số điện thoại|điện thoại|phone|tel)?[:\s]*(0\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3,4})\b/i);
   if (phoneMatch) {
     newConfig.phone = phoneMatch[1].replace(/[-.]/g, " ");
     summary.push(`Số điện thoại: ${newConfig.phone}`);
   }
 
-  // Trích xuất địa chỉ / thành phố
+  // 2. Trích xuất email
+  const emailMatch = p.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i);
+  if (emailMatch) {
+    newConfig.email = emailMatch[1];
+    summary.push(`Email liên hệ: ${newConfig.email}`);
+  }
+
+  // 3. Trích xuất địa chỉ / khu vực
   const addressKeywords = [
     "Hà Nội", "Hồ Chí Minh", "TP.HCM", "Sài Gòn", "Đà Nẵng", "Hải Phòng",
     "Cần Thơ", "Bình Dương", "Đồng Nai", "Nha Trang", "Quảng Ninh", "Huế",
@@ -38,69 +113,101 @@ export function smartLocalAiGenerator(
     newConfig.address = p.includes("tại") 
       ? p.split(/tại/i)[1]?.split(/[,.]/)[0]?.trim() || `${foundAddress}, Việt Nam`
       : `${foundAddress}, Việt Nam`;
-    summary.push(`Địa chỉ hoạt động: ${newConfig.address}`);
+    summary.push(`Địa chỉ: ${newConfig.address}`);
   }
 
-  // Trích xuất tên trung tâm / lớp
+  // 4. Trích xuất tên trung tâm / thương hiệu
   let centerName = "";
-  const nameMatch = p.match(/(?:trung tâm|lớp|phòng khám|viện|trường)\s+([^,.;\n]+)/i);
-  if (nameMatch) {
-    const rawName = nameMatch[1].trim();
-    // Lọc bỏ các từ nối
+  const nameExplicitMatch = p.match(/(?:đổi tên thành|tên là|tên trung tâm|tên lớp|thương hiệu)\s*[:=]?\s*["“']?([^"”'\n,.;]+)["”']?/i);
+  const nameKeywordMatch = p.match(/(?:trung tâm|lớp|phòng khám|viện|trường)\s+([^,.;\n]+)/i);
+  const matchResult = nameExplicitMatch || nameKeywordMatch;
+  if (matchResult) {
+    const rawName = matchResult[1].trim();
     const cleanName = rawName.split(/\s+(?:tại|ở|chuyên|với|hotline|số|địa chỉ)\b/i)[0].trim();
     if (cleanName.length > 2) {
       centerName = cleanName;
-      newConfig.siteName = `Trung tâm Can thiệp ${centerName}`;
-      newConfig.shortName = centerName;
-      const domain = cleanName.toLowerCase().replace(/[^a-z0-9]/g, "");
-      newConfig.email = `lienhe@${domain || "canthiep"}.vn`;
-      summary.push(`Tên trung tâm: ${newConfig.siteName}`);
+      newConfig.siteName = cleanName.toLowerCase().startsWith("trung tâm") || cleanName.toLowerCase().startsWith("lớp")
+        ? cleanName
+        : `Trung tâm Can thiệp ${cleanName}`;
+      newConfig.shortName = cleanName.replace(/^(trung tâm|lớp|phòng khám)\s+/i, "");
+      if (!emailMatch) {
+        const domain = newConfig.shortName.toLowerCase().replace(/[^a-z0-9]/g, "");
+        newConfig.email = `lienhe@${domain || "canthiep"}.vn`;
+      }
+      summary.push(`Tên nhận diện: ${newConfig.siteName}`);
     }
   }
 
-  // Trích xuất phương pháp / chuyên môn
+  // 5. Trích xuất tiêu đề cụ thể nếu người dùng yêu cầu
+  const titleMatch = p.match(/(?:tiêu đề|title|slogan)\s*(?:mở đầu|hero|chính|cho phần [^:]+|của [^:]+)?\s*(?:là|thành|:)?\s*["“']?([^"”'\n]+?)["”']?(?:\.|\n|$|với|và)/i);
+  const customTitle = titleMatch ? titleMatch[1].trim() : "";
+
+  // 6. Trích xuất mô tả cụ thể nếu người dùng yêu cầu
+  const descMatch = p.match(/(?:mô tả|nội dung|description)\s*(?:là|thành|:)?\s*["“']?([^"”'\n]+?)["”']?(?:\.|\n|$)/i);
+  const customDesc = descMatch ? descMatch[1].trim() : "";
+
+  // Trích xuất chuyên môn
   const isAba = /aba\b/i.test(p);
   const isSpeech = /âm ngữ|ngôn ngữ|chậm nói|bật âm|phát âm/i.test(p);
   const isSensory = /cảm giác|giác quan|vận động|ot\b/i.test(p);
-  const isTeacch = /teacch\b/i.test(p);
-  const isPecs = /pecs\b/i.test(p);
   const isEarly = /can thiệp sớm|tiền tiểu học|hòa nhập/i.test(p);
 
-  const brand = centerName || newConfig.shortName || "Ban Mai Xanh";
+  const brand = centerName || newConfig.shortName || newConfig.siteName || "Ban Mai Xanh";
 
-  // Cập nhật từng section tùy theo targetSectionId
-  const shouldUpdate = (id: LandingSectionId) => targetSectionId === "all" || targetSectionId === id;
+  // Xác định phạm vi cập nhật
+  const shouldUpdate = (id: LandingSectionId) => {
+    if (targetSectionId === id) return true;
+    if (targetSectionId !== "all") return false;
+    // Nếu chọn all: xem prompt có nhắc tới khối này hay muốn cập nhật chung
+    return true;
+  };
 
-  // 1. Hero
+  // 1. Cập nhật khối Mở đầu (Hero)
   if (shouldUpdate("hero")) {
     const heroSec = newConfig.sections.find((s) => s.id === "hero");
     if (heroSec) {
+      if (customTitle && (targetSectionId === "hero" || /mở đầu|hero/i.test(p))) {
+        heroSec.title = customTitle;
+      } else if (centerName) {
+        heroSec.title = `Tôn trọng từng nhịp phát triển của trẻ cùng ${brand}`;
+      }
+
+      if (customDesc && (targetSectionId === "hero" || /mở đầu|hero/i.test(p))) {
+        heroSec.description = customDesc;
+      } else {
+        const specialties: string[] = [];
+        if (isSpeech) specialties.push("phát triển ngôn ngữ & âm ngữ trị liệu");
+        if (isAba) specialties.push("can thiệp hành vi ứng dụng ABA");
+        if (isSensory) specialties.push("điều hòa cảm giác và vận động");
+        if (isEarly) specialties.push("can thiệp sớm & chuẩn bị vào lớp 1");
+
+        const focusText = specialties.length > 0 
+          ? ` Chuyên sâu về ${specialties.join(", ")}.`
+          : " Không gian kết nối thấu cảm, an toàn và cá nhân hóa cho từng trẻ.";
+
+        heroSec.description = `Mỗi bước tiến của con đều được trân trọng và ghi nhận.${focusText} Xây dựng lộ trình khoa học và gắn kết chặt chẽ cùng phụ huynh.`;
+      }
+
       heroSec.eyebrow = `Đồng hành cùng trẻ và gia đình tại ${newConfig.address.split(",")[0]}`;
-      heroSec.title = centerName 
-        ? `Tôn trọng từng nhịp phát triển của trẻ cùng ${brand}`
-        : "Tôn trọng từng nhịp phát triển, đồng hành cùng gia đình";
-      
-      const specialties: string[] = [];
-      if (isSpeech) specialties.push("phát triển ngôn ngữ & âm ngữ trị liệu");
-      if (isAba) specialties.push("can thiệp hành vi ứng dụng ABA");
-      if (isSensory) specialties.push("điều hòa cảm giác và vận động");
-      if (isEarly) specialties.push("can thiệp sớm & chuẩn bị vào lớp 1");
-
-      const focusText = specialties.length > 0 
-        ? ` Chuyên sâu về ${specialties.join(", ")}.`
-        : " Không gian kết nối thấu cảm, an toàn và cá nhân hóa cho từng trẻ.";
-
-      heroSec.description = `Mỗi bước tiến của con đều được trân trọng và ghi nhận.${focusText} Xây dựng lộ trình khoa học và gắn kết chặt chẽ cùng phụ huynh.`;
       summary.push("Cập nhật thông điệp mở đầu (Hero)");
     }
   }
 
-  // 2. Sứ mệnh (Mission)
+  // 2. Cập nhật khối Sứ mệnh (Mission)
   if (shouldUpdate("mission")) {
     const missionSec = newConfig.sections.find((s) => s.id === "mission");
     if (missionSec) {
-      missionSec.title = `Sứ mệnh và cam kết của ${brand}`;
-      missionSec.description = `Chúng tôi lấy sự an tâm của gia đình và hạnh phúc của trẻ làm trung tâm, tôn trọng nhịp phát triển tự nhiên thay vì tạo áp lực.`;
+      if (customTitle && (targetSectionId === "mission" || /sứ mệnh/i.test(p))) {
+        missionSec.title = customTitle;
+      } else {
+        missionSec.title = `Sứ mệnh và cam kết của ${brand}`;
+      }
+      if (customDesc && (targetSectionId === "mission" || /sứ mệnh/i.test(p))) {
+        missionSec.description = customDesc;
+      } else {
+        missionSec.description = `Chúng tôi lấy sự an tâm của gia đình và hạnh phúc của trẻ làm trung tâm, tôn trọng nhịp phát triển tự nhiên thay vì tạo áp lực.`;
+      }
+
       missionSec.items = [
         {
           id: "m-1",
@@ -118,16 +225,19 @@ export function smartLocalAiGenerator(
           description: "Không áp đặt, không phán xét. Tôn trọng cảm xúc và quyền riêng tư tuyệt đối của gia đình."
         }
       ];
-      summary.push("Cập nhật 3 trụ cột sứ mệnh");
+      summary.push("Cập nhật mục Sứ mệnh");
     }
   }
 
-  // 3. Lĩnh vực hỗ trợ (Support)
+  // 3. Cập nhật khối Lĩnh vực hỗ trợ (Support)
   if (shouldUpdate("support")) {
     const supportSec = newConfig.sections.find((s) => s.id === "support");
     if (supportSec) {
-      supportSec.title = `Các chương trình can thiệp tại ${brand}`;
-      supportSec.description = "Thiết kế dựa trên các mô hình khoa học quốc tế, linh hoạt theo độ tuổi và khả năng của trẻ.";
+      if (customTitle && (targetSectionId === "support" || /lĩnh vực/i.test(p))) {
+        supportSec.title = customTitle;
+      } else {
+        supportSec.title = `Các chương trình can thiệp tại ${brand}`;
+      }
       supportSec.items = [
         {
           id: "sup-1",
@@ -160,11 +270,11 @@ export function smartLocalAiGenerator(
           description: "Tập ăn uống, tự thay đồ, vệ sinh cá nhân và quản lý đồ dùng để trẻ tự tin trong cuộc sống."
         }
       ];
-      summary.push("Cập nhật 6 lĩnh vực can thiệp chuyên sâu");
+      summary.push("Cập nhật các lĩnh vực hỗ trợ chuyên sâu");
     }
   }
 
-  // 4. Quy trình (Process)
+  // 4. Cập nhật khối Quy trình (Process)
   if (shouldUpdate("process")) {
     const procSec = newConfig.sections.find((s) => s.id === "process");
     if (procSec) {
@@ -177,11 +287,11 @@ export function smartLocalAiGenerator(
         { id: "p-4", meta: "04", title: "Thực hiện can thiệp & Ghi nhận", description: "Học tập tương tác 1:1 hoặc nhóm nhỏ, theo dõi dữ liệu tiến bộ mỗi buổi học." },
         { id: "p-5", meta: "05", title: "Đánh giá định kỳ & Điều chỉnh", description: "Họp định kỳ 3-6 tháng để tổng kết kết quả và lập kế hoạch cho giai đoạn kế tiếp." }
       ];
-      summary.push("Cập nhật quy trình can thiệp 5 bước");
+      summary.push("Cập nhật quy trình can thiệp");
     }
   }
 
-  // 5. Đội ngũ (Team)
+  // 5. Cập nhật khối Đội ngũ (Team)
   if (shouldUpdate("team")) {
     const teamSec = newConfig.sections.find((s) => s.id === "team");
     if (teamSec) {
@@ -213,11 +323,11 @@ export function smartLocalAiGenerator(
           description: "Giàu kinh nghiệm trong việc xây dựng thói quen tự lập, điều hòa cảm xúc và chuẩn bị tâm thế vào lớp 1 cho trẻ."
         }
       ];
-      summary.push("Cập nhật hồ sơ 4 chuyên gia/giáo viên tiêu biểu");
+      summary.push("Cập nhật đội ngũ giáo viên & chuyên môn");
     }
   }
 
-  // 6. FAQ
+  // 6. Cập nhật khối FAQ
   if (shouldUpdate("faq")) {
     const faqSec = newConfig.sections.find((s) => s.id === "faq");
     if (faqSec) {
@@ -245,38 +355,12 @@ export function smartLocalAiGenerator(
           description: "Toàn bộ hồ sơ đánh giá và dữ liệu tiến trình học tập của trẻ được lưu trữ bảo mật tuyệt đối, chỉ chia sẻ khi có sự đồng ý của cha mẹ."
         }
       ];
-      summary.push("Cập nhật 4 câu hỏi thường gặp (FAQ)");
+      summary.push("Cập nhật danh sách câu hỏi FAQ");
     }
   }
 
-  // 7. Tài nguyên (Resources)
-  if (shouldUpdate("resources")) {
-    const resSec = newConfig.sections.find((s) => s.id === "resources");
-    if (resSec) {
-      resSec.title = "Góc chia sẻ kiến thức cho phụ huynh";
-      resSec.description = "Các bài viết hữu ích giúp ba mẹ tự tin hỗ trợ con trong từng sinh hoạt thường nhật.";
-      resSec.items = [
-        {
-          id: "res-1",
-          title: "5 cách kích thích phản xạ ngôn ngữ tự nhiên tại nhà",
-          description: "Tận dụng những khoảnh khắc đời thường như giờ ăn, giờ tắm để tạo nhu cầu giao tiếp cho trẻ.",
-          meta: "Âm ngữ"
-        },
-        {
-          id: "res-2",
-          title: "Xử lý cơn giận dữ (Meltdown) ở trẻ tự kỷ an toàn",
-          description: "Cách nhận biết các dấu hiệu quá tải giác quan và bước hỗ trợ giúp trẻ bình tĩnh trở lại.",
-          meta: "Cảm xúc"
-        },
-        {
-          id: "res-3",
-          title: "Xây dựng lịch trình trực quan bằng hình ảnh (PECS)",
-          description: "Tạo cấu trúc ngày rõ ràng giúp trẻ giảm bớt lo âu và tự chủ trong các hoạt động hàng ngày.",
-          meta: "Kỹ năng sống"
-        }
-      ];
-      summary.push("Cập nhật 3 bài viết cẩm nang phụ huynh");
-    }
+  if (summary.length === 0) {
+    summary.push("Đã hoàn tất tối ưu nội dung theo yêu cầu của bạn.");
   }
 
   return {
@@ -294,122 +378,114 @@ export async function callGeminiApi(
   targetSectionId: LandingSectionId | "all",
   apiKey: string
 ): Promise<AiGenerateResult> {
-  const modelsToTry = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
 
   const systemInstruction = `
 Bạn là chuyên gia thương hiệu và biên tập nội dung y tế / giáo dục đặc biệt (can thiệp sớm, tự kỷ, chậm nói, trị liệu tâm lý cho trẻ em).
-Nhiệm vụ của bạn: Dựa trên yêu cầu của người dùng, cập nhật và hoàn thiện cấu trúc JSON của trang landing page.
+Nhiệm vụ của bạn: Dựa trên yêu cầu của người dùng, cập nhật và hoàn thiện cấu trúc JSON của website.
 
-CÁC NGUYÊN TẮC QUAN TRỌNG:
-1. Trả về DUY NHẤT một chuỗi JSON hợp lệ, không bọc markdown block (\`\`\`json ... \`\`\`), không có lời mở đầu hay kết thúc.
-2. Tiếng Việt chuẩn mực, giàu tính thấu cảm, khoa học, chuyên nghiệp, không sáo rỗng.
-3. Tuyệt đối không dùng chữ in hoa dài (ALL CAPS) cho các đoạn văn bản. Dấu tiếng Việt phải rõ ràng, tự nhiên.
-4. Giữ nguyên cấu trúc thuộc tính của LandingPageConfig:
+CÁC NGUYÊN TẮC BẮT BUỘC:
+1. Trả về DUY NHẤT một chuỗi JSON hợp lệ, bắt đầu bằng '{' và kết thúc bằng '}'. Tuyệt đối không thêm lời giải thích nào khác ngoài chuỗi JSON.
+2. Tiếng Việt tự nhiên, giàu tính thấu cảm, khoa học, chuyên nghiệp. Không dùng chữ in hoa toàn bộ (ALL CAPS). Dấu câu và dấu tiếng Việt đầy đủ, chuẩn mực.
+3. Cập nhật đúng trọng tâm theo yêu cầu của người dùng:
+   - Nếu người dùng yêu cầu sửa tiêu đề, đổi tên trung tâm, thay đổi thông tin liên hệ, viết lại sứ mệnh, cập nhật giáo viên hay bổ sung nội dung nào, hãy cập nhật CHÍNH XÁC mục đó.
+   - Giữ nguyên các thông tin hiện tại không bị yêu cầu thay đổi.
+4. Cấu trúc JSON trả về phải bao gồm:
    - siteName, shortName, logo, consultationLabel, phone, email, address, navigation
-   - sections: mảng các section với id ("general", "hero", "mission", "support", "process", "team", "gallery", "resources", "faq", "contact", "footer").
-   - Mỗi section có: id, label, title, description, enabled (boolean), eyebrow (nếu có), primaryAction, secondaryAction, items (mảng các item { id, title, description, meta }).
-5. Cập nhật đúng các mục mà người dùng yêu cầu: ${targetSectionId === "all" ? "toàn bộ các khối" : `chỉ tập trung vào khối "${targetSectionId}"`}.
+   - sections: mảng các section ("general", "hero", "mission", "support", "process", "team", "gallery", "resources", "faq", "contact", "footer").
+   - Mỗi section gồm: id, label, title, description, enabled (boolean), eyebrow, primaryAction, secondaryAction, items: [{ id, title, description, meta, image }]
 `;
 
   const requestBody = {
     systemInstruction: {
-      parts: [{ text: systemInstruction }]
+      parts: [{ text: systemInstruction }],
     },
     contents: [
       {
         parts: [
           {
-            text: `Đây là cấu hình hiện tại:\n${JSON.stringify(currentConfig, null, 2)}\n\nYêu cầu của người dùng:\n${prompt}\n\nHãy tạo lại cấu hình JSON hoàn chỉnh theo đúng yêu cầu:`
-          }
-        ]
-      }
+            text: `Đây là cấu hình website hiện tại:\n${JSON.stringify(currentConfig, null, 2)}\n\nPhạm vi cập nhật: ${targetSectionId === "all" ? "Toàn bộ website" : `Chỉ khối ${targetSectionId}`}\n\nYêu cầu của người dùng:\n${prompt}\n\nHãy trả về JSON cấu hình đã cập nhật hoàn chỉnh:`,
+          },
+        ],
+      },
     ],
     generationConfig: {
       temperature: 0.6,
       topK: 40,
       topP: 0.95,
-      responseMimeType: "application/json"
-    }
+      responseMimeType: "application/json",
+    },
   };
 
-  try {
-    let lastError: any = null;
-    let data: any = null;
-    let successfulModel = modelsToTry[0];
+  let lastError: any = null;
+  let data: any = null;
+  let successfulModel = modelsToTry[0];
 
-    for (const model of modelsToTry) {
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        });
+  for (const model of modelsToTry) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
 
-        if (res.ok) {
-          data = await res.json();
-          successfulModel = model;
-          break;
-        }
-
-        const errData = await res.json().catch(() => ({}));
-        lastError = new Error(errData?.error?.message || `HTTP ${res.status}: Lỗi khi gọi model ${model}`);
-        console.warn(`Model ${model} failed, trying next fallback:`, lastError.message);
-      } catch (err: any) {
-        lastError = err;
+      if (res.ok) {
+        data = await res.json();
+        successfulModel = model;
+        break;
       }
+
+      const errData = await res.json().catch(() => ({}));
+      lastError = new Error(errData?.error?.message || `HTTP ${res.status}: Lỗi khi gọi model ${model}`);
+      console.warn(`Model ${model} failed:`, lastError.message);
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Fetch to ${model} failed:`, err.message);
     }
-
-    if (!data) {
-      throw lastError || new Error("Không thể kết nối đến các model Gemini API");
-    }
-
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      throw new Error("Gemini không trả về kết quả nội dung");
-    }
-
-    // Làm sạch chuỗi JSON nếu có markdown code fence
-    const cleanedJson = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-    const parsedConfig = JSON.parse(cleanedJson) as LandingPageConfig;
-
-    if (!parsedConfig || !Array.isArray(parsedConfig.sections)) {
-      throw new Error("Dữ liệu JSON từ Gemini không đúng định dạng website");
-    }
-
-    // Ghép với initialLandingPageConfig để đảm bảo không bị thiếu section nào
-    const mergedConfig: LandingPageConfig = {
-      ...initialLandingPageConfig,
-      ...parsedConfig,
-      sections: initialLandingPageConfig.sections.map((defaultSec) => {
-        const found = parsedConfig.sections?.find((s) => s.id === defaultSec.id);
-        if (!found) return defaultSec;
-        return {
-          ...defaultSec,
-          ...found,
-          items: found.items ?? defaultSec.items,
-        };
-      }),
-    };
-
-    return {
-      success: true,
-      config: mergedConfig,
-      summary: [
-        `Đã sinh cấu hình thông minh thành công bằng Google Gemini AI (${successfulModel})`,
-        `Đã cập nhật ${mergedConfig.sections.length} khối nội dung`,
-      ],
-      engine: "gemini",
-    };
-  } catch (err: any) {
-    console.warn("Gemini API call failed, falling back to smart local engine:", err);
-    // Tự động chuyển tiếp sang built-in generator nếu Gemini bị lỗi
-    const localResult = smartLocalAiGenerator(prompt, currentConfig, targetSectionId);
-    return {
-      ...localResult,
-      error: `Gemini: ${err.message}. Đã chuyển sang chế độ AI Thông minh tích hợp.`,
-    };
   }
+
+  if (!data) {
+    throw lastError || new Error("Không thể kết nối đến máy chủ Google Gemini API.");
+  }
+
+  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!rawText) {
+    throw new Error("Gemini không trả về nội dung.");
+  }
+
+  // Parse JSON bằng parser an toàn
+  const parsedConfig = extractJsonFromText(rawText);
+
+  if (!parsedConfig || !Array.isArray(parsedConfig.sections)) {
+    throw new Error("Dữ liệu trả về từ Gemini không đúng định dạng cấu hình website.");
+  }
+
+  // Ghép an toàn với currentConfig để không làm mất bất kỳ trường nào
+  const baseConfig = currentConfig || initialLandingPageConfig;
+  const mergedConfig: LandingPageConfig = {
+    ...baseConfig,
+    ...parsedConfig,
+    sections: baseConfig.sections.map((currentSec) => {
+      const found = parsedConfig.sections?.find((s: LandingSection) => s.id === currentSec.id);
+      if (!found) return currentSec;
+      return {
+        ...currentSec,
+        ...found,
+        items: found.items ?? currentSec.items,
+      };
+    }),
+  };
+
+  return {
+    success: true,
+    config: mergedConfig,
+    summary: [
+      `Đã tạo nội dung thành công bằng Google Gemini AI (${successfulModel})`,
+      `Đã cập nhật dữ liệu trực tiếp theo yêu cầu của bạn`,
+    ],
+    engine: "gemini",
+  };
 }
 
 // 3. Hàm kích hoạt chung
@@ -419,8 +495,19 @@ export async function generateLandingConfigWithAI(
   targetSectionId: LandingSectionId | "all" = "all",
   apiKey?: string
 ): Promise<AiGenerateResult> {
-  if (apiKey && apiKey.trim().length > 10) {
-    return callGeminiApi(prompt, currentConfig, targetSectionId, apiKey.trim());
+  const cleanKey = apiKey?.trim();
+  if (cleanKey && cleanKey.length >= 15) {
+    try {
+      return await callGeminiApi(prompt, currentConfig, targetSectionId, cleanKey);
+    } catch (err: any) {
+      console.warn("Gemini call failed, switching to smart local generator:", err);
+      // Khi Gemini bị lỗi, gọi local generator nhưng thông báo rõ lý do
+      const localRes = smartLocalAiGenerator(prompt, currentConfig, targetSectionId);
+      return {
+        ...localRes,
+        error: `Không thể kết nối Google Gemini (${err.message}). Hệ thống đã tự động dùng AI Thông minh tích hợp để xử lý yêu cầu của bạn.`,
+      };
+    }
   }
   return smartLocalAiGenerator(prompt, currentConfig, targetSectionId);
 }
