@@ -1,3 +1,4 @@
+import { DEFAULT_AUTISM_SCENARIOS, analyzeUserQuestionAndRespond, type AutismScenario } from "./autismKnowledgeBase";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useCms } from "./Layout";
@@ -38,11 +39,14 @@ const ADMIN_PRESENCE_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_pre
 const SETTINGS_STORAGE_KEY = "aurora_live_chat_settings_admin";
 
 const CANNED_RESPONSES = [
-  "Dạ chào ba/mẹ, Cô Hương đã tiếp nhận tin nhắn và đang xem xét tình trạng phát triển của con ạ.",
-  "Cô Hương xin phép gọi điện trực tiếp hoặc kết nối qua Zalo này để hướng dẫn gia đình chi tiết nhé ạ.",
-  "Trung tâm có buổi đánh giá phát triển ban đầu MIỄN PHÍ 60 phút. Ba mẹ có tiện đưa bé qua vào cuối tuần này không ạ?",
-  "Học phí can thiệp cá nhân 1:1 tại trung tâm dao động 250.000đ - 350.000đ/buổi tùy theo độ tuổi và đánh giá ban đầu ạ.",
-  "Dạ ba mẹ có thể gửi trước cho cô video ngắn quay lại cử chỉ hoặc cách con chơi ở nhà để các cô phân tích chính xác nhất nhé ạ!",
+  "🗣️ Chậm nói: Giai đoạn 18-36 tháng là giai đoạn vàng kích hoạt ngôn ngữ 1:1, các cô dùng trò chơi tương tác để con bật âm tự nhiên ạ.",
+  "👀 Tương tác mắt: Con giảm tương tác mắt cần can thiệp kỹ thuật ngang tầm mắt ABA/TEACCH để xây dựng chú ý chung.",
+  "👣 Nhón chân & vẫy tay: Hành vi định hình là phản xạ tìm kiếm cảm giác, trung tâm áp dụng phòng OT/SI thảm gai xích đu để điều hòa.",
+  "⚡ Cơn ăn vạ: Khi con chưa đủ lời nói sẽ bất lực la hét, các cô áp dụng ABA dạy con kỹ năng giao tiếp thay thế (PECS).",
+  "🔁 Nhại lời: Nhại lời chứng minh con có âm, các cô sẽ dùng giáo cụ trực quan chuyển đổi nhại lời sang câu nói có nghĩa.",
+  "📅 Lịch đánh giá: Buổi đánh giá phát triển 60 phút MIỄN PHÍ (thang Denver II, M-CHAT), ba mẹ tiện đưa bé qua thứ 7 hay CN ạ?",
+  "💰 Học phí: Ca can thiệp cá nhân 1:1 (45-60 phút) dao động 250.000đ - 350.000đ/buổi tùy theo kế hoạch IEP của con ạ.",
+  "🛡️ Ngoài phạm vi: Dạ Cô Hương ghi nhận thông tin, trung tâm chuyên sâu về can thiệp tự kỷ nên chuyên viên sẽ gọi riêng hỗ trợ gia đình ạ.",
 ];
 
 export function LiveChatPage() {
@@ -60,9 +64,99 @@ export function LiveChatPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  // Scenarios Modal & Testing
+  const [showScenariosModal, setShowScenariosModal] = useState(false);
+  const [scenariosList, setScenariosList] = useState<AutismScenario[]>(DEFAULT_AUTISM_SCENARIOS);
+  const [scenarioFilterCategory, setScenarioFilterCategory] = useState<string>("all");
+  const [scenarioSearchTerm, setScenarioSearchTerm] = useState("");
+  const [testUserQuestion, setTestUserQuestion] = useState("Bé nhà mình 2 tuổi rưỡi chưa biết nói từ nào, hay đi nhón chân");
+  const [testAnalysisResult, setTestAnalysisResult] = useState<any>(null);
+
   // Filter & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "waiting" | "replied" | "online">("all");
+
+
+  // Phân tích thử nghiệm câu hỏi
+  const handleRunScenarioTest = () => {
+    if (!testUserQuestion.trim()) return;
+    const res = analyzeUserQuestionAndRespond(testUserQuestion, "Mẹ Bé", "096 290 3942");
+    setTestAnalysisResult(res);
+  };
+
+  // Xuất file JSON bộ kịch bản
+  const handleExportScenariosJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(scenariosList, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "kich-ban-tu-ky-qa.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    notify("Đã xuất bộ kịch bản ra file kich-ban-tu-ky-qa.json");
+  };
+
+  // Xuất file Text báo cáo kịch bản
+  const handleExportScenariosTxt = () => {
+    let txt = "================================================================================\n";
+    txt += "BỘ CÂU HỎI VÀ KỊCH BẢN TÌNH HUỐNG CAN THIỆP TỰ KỶ (AI KNOWLEDGE BASE)\n";
+    txt += "Dự án: Trung tâm Hỗ trợ Trẻ Tự kỷ Cô Hương\n";
+    txt += "Tổng số tình huống: " + scenariosList.length + "\n";
+    txt += "================================================================================\n\n";
+
+    scenariosList.forEach((sc, idx) => {
+      txt += (idx + 1) + ". " + sc.title.toUpperCase() + "\n";
+      txt += "   - Phân loại: " + (sc.isOutOfScope ? "[NGOÀI PHẠM VI - CHỈ TIẾP NHẬN]" : "[CHUYÊN SÂU TỰ KỶ]") + "\n";
+      txt += "   - Ý định câu hỏi: " + sc.intent + "\n";
+      txt += "   - Câu hỏi mẫu: \"" + sc.sampleQuestion + "\"\n";
+      txt += "   - Từ khóa nhận diện: " + sc.keywords.join(", ") + "\n";
+      txt += "   - Câu trả lời đúng trọng tâm: \"" + sc.responseTemplate.replace(/{customerName}/g, "Ba/Mẹ").replace(/{customerPhone}/g, "096 290 3942") + "\"\n";
+      if (sc.recommendedAction) txt += "   - Hành động đề xuất: " + sc.recommendedAction + "\n";
+      txt += "\n--------------------------------------------------------------------------------\n\n";
+    });
+
+    const dataStr = "data:text/plain;charset=utf-8," + encodeURIComponent(txt);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "bo-tinh-huong-tu-ky.txt");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    notify("Đã xuất báo cáo kịch bản ra file bo-tinh-huong-tu-ky.txt");
+  };
+
+  // Nạp file JSON kịch bản mới
+  const handleImportScenariosJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setScenariosList(parsed);
+          notify("Đã nạp thành công " + parsed.length + " tình huống kịch bản mới vào hệ thống!");
+        } else {
+          notify("File JSON không đúng cấu trúc danh sách kịch bản.");
+        }
+      } catch {
+        notify("Lỗi đọc file JSON. Vui lòng kiểm tra định dạng.");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // Sử dụng câu trả lời của kịch bản chèn vào khung chat
+  const handleUseScenarioResponse = (template: string) => {
+    const filled = template
+      .replace(/{customerName}/g, selectedSession?.customerName || "Ba/Mẹ")
+      .replace(/{customerPhone}/g, selectedSession?.customerPhone || "của gia đình");
+    setReplyText(filled);
+    setShowScenariosModal(false);
+    notify("Đã chèn câu trả lời vào khung chat");
+  };
 
   // Compose
   const [replyText, setReplyText] = useState("");
@@ -439,8 +533,27 @@ export function LiveChatPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate("/dang-ky-tu-van")}
+              onClick={() => setShowScenariosModal(true)}
               className="secondary-button"
+              style={{
+                height: 38,
+                padding: "0 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#6d28d9",
+                borderColor: "#c4b5fd",
+                background: "#f5f3ff",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <span>📚</span>
+              Bộ kịch bản & Tình huống AI
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dang-ky-tu-van")}
               style={{
                 height: 38,
                 padding: "0 14px",
