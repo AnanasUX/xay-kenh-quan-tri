@@ -45,6 +45,16 @@ export default function Layout() {
     return () => window.removeEventListener("aurora-auth-changed", handleAuthChange);
   }, []);
 
+  // Tự động chuyển hướng Nhân viên về Cấu hình trang nếu truy cập đường dẫn Quản trị viên
+  useEffect(() => {
+    if (currentUser?.role === "staff") {
+      const adminOnlyPaths = ["/tai-khoan", "/heatmap", "/dang-ky-tu-van"];
+      if (adminOnlyPaths.includes(location.pathname)) {
+        navigate("/cau-hinh-trang", { replace: true });
+      }
+    }
+  }, [currentUser, location.pathname, navigate]);
+
   const currentPage =
     navItems.find((item) => item.path === location.pathname)?.label ?? "Cấu hình trang";
 
@@ -235,7 +245,6 @@ export default function Layout() {
               <Icon name={item.icon} size={19} />
               <span>{item.label}</span>
               {item.badge && <b>{item.badge}</b>}
-              {item.adminOnly && <span className="nav-admin-tag">Admin</span>}
             </NavLink>
           ))}
         </nav>

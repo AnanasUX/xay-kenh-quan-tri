@@ -19,16 +19,48 @@ function loadLandingPageConfig(): LandingPageConfig {
 export function PageConfigPage() {
   const { notify, currentUser } = useCms();
   const [config, setConfig] = useState<LandingPageConfig>(loadLandingPageConfig);
-  const [activeId, setActiveId] = useState<LandingSectionId>(() => {
-    return currentUser?.role === "staff" ? "support" : "general";
-  });
 
   const isStaff = currentUser?.role === "staff";
-  const STAFF_ALLOWED_SECTIONS = ["mission", "support", "process", "team", "gallery", "resources", "faq"];
-  const isSectionLockedForUser = (secId: string) => {
-    if (!isStaff) return false;
-    return !STAFF_ALLOWED_SECTIONS.includes(secId);
-  };
+  const staffAllowedSections = currentUser?.allowedSections || [
+    "mission",
+    "support",
+    "process",
+    "team",
+    "gallery",
+    "resources",
+    "faq",
+  ];
+
+  // Danh sách các khối nội dung được phép hiển thị:
+  // Nếu là Nhân viên: ẨN HẲN các mục không được phân quyền, không hiển thị khóa
+  const visibleSections = useMemo(() => {
+    if (!isStaff) return config.sections;
+    return config.sections.filter((section) => staffAllowedSections.includes(section.id));
+  }, [config.sections, isStaff, staffAllowedSections]);
+
+  const [activeId, setActiveId] = useState<LandingSectionId>(() => {
+    if (currentUser?.role === "staff") {
+      const allowed = currentUser?.allowedSections || [
+        "mission",
+        "support",
+        "process",
+        "team",
+        "gallery",
+        "resources",
+        "faq",
+      ];
+      return (allowed[0] as LandingSectionId) || "mission";
+    }
+    return "general";
+  });
+
+  // Tự động đảm bảo activeId luôn nằm trong danh sách visibleSections
+  useEffect(() => {
+    if (visibleSections.length > 0 && !visibleSections.some((s) => s.id === activeId)) {
+      setActiveId(visibleSections[0].id);
+    }
+  }, [visibleSections, activeId]);
+
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -44,10 +76,11 @@ export function PageConfigPage() {
       })
       .catch((err) => console.warn("Could not load from cloud:", err));
   }, []);
-  const activeSection = useMemo(
-    () => config.sections.find((section) => section.id === activeId)!,
-    [activeId, config.sections],
-  );
+
+  const activeSection = useMemo(() => {
+    const found = visibleSections.find((section) => section.id === activeId);
+    return found || visibleSections[0] || config.sections[0];
+  }, [activeId, visibleSections, config.sections]);
 
   const updateSection = (patch: Partial<LandingSection>) => {
     setConfig((current) => ({
@@ -185,11 +218,13 @@ export function PageConfigPage() {
               <Icon name="sparkle" size={16} />
               Trợ lý AI
             </button>
-            <label className="secondary-button" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>
-              <Icon name="page" size={15} />
-              Nhập JSON
-              <input type="file" accept=".json" onChange={importJson} style={{ display: "none" }} />
-            </label>
+            {!isStaff && (
+              <label className="secondary-button" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>
+                <Icon name="page" size={15} />
+                Nhập JSON
+                <input type="file" accept=".json" onChange={importJson} style={{ display: "none" }} />
+              </label>
+            )}
             <button className="secondary-button" onClick={exportJson} title="Tải file cấu hình JSON về máy">
               <Icon name="share" size={15} />
               Xuất JSON
@@ -197,10 +232,12 @@ export function PageConfigPage() {
             <button className="secondary-button" disabled={saving} onClick={() => save(false)}>
               Lưu bản nháp
             </button>
-            <button className="primary-button" disabled={saving} onClick={() => save(true)}>
-              <Icon name="check" size={16} />
-              {saving ? "Đang đồng bộ..." : "Xuất bản thay đổi"}
-            </button>
+            {!isStaff && (
+              <button className="primary-button" disabled={saving} onClick={() => save(true)}>
+                <Icon name="check" size={16} />
+                {saving ? "Đang đồng bộ..." : "Xuất bản thay đổi"}
+              </button>
+            )}
           </div>
         }
       />
@@ -217,41 +254,28 @@ export function PageConfigPage() {
         <aside className="section-list">
           <div className="section-list-heading">
             <strong>Cấu trúc trang chủ</strong>
-            <small>{config.sections.filter((section) => section.enabled).length} khối đang hiển thị</small>
+            <small>{visibleSections.filter((section) => section.enabled).length} khối đang hiển thị</small>
           </div>
           <nav aria-label="Các khối nội dung landing page">
-            {config.sections.map((section, index) => {
-              const locked = isSectionLockedForUser(section.id);
+            {visibleSections.map((section, index) => {
               return (
                 <button
-                  className={`${activeId === section.id ? "active" : ""} ${locked ? "section-btn--locked" : ""}`}
+                  className={activeId === section.id ? "active" : ""}
                   key={section.id}
-                  onClick={() => {
-                    if (locked) {
-                      notify(`Mục "${section.label}" chỉ dành cho Quản trị viên.`);
-                    }
-                    setActiveId(section.id);
-                  }}
-                  title={locked ? "Chỉ dành cho Quản trị viên" : undefined}
+                  onClick={() => setActiveId(section.id)}
                 >
                   <span>
-                    {locked ? (
-                      <Icon name="lock" size={14} />
-                    ) : index === 0 ? (
+                    {section.id === "general" ? (
                       <Icon name="settings" size={15} />
                     ) : (
-                      String(index).padStart(2, "0")
+                      String(index + 1).padStart(2, "0")
                     )}
                   </span>
                   <span>
                     <strong>{section.label}</strong>
-                    <small>{locked ? "🔒 Quản trị viên" : section.enabled ? "Đang hiển thị" : "Đang ẩn"}</small>
+                    <small>{section.enabled ? "Đang hiển thị" : "Đang ẩn"}</small>
                   </span>
-                  {locked ? (
-                    <span className="lock-pill">Khóa</span>
-                  ) : (
-                    <i className={section.enabled ? "visible" : ""} />
-                  )}
+                  <i className={section.enabled ? "visible" : ""} />
                 </button>
               );
             })}
@@ -293,22 +317,7 @@ export function PageConfigPage() {
             </div>
           </div>
 
-          {isSectionLockedForUser(activeSection.id) ? (
-            <div className="section-locked-view">
-              <div className="locked-view-card">
-                <span className="locked-icon-badge">
-                  <Icon name="lock" size={32} />
-                </span>
-                <h3>Mục "{activeSection.label}" chỉ dành cho Quản trị viên</h3>
-                <p>
-                  Tài khoản của bạn đang là <strong>Nhân viên ({currentUser?.fullName})</strong>. Theo phân quyền, bạn chỉ được phép chỉnh sửa các khối nội dung: Sứ mệnh, Lĩnh vực, Quy trình, Đội ngũ, Không gian, Tài liệu và FAQ.
-                </p>
-                <div className="locked-recommend">
-                  <p>Để chỉnh sửa nhận diện thương hiệu, bộ nút liên hệ nổi hoặc cấu hình xuất bản, vui lòng chuyển sang tài khoản Quản trị viên.</p>
-                </div>
-              </div>
-            </div>
-          ) : activeSection.id === "general" ? (
+          {activeSection.id === "general" ? (
             <GeneralSettings
               config={config}
               onChange={(field, value) => {
