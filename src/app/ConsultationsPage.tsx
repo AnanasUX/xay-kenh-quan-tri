@@ -44,11 +44,20 @@ export function ConsultationsPage() {
     fetchLeads();
 
     let channel: BroadcastChannel | null = null;
+    let chatLeadChannel: BroadcastChannel | null = null;
     try {
       channel = new BroadcastChannel("aurora-leads-sync");
       channel.onmessage = (event) => {
         if (event.data?.type === "new_lead") {
-          notify(`Có đăng ký tư vấn mới từ: ${event.data.lead.name || "Phụ huynh"}`);
+          notify(`Có đăng ký tư vấn mới từ: ${event.data.lead?.name || "Phụ huynh"}`);
+          fetchLeads();
+        }
+      };
+
+      chatLeadChannel = new BroadcastChannel("aurora_leads_channel");
+      chatLeadChannel.onmessage = (event) => {
+        if (event.data?.type === "NEW_LEAD") {
+          notify(`Có khách bắt đầu Live Chat: ${event.data.lead?.name || "Phụ huynh"} (${event.data.lead?.phone || ""})`);
           fetchLeads();
         }
       };
@@ -56,6 +65,7 @@ export function ConsultationsPage() {
 
     return () => {
       channel?.close();
+      chatLeadChannel?.close();
     };
   }, []);
 
@@ -301,6 +311,24 @@ export function ConsultationsPage() {
                     </td>
                     <td style={{ padding: "14px 18px", textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: "8px", alignItems: "center" }}>
+                        <a
+                          href={`#/chat-khach-hang?phone=${cleanPhone}`}
+                          style={{
+                            padding: "6px 10px",
+                            background: "linear-gradient(135deg, #7c3aed, #50008b)",
+                            color: "#ffffff",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                          title="Mở trò chuyện trực tiếp Live Chat"
+                        >
+                          💬 Chat
+                        </a>
                         <a
                           href={`https://zalo.me/${cleanPhone}`}
                           rel="noopener noreferrer"

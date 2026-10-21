@@ -4,6 +4,7 @@ import { AuditLogsPage } from "./AuditLogsPage";
 import { ConsultationsPage } from "./ConsultationsPage";
 import { HeatmapPage } from "./HeatmapPage";
 import Layout from "./Layout";
+import { LiveChatPage } from "./LiveChatPage";
 import { PageConfigPage } from "./PageConfigPage";
 import { SystemAnalysisPage } from "./SystemAnalysisPage";
 
@@ -14,6 +15,7 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/cau-hinh-trang" replace /> },
       { path: "cau-hinh-trang", Component: PageConfigPage },
+      { path: "chat-khach-hang", Component: LiveChatPage },
       { path: "dang-ky-tu-van", Component: ConsultationsPage },
       { path: "heatmap", Component: HeatmapPage },
       { path: "phan-tich-he-thong", Component: SystemAnalysisPage },
