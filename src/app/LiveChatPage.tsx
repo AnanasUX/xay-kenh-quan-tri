@@ -34,6 +34,7 @@ export interface LiveChatSettings {
 
 const CHAT_SESSIONS_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_sessions";
 const CHAT_SETTINGS_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_settings";
+const ADMIN_PRESENCE_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_presence";
 const SETTINGS_STORAGE_KEY = "aurora_live_chat_settings_admin";
 
 const CANNED_RESPONSES = [
@@ -167,7 +168,40 @@ export function LiveChatPage() {
     loadChatSettings();
     fetchSessions();
 
-    // Polling định kỳ mỗi 3 giây
+    // Gửi tín hiệu báo Quản trị viên đang có mặt tại /chat-khach-hang
+    const sendPresence = async (isOnline = true) => {
+      try {
+        const payload = {
+          adminOnline: isOnline,
+          activePath: "/chat-khach-hang",
+          lastHeartbeat: Date.now(),
+          adminName: currentUser?.fullName || "Quản trị viên",
+        };
+        await fetch(ADMIN_PRESENCE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        // BroadcastChannel cho landing page cùng trình duyệt
+        try {
+          const chan = new BroadcastChannel("aurora_live_chat_channel");
+          chan.postMessage({
+            type: "ADMIN_PRESENCE",
+            adminOnline: isOnline,
+            activePath: "/chat-khach-hang",
+            timestamp: Date.now(),
+          });
+          chan.close();
+        } catch {}
+      } catch {}
+    };
+
+    // Báo online ngay khi mở trang
+    sendPresence(true);
+    const presenceTimer = setInterval(() => sendPresence(true), 6000);
+
+    // Polling danh sách phiên mỗi 3 giây
     pollTimerRef.current = setInterval(() => {
       fetchSessions(false);
     }, 3000);
@@ -180,14 +214,25 @@ export function LiveChatPage() {
         if (event.data?.type === "NEW_SESSION" || event.data?.type === "SESSION_UPDATED") {
           fetchSessions(false);
         }
+        if (event.data?.type === "CHECK_ADMIN_PRESENCE") {
+          sendPresence(true);
+        }
       };
     } catch {}
 
+    const handleBeforeUnload = () => {
+      sendPresence(false);
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
+      clearInterval(presenceTimer);
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
       if (channel) channel.close();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      sendPresence(false);
     };
-  }, []);
+  }, [currentUser]);
 
   // Hỗ trợ chọn nhanh phiên từ query param ?phone=...
   useEffect(() => {
@@ -454,6 +499,19 @@ export function LiveChatPage() {
               <strong style={{ fontSize: 15, fontWeight: 700, color: "#3b0764" }}>
                 Trợ lý AI Cô Hương (Tự động hỗ trợ khi vắng mặt)
               </strong>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "2px 8px",
+                  borderRadius: 999,
+                  background: "#dbeafe",
+                  color: "#1e40af",
+                  border: "1px solid #bfdbfe",
+                }}
+              >
+                👤 Bạn đang trực phòng chat (AI tạm dừng để bạn trò chuyện trực tiếp)
+              </span>
               <span
                 style={{
                   fontSize: 11,
