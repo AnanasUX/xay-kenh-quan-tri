@@ -242,11 +242,24 @@ export function PageConfigPage() {
         }
       />
 
-      <div className="config-status">
+      <div className="config-status" style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
         <span className="publish-state"><i /> Website đang hoạt động</span>
         <span>{dirty ? "Có thay đổi chưa lưu" : "Tất cả thay đổi đã được lưu"}</span>
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => {
+            navigator.clipboard.writeText("https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources");
+            notify("Đã sao chép liên kết chiến dịch Zalo vào khay nhớ tạm!");
+          }}
+          style={{ padding: "4px 10px", fontSize: "12px", height: "28px", display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
+          title="Sao chép liên kết chiến dịch Zalo có tracking zarsrc=30"
+        >
+          <Icon name="share" size={13} />
+          Sao chép link Zalo Campaign
+        </button>
         <a className="config-url" href="https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources" target="_blank" rel="noreferrer">
-          tre-tu-ky-responsive
+          ↗ Mở Landing Page
         </a>
       </div>
 

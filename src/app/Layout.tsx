@@ -154,36 +154,7 @@ export default function Layout() {
               </div>
             </label>
 
-            {/* Quick account presets */}
-            <div className="login-presets-box">
-              <span className="login-presets-title">Điền nhanh tài khoản mẫu:</span>
-              <div className="login-presets-row">
-                <button
-                  type="button"
-                  className={`login-preset-btn preset-admin ${loginUser === "admin" ? "selected" : ""}`}
-                  onClick={() => {
-                    setLoginUser("admin");
-                    setLoginPass("admin");
-                    setLoginError("");
-                  }}
-                >
-                  <span className="preset-role-badge">👑 Quản trị viên</span>
-                  <strong>admin</strong> / admin
-                </button>
-                <button
-                  type="button"
-                  className={`login-preset-btn preset-staff ${loginUser === "nhanvien" ? "selected" : ""}`}
-                  onClick={() => {
-                    setLoginUser("nhanvien");
-                    setLoginPass("admin");
-                    setLoginError("");
-                  }}
-                >
-                  <span className="preset-role-badge">👤 Nhân viên</span>
-                  <strong>nhanvien</strong> / admin
-                </button>
-              </div>
-            </div>
+
 
             <button type="submit" className="login-submit-btn">
               <Icon name="check" size={18} />

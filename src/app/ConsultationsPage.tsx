@@ -86,6 +86,27 @@ export function ConsultationsPage() {
     }
   };
 
+  const exportCsv = () => {
+    if (!leads.length) {
+      alert("Chưa có danh sách phụ huynh để xuất.");
+      return;
+    }
+    const headers = "Họ tên phụ huynh,Số điện thoại/Zalo,Nhu cầu của con,Ghi chú của phụ huynh,Thời gian gửi,Trạng thái\n";
+    const rows = leads
+      .map(
+        (l) =>
+          `"${l.name}","${l.phone}","${l.need || ""}","${(l.message || "").replace(/"/g, '""')}","${formatDate(l.createdAt)}","${statusMeta[l.status]?.label || l.status}"`
+      )
+      .join("\n");
+    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `danh-sach-phu-huynh-tu-van-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    notify("Đã xuất danh sách phụ huynh thành công (file CSV)");
+  };
+
   const updateNotes = (id: string, notes: string) => {
     const updated = leads.map((item) => (item.id === id ? { ...item, notes } : item));
     saveLeadsToCloud(updated);
@@ -125,6 +146,10 @@ export function ConsultationsPage() {
       <PageHeading
         action={
           <div style={{ display: "flex", gap: "10px" }}>
+            <button className="button button--secondary" onClick={exportCsv} type="button">
+              <Icon name="download" size={16} />
+              <span>Xuất Excel / CSV</span>
+            </button>
             <button className="button button--secondary" onClick={fetchLeads} type="button">
               <Icon name="refresh" size={16} />
               <span>Tải lại</span>
@@ -184,7 +209,7 @@ export function ConsultationsPage() {
 
         <input
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm theo tên, số điện thoại, nhu cầu..."
+          placeholder="Tìm theo tên, số Zalo/điện thoại, nhu cầu..."
           style={{
             padding: "8px 16px",
             borderRadius: "8px",
@@ -214,7 +239,7 @@ export function ConsultationsPage() {
             <thead>
               <tr style={{ background: "#fcfaff", borderBottom: "1px solid #e3dcee", color: "#686279", fontWeight: 600 }}>
                 <th style={{ padding: "14px 18px" }}>Phụ huynh</th>
-                <th style={{ padding: "14px 18px" }}>Số điện thoại</th>
+                <th style={{ padding: "14px 18px" }}>Số Zalo / Điện thoại</th>
                 <th style={{ padding: "14px 18px" }}>Nhu cầu của con</th>
                 <th style={{ padding: "14px 18px" }}>Thời gian gửi</th>
                 <th style={{ padding: "14px 18px" }}>Trạng thái</th>
