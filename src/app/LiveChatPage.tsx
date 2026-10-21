@@ -1621,16 +1621,16 @@ export function LiveChatPage() {
               </div>
             </div>
 
-            {/* CATEGORY FILTER PILLS */}
+            {/* CATEGORY FILTER PILLS - WRAP CHỐNG ĐÈ THANH CUỘN */}
             <div
               style={{
-                padding: "10px 24px",
-                borderBottom: "1px solid #f1f5f9",
+                padding: "12px 24px",
+                borderBottom: "1px solid #e2e8f0",
                 background: "#ffffff",
                 display: "flex",
+                flexWrap: "wrap",
                 gap: 8,
-                overflowX: "auto",
-                whiteSpace: "nowrap",
+                alignItems: "center",
               }}
             >
               {[
@@ -1649,15 +1649,20 @@ export function LiveChatPage() {
                   type="button"
                   onClick={() => setScenarioFilterCategory(tab.id)}
                   style={{
-                    padding: "5px 12px",
+                    height: 32,
+                    padding: "0 14px",
                     borderRadius: 999,
-                    fontSize: 12,
+                    fontSize: 12.5,
                     fontWeight: 600,
                     cursor: "pointer",
-                    border: scenarioFilterCategory === tab.id ? "1.5px solid #50008b" : "1px solid #e2e8f0",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: scenarioFilterCategory === tab.id ? "1.5px solid #50008b" : "1px solid #cbd5e1",
                     background: scenarioFilterCategory === tab.id ? "#faf5ff" : "#ffffff",
-                    color: scenarioFilterCategory === tab.id ? "#50008b" : "#64748b",
+                    color: scenarioFilterCategory === tab.id ? "#50008b" : "#475569",
                     transition: "all 0.15s",
+                    boxSizing: "border-box",
                   }}
                 >
                   {tab.label}

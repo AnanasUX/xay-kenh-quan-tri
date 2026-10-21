@@ -221,7 +221,7 @@ export default function Layout() {
               <span>Tên đăng nhập</span>
               <input
                 type="text"
-                placeholder="Nhập tên đăng nhập (ví dụ: admin, nhanvien, hoặc tài khoản mới)..."
+                placeholder="Nhập tên đăng nhập..."
                 value={loginUser}
                 onChange={(e) => {
                   setLoginUser(e.target.value);
@@ -229,12 +229,33 @@ export default function Layout() {
                 }}
                 required
                 autoFocus
+                style={{
+                  width: "100%",
+                  height: "46px",
+                  padding: "0 14px",
+                  borderRadius: "10px",
+                  border: "1.5px solid #cbd5e1",
+                  fontSize: "14px",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  background: "#ffffff",
+                  color: "#1e293b",
+                }}
               />
             </label>
 
             <label className="login-field-label">
               <span>Mật khẩu</span>
-              <div className="input-with-eye">
+              <div
+                className="input-with-eye"
+                style={{
+                  position: "relative",
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  boxSizing: "border-box",
+                }}
+              >
                 <input
                   type={showLoginPass ? "text" : "password"}
                   placeholder="Nhập mật khẩu..."
@@ -244,47 +265,65 @@ export default function Layout() {
                     if (loginError) setLoginError("");
                   }}
                   required
+                  style={{
+                    width: "100%",
+                    height: "46px",
+                    padding: "0 44px 0 14px",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: "14px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                    background: "#ffffff",
+                    color: "#1e293b",
+                  }}
                 />
                 <button
                   type="button"
                   className="eye-toggle-btn"
                   onClick={() => setShowLoginPass(!showLoginPass)}
                   title={showLoginPass ? "Ẩn" : "Hiện"}
+                  style={{
+                    position: "absolute",
+                    right: "12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#64748b",
+                  }}
                 >
-                  <Icon name={showLoginPass ? "eyeOff" : "eye"} size={16} />
+                  <Icon name={showLoginPass ? "eyeOff" : "eye"} size={18} />
                 </button>
               </div>
             </label>
 
-            {/* Quick account selection chips */}
-            {accountsList.length > 0 && (
-              <div className="login-account-hints">
-                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
-                  Tài khoản có sẵn trong hệ thống:
-                </span>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "6px" }}>
-                  {accountsList.map((acc) => (
-                    <button
-                      key={acc.id}
-                      type="button"
-                      onClick={() => {
-                        setLoginUser(acc.username);
-                        setLoginPass(acc.password);
-                        setLoginError("");
-                      }}
-                      className="login-hint-chip"
-                      title={`Bấm để điền nhanh thông tin tài khoản @${acc.username}`}
-                    >
-                      <span className={`chip-dot ${acc.role === "admin" ? "chip-dot--admin" : "chip-dot--staff"}`} />
-                      <strong>@{acc.username}</strong>
-                      <small>({acc.role === "admin" ? "Admin" : "NV"})</small>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button type="submit" className="login-submit-btn">
+            <button
+              type="submit"
+              className="login-submit-btn"
+              style={{
+                width: "100%",
+                height: "46px",
+                borderRadius: "10px",
+                border: "none",
+                background: "#50008b",
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                marginTop: "4px",
+                boxShadow: "0 4px 14px rgba(80, 0, 139, 0.25)",
+              }}
+            >
               <Icon name="check" size={18} />
               <span>Đăng nhập vào Hệ thống</span>
             </button>

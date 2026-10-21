@@ -6360,3 +6360,84 @@ select::placeholder {
     display: none;
   }
 }
+
+/* ========================================================================= */
+/* FIX CĂN CHỈNH INPUT ĐĂNG NHẬP (KHÔNG LỆCH KHUNG, WIDTH 100% ĐỒNG BỘ)       */
+/* ========================================================================= */
+.login-field-label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #25213b !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.login-field-label input {
+  width: 100% !important;
+  height: 46px !important;
+  padding: 0 14px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  color: #1e293b !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
+}
+
+.login-field-label input:focus {
+  border-color: #50008b !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(80, 0, 139, 0.12) !important;
+}
+
+.input-with-eye {
+  position: relative !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+.input-with-eye input {
+  width: 100% !important;
+  height: 46px !important;
+  padding: 0 44px 0 14px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+  color: #1e293b !important;
+  box-sizing: border-box !important;
+}
+
+.input-with-eye input:focus {
+  border-color: #50008b !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(80, 0, 139, 0.12) !important;
+}
+
+.eye-toggle-btn {
+  position: absolute !important;
+  right: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: #64748b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 6px !important;
+  border-radius: 6px !important;
+}
+
+.eye-toggle-btn:hover {
+  color: #1e293b !important;
+}
