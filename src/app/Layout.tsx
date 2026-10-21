@@ -77,7 +77,13 @@ export default function Layout() {
   // Tự động chuyển hướng Nhân viên về Cấu hình trang nếu cố tình truy cập các đường dẫn Quản trị viên
   useEffect(() => {
     if (currentUser?.role === "staff") {
-      const adminOnlyPaths = ["/tai-khoan", "/heatmap", "/dang-ky-tu-van", "/nhat-ky-hoat-dong"];
+      const adminOnlyPaths = [
+        "/tai-khoan",
+        "/heatmap",
+        "/dang-ky-tu-van",
+        "/nhat-ky-hoat-dong",
+        "/phan-tich-he-thong",
+      ];
       if (adminOnlyPaths.includes(location.pathname)) {
         navigate("/cau-hinh-trang", { replace: true });
       }

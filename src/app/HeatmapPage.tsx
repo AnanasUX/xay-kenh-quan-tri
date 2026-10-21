@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from "react";
+import { useNavigate } from "react-router";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
 
@@ -96,6 +97,7 @@ const SECTIONS_NAV = [
 
 export function HeatmapPage() {
   const { notify } = useCms();
+  const navigate = useNavigate();
 
   // 1. Initialize from local cache immediately (0-second render, 100% offline stability)
   const [store, setStore] = useState<HeatmapStore>(() => {
@@ -1161,6 +1163,29 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             >
               <Icon name="download" size={14} />
               Tải file .TXT
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/phan-tich-he-thong")}
+              style={{
+                height: "36px",
+                padding: "0 14px",
+                fontSize: "13px",
+                fontWeight: "700",
+                color: "#ffffff",
+                background: "linear-gradient(135deg, #16a34a, #15803d)",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                boxShadow: "0 2px 6px rgba(22, 163, 74, 0.3)",
+              }}
+              title="Chuyển báo cáo này sang mục Phân tích hệ thống AI để lập ma trận giải pháp nâng cấp"
+            >
+              <Icon name="sparkle" size={14} />
+              Phân tích Hệ thống AI ↗
             </button>
           </div>
         </div>
