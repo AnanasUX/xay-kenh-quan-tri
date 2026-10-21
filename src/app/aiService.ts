@@ -102,6 +102,22 @@ export function smartLocalAiGenerator(
     summary.push(`Email liên hệ: ${newConfig.email}`);
   }
 
+  // 2.1 Trích xuất Facebook
+  const fbMatch = p.match(/(?:facebook|fb|fanpage)\s*[:=]?\s*(https?:\/\/[^\s]+)/i);
+  if (fbMatch) {
+    newConfig.facebook = fbMatch[1];
+    newConfig.enableFloatingFacebook = true;
+    summary.push(`Facebook Fanpage: ${newConfig.facebook}`);
+  }
+
+  // 2.2 Trích xuất Zalo
+  const zaloMatch = p.match(/zalo\s*[:=]?\s*(0\d{9,10}|https?:\/\/[^\s]+)/i);
+  if (zaloMatch) {
+    newConfig.zalo = zaloMatch[1];
+    newConfig.enableFloatingZalo = true;
+    summary.push(`Zalo tư vấn: ${newConfig.zalo}`);
+  }
+
   // 3. Trích xuất địa chỉ / khu vực
   const addressKeywords = [
     "Hà Nội", "Hồ Chí Minh", "TP.HCM", "Sài Gòn", "Đà Nẵng", "Hải Phòng",
@@ -391,7 +407,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
    - Nếu người dùng yêu cầu sửa tiêu đề, đổi tên trung tâm, thay đổi thông tin liên hệ, viết lại sứ mệnh, cập nhật giáo viên hay bổ sung nội dung nào, hãy cập nhật CHÍNH XÁC mục đó.
    - Giữ nguyên các thông tin hiện tại không bị yêu cầu thay đổi.
 4. Cấu trúc JSON trả về phải bao gồm:
-   - siteName, shortName, logo, consultationLabel, phone, email, address, navigation
+   - siteName, shortName, logo, consultationLabel, phone, email, address, facebook, zalo, enableFloatingFacebook, enableFloatingZalo, enableFloatingPhone, enableBackToTop, enableFloatingPulse, floatingPosition, navigation
    - sections: mảng các section ("general", "hero", "mission", "support", "process", "team", "gallery", "resources", "faq", "contact", "footer").
    - Mỗi section gồm: id, label, title, description, enabled (boolean), eyebrow, primaryAction, secondaryAction, items: [{ id, title, description, meta, image }]
 `;

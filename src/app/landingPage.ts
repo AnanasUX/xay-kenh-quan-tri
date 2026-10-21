@@ -41,6 +41,13 @@ export type LandingPageConfig = {
   email: string;
   address: string;
   facebook?: string;
+  zalo?: string;
+  enableFloatingFacebook?: boolean;
+  enableFloatingZalo?: boolean;
+  enableFloatingPhone?: boolean;
+  enableBackToTop?: boolean;
+  enableFloatingPulse?: boolean;
+  floatingPosition?: "right" | "left";
   navigation: { label: string; path: string }[];
   sections: LandingSection[];
 };
@@ -54,6 +61,13 @@ export const initialLandingPageConfig: LandingPageConfig = {
   "email": "mamnonhpkid@gmail.com",
   "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
   "facebook": "https://www.facebook.com",
+  "zalo": "096 290 3942",
+  "enableFloatingFacebook": true,
+  "enableFloatingZalo": true,
+  "enableFloatingPhone": true,
+  "enableBackToTop": true,
+  "enableFloatingPulse": true,
+  "floatingPosition": "right",
   "navigation": [
     {
       "label": "Giới thiệu",

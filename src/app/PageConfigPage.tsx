@@ -291,9 +291,104 @@ export function PageConfigPage() {
             <span><Icon name="eye" size={15} /> Xem trước nội dung</span>
             <small>Desktop</small>
           </div>
-          <div className="mini-browser">
+          <div className="mini-browser" style={{ position: "relative" }}>
             <div className="browser-bar"><i /><i /><i /><span>cothuong.vn</span></div>
-            <div className={`mini-section mini-section--${activeSection.id}`}>
+            <div className={`mini-section mini-section--${activeSection.id}`} style={{ position: "relative", minHeight: 180 }}>
+              {/* Mini floating contact dock preview */}
+              <div
+                className="mini-floating-preview"
+                style={{
+                  position: "absolute",
+                  bottom: 10,
+                  [config.floatingPosition === "left" ? "left" : "right"]: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  alignItems: "center",
+                  zIndex: 20,
+                  pointerEvents: "none",
+                }}
+              >
+                {config.enableFloatingFacebook !== false && (
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #1877f2, #0d65d9)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                    }}
+                    title="Facebook"
+                  >
+                    f
+                  </span>
+                )}
+                {config.enableFloatingZalo !== false && (
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #0068ff, #0052cc)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 8,
+                      fontWeight: 700,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                    }}
+                    title="Zalo"
+                  >
+                    Zalo
+                  </span>
+                )}
+                {config.enableFloatingPhone !== false && (
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #2d9935, #227929)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 9,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                    }}
+                    title="Hotline"
+                  >
+                    📞
+                  </span>
+                )}
+                {config.enableBackToTop !== false && (
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #6d2c8b, #50008b)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                    }}
+                    title="Back to top"
+                  >
+                    ↑
+                  </span>
+                )}
+              </div>
               {activeSection.id === "general" ? (
                 <>
                   <div className="mini-nav">
@@ -360,16 +455,22 @@ function GeneralSettings({
   onChange,
   onNavigationChange,
 }: {
-  config: typeof initialLandingPageConfig;
-  onChange: (
-    field: "siteName" | "shortName" | "logo" | "consultationLabel" | "phone" | "email" | "address" | "facebook",
-    value: string,
-  ) => void;
+  config: LandingPageConfig;
+  onChange: (field: keyof LandingPageConfig, value: any) => void;
   onNavigationChange: (index: number, field: "label" | "path", value: string) => void;
 }) {
   return (
     <div className="config-form">
-      <div className="form-section">
+      {/* Quick jump navigation */}
+      <div className="general-quick-nav">
+        <a href="#section-brand">🏷️ Nhận diện thương hiệu</a>
+        <a href="#section-contact-info">📞 Thông tin liên hệ</a>
+        <a href="#section-floating-dock" className="highlight-pill">⚡ Bộ nút liên hệ nổi (FB, Zalo, Hotline)</a>
+        <a href="#section-navigation">🧭 Menu điều hướng</a>
+      </div>
+
+      {/* 1. Nhận diện thương hiệu */}
+      <div className="form-section" id="section-brand">
         <div className="form-section-title">
           <strong>Nhận diện thương hiệu</strong>
           <p>Thông tin xuất hiện tại đầu và cuối trang.</p>
@@ -390,26 +491,188 @@ function GeneralSettings({
           <MediaField label="Logo website" value={config.logo} onChange={(value) => onChange("logo", value)} />
         </div>
       </div>
-      <div className="form-section">
+
+      {/* 2. Thông tin liên hệ cơ bản */}
+      <div className="form-section" id="section-contact-info">
         <div className="form-section-title">
-          <strong>Thông tin liên hệ & Mạng xã hội</strong>
-          <p>Dùng cho biểu mẫu tư vấn, nút nổi liên hệ nhanh và chân trang.</p>
+          <strong>Thông tin liên hệ & Địa chỉ</strong>
+          <p>Dùng cho biểu mẫu tư vấn và thông tin chân trang.</p>
         </div>
         <div className="form-grid">
           <label>Số điện thoại<input value={config.phone} onChange={(event) => onChange("phone", event.target.value)} /></label>
           <label>Email<input type="email" value={config.email} onChange={(event) => onChange("email", event.target.value)} /></label>
-          <label className="field-wide">Đường dẫn Facebook Fanpage / Messenger<input value={config.facebook || ""} placeholder="https://www.facebook.com/..." onChange={(event) => onChange("facebook", event.target.value)} /></label>
-          <label className="field-wide">Địa chỉ<input value={config.address} onChange={(event) => onChange("address", event.target.value)} /></label>
+          <label className="field-wide">Địa chỉ trung tâm<input value={config.address} onChange={(event) => onChange("address", event.target.value)} /></label>
         </div>
       </div>
-      <div className="form-section">
+
+      {/* 3. BỘ NÚT LIÊN HỆ NỔI & TIỆN ÍCH (FLOATING CONTACT DOCK) */}
+      <div className="form-section" id="section-floating-dock">
+        <div className="form-section-title">
+          <strong>Bộ nút liên hệ nổi & Tiện ích (Floating Contact Dock)</strong>
+          <p>Tùy chỉnh các nút liên hệ cố định ở góc màn hình: Facebook, Zalo, Hotline gọi ngay và Cuộn trang.</p>
+        </div>
+        
+        <div className="floating-dock-config-grid">
+          {/* Card Facebook */}
+          <div className="dock-card">
+            <div className="dock-card-header">
+              <div className="dock-card-title">
+                <span className="dock-icon dock-icon--fb">f</span>
+                <div>
+                  <strong>Nút Facebook Messenger</strong>
+                  <small>Mở fanpage hoặc nhắn tin</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`toggle ${config.enableFloatingFacebook !== false ? "enabled" : ""}`}
+                onClick={() => onChange("enableFloatingFacebook", config.enableFloatingFacebook === false)}
+                aria-label="Bật tắt nút Facebook nổi"
+              >
+                <i />
+              </button>
+            </div>
+            <label className="dock-field-label">
+              Đường dẫn Facebook Fanpage / Messenger
+              <input
+                type="text"
+                value={config.facebook || ""}
+                placeholder="https://www.facebook.com/..."
+                onChange={(event) => onChange("facebook", event.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Card Zalo */}
+          <div className="dock-card">
+            <div className="dock-card-header">
+              <div className="dock-card-title">
+                <span className="dock-icon dock-icon--zalo">Zalo</span>
+                <div>
+                  <strong>Nút Zalo Chat tư vấn</strong>
+                  <small>Chat Zalo nhanh với phụ huynh</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`toggle ${config.enableFloatingZalo !== false ? "enabled" : ""}`}
+                onClick={() => onChange("enableFloatingZalo", config.enableFloatingZalo === false)}
+                aria-label="Bật tắt nút Zalo nổi"
+              >
+                <i />
+              </button>
+            </div>
+            <label className="dock-field-label">
+              Số điện thoại Zalo hoặc link Zalo OA
+              <input
+                type="text"
+                value={config.zalo || ""}
+                placeholder="096 290 3942 hoặc https://zalo.me/..."
+                onChange={(event) => onChange("zalo", event.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Card Hotline */}
+          <div className="dock-card">
+            <div className="dock-card-header">
+              <div className="dock-card-title">
+                <span className="dock-icon dock-icon--phone">
+                  <Icon name="phone" size={16} />
+                </span>
+                <div>
+                  <strong>Nút Hotline gọi ngay</strong>
+                  <small>Bấm gọi trực tiếp (tel:)</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`toggle ${config.enableFloatingPhone !== false ? "enabled" : ""}`}
+                onClick={() => onChange("enableFloatingPhone", config.enableFloatingPhone === false)}
+                aria-label="Bật tắt nút Hotline nổi"
+              >
+                <i />
+              </button>
+            </div>
+            <label className="dock-field-label">
+              Số điện thoại Hotline
+              <input
+                type="text"
+                value={config.phone || ""}
+                placeholder="096 290 3942"
+                onChange={(event) => onChange("phone", event.target.value)}
+              />
+            </label>
+          </div>
+
+          {/* Card Tùy chọn hiển thị & Vị trí */}
+          <div className="dock-card dock-card--full">
+            <div className="dock-options-grid">
+              {/* Toggle Back to Top */}
+              <div className="dock-option-item">
+                <button
+                  type="button"
+                  className={`toggle ${config.enableBackToTop !== false ? "enabled" : ""}`}
+                  onClick={() => onChange("enableBackToTop", config.enableBackToTop === false)}
+                  aria-label="Bật tắt nút cuộn trang"
+                >
+                  <i />
+                </button>
+                <div>
+                  <strong>Nút Cuộn lên đầu trang (Back to top)</strong>
+                  <small>Hiện nút mũi tên khi phụ huynh cuộn xuống đọc</small>
+                </div>
+              </div>
+
+              {/* Toggle Pulse Wave */}
+              <div className="dock-option-item">
+                <button
+                  type="button"
+                  className={`toggle ${config.enableFloatingPulse !== false ? "enabled" : ""}`}
+                  onClick={() => onChange("enableFloatingPulse", config.enableFloatingPulse === false)}
+                  aria-label="Bật tắt hiệu ứng phát xung"
+                >
+                  <i />
+                </button>
+                <div>
+                  <strong>Hiệu ứng sóng động lực (Pulse Wave)</strong>
+                  <small>Vòng tròn lan tỏa nhấp nháy tạo sự chú ý</small>
+                </div>
+              </div>
+
+              {/* Position selector */}
+              <div className="dock-option-item dock-option-item--select">
+                <div>
+                  <strong>Vị trí hiển thị trên màn hình</strong>
+                  <small>Vị trí cố định của bộ nút dock</small>
+                </div>
+                <select
+                  value={config.floatingPosition || "right"}
+                  onChange={(event) => onChange("floatingPosition", event.target.value as "right" | "left")}
+                >
+                  <option value="right">Góc dưới bên phải (Thuận ngón cái - Khuyên dùng)</option>
+                  <option value="left">Góc dưới bên trái</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Điều hướng chính */}
+      <div className="form-section" id="section-navigation">
         <div className="form-section-title">
           <strong>Điều hướng chính</strong>
           <p>Các liên kết xuất hiện trên thanh menu đầu trang.</p>
         </div>
         <div className="menu-config">
           {config.navigation.map((item, index) => (
-            <div key={`${item.path}-${index}`}><span>{index + 1}</span><input value={item.label} onChange={(event) => onNavigationChange(index, "label", event.target.value)} /><input className="menu-path-input" value={item.path} onChange={(event) => onNavigationChange(index, "path", event.target.value)} /><button aria-label={`Tùy chọn ${item.label}`}><Icon name="more" size={16} /></button></div>
+            <div key={`${item.path}-${index}`}>
+              <span>{index + 1}</span>
+              <input value={item.label} onChange={(event) => onNavigationChange(index, "label", event.target.value)} />
+              <input className="menu-path-input" value={item.path} onChange={(event) => onNavigationChange(index, "path", event.target.value)} />
+              <button aria-label={`Tùy chọn ${item.label}`}><Icon name="more" size={16} /></button>
+            </div>
           ))}
         </div>
       </div>
