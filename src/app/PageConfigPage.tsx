@@ -27,7 +27,6 @@ export function PageConfigPage() {
     "mission",
     "support",
     "process",
-    "team",
     "gallery",
     "resources",
     "faq",
@@ -46,7 +45,6 @@ export function PageConfigPage() {
         "mission",
         "support",
         "process",
-        "team",
         "gallery",
         "resources",
         "faq",
@@ -529,23 +527,7 @@ export function PageConfigPage() {
                   <h3>{activeSection.title}</h3>
                   <p>{activeSection.description}</p>
                   {activeSection.image && <div className="mini-image"><Icon name="eye" size={19} /><span>{activeSection.image}</span></div>}
-                  {activeSection.id === "team" ? (
-                    <div className="mini-team-list">
-                      {activeSection.items?.slice(0, 4).map((item) => (
-                        <div key={item.id} className="mini-team-item">
-                          {item.image ? (
-                            <img src={item.image} alt={item.title} className="mini-avatar" />
-                          ) : (
-                            <span className="mini-avatar-placeholder"><Icon name="profile" size={14} /></span>
-                          )}
-                          <div>
-                            <strong>{item.title}</strong>
-                            <small>{item.meta || "Chuyên môn"}</small>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : activeSection.items && (
+                  {activeSection.items && (
                     <div className="mini-items">
                       {activeSection.items.slice(0, 6).map((item) => (
                         <span key={item.id}><i />{item.title}</span>
@@ -873,16 +855,6 @@ function SectionEditor({
                   {item.meta !== undefined && !/^\d+$/.test(item.meta) && <label className="field-wide">Chuyên môn / Vai trò<input value={item.meta} onChange={(event) => onItemChange(item.id, "meta", event.target.value)} /></label>}
                   {item.description !== undefined && <label className="field-wide">Mô tả giới thiệu<textarea value={item.description} onChange={(event) => onItemChange(item.id, "description", event.target.value)} /></label>}
                   
-                  {/* Mục 5: Thêm ảnh chân dung cho Đội ngũ giáo viên */}
-                  {section.id === "team" && (
-                    <ItemImageField
-                      label="Ảnh chân dung giáo viên"
-                      value={item.image || ""}
-                      onChange={(val) => onItemChange(item.id, "image", val)}
-                      spec={CROP_SPECS.team}
-                    />
-                  )}
-
                   {/* Ảnh không gian phòng học */}
                   {section.id === "gallery" && (
                     <ItemImageField

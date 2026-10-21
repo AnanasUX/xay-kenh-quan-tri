@@ -37,20 +37,20 @@ I. TỔNG HỢP CÁC ĐIỂM NGHẼN UX GHI NHẬN TRÊN TRANG (FRICTION POINTS)
      + Phụ huynh dùng mạng di động 4G ngoài đường có độ trễ cao, gây cảm giác "chưa bấm được".
 
 2. Điểm nghẽn Nhấp không phản hồi (Dead Clicks): 34 lượt ghi nhận
-   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thẻ giáo viên).
+   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thông tin phương pháp).
    - Vị trí tập trung:
      + Ảnh cơ sở vật chất & phòng học can thiệp cá nhân.
-     + Thẻ hồ sơ giáo viên và chuyên gia tâm lý.
+     + Thẻ các lĩnh vực can thiệp chuyên sâu.
    - Nguyên nhân tâm lý học phụ huynh:
      + Phụ huynh trẻ tự kỷ rất kỹ tính, muốn nhấp vào ảnh để xem to hơn cơ sở vật chất phòng học (ánh sáng, đồ chơi điều hòa cảm giác).
-     + Phụ huynh muốn bấm vào thẻ giáo viên để xem chi tiết bằng cấp, chứng chỉ can thiệp.
+     + Phụ huynh muốn tìm hiểu chi tiết các phương pháp can thiệp sớm và âm ngữ trị liệu của Cô Hương.
 
 3. Điểm rơi phụ huynh trên luồng cuộn (Scroll Drop-off Funnel):
    - 100% Phụ huynh tiếp cận Khối Đầu trang (Hero & Tiêu đề chính)
    - 84% Phụ huynh đọc tiếp đến Khối Sứ mệnh & Can thiệp sớm
-   - 62% Phụ huynh cuộn qua Khối Quy trình 5 bước & Đội ngũ giáo viên
+   - 62% Phụ huynh cuộn qua Khối Quy trình can thiệp & Không gian học tập
    - 48% Phụ huynh cuộn trọn vẹn đến Biểu mẫu đăng ký tư vấn cuối trang
-   - Nhận định: Khối Lộ trình can thiệp và Đội ngũ chuyên gia giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
+   - Nhận định: Khối Lộ trình can thiệp và Không gian phòng học giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
 
 II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION AUDIT)
 --------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     3. Đặt kích thước font chữ ô nhập liệu tối thiểu 16px để ngăn iOS tự động phóng to màn hình khi gõ phím.
 
 [x] ƯU TIÊN 3 - TĂNG TỐC ĐỘ CHUYỂN ĐỔI CHIẾN DỊCH ZALO:
-    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Đội ngũ chuyên gia.
+    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Quy trình can thiệp.
     2. Đưa cam kết "Bảo mật 100% thông tin gia đình" nổi bật hơn ngay trên nút gửi form để phụ huynh hoàn toàn an tâm.
 ================================================================================`;
 
@@ -277,20 +277,20 @@ I. TỔNG HỢP CÁC ĐIỂM NGHẼN UX GHI NHẬN TRÊN TRANG (FRICTION POINTS)
      + Phụ huynh dùng mạng di động 4G ngoài đường có độ trễ cao, gây cảm giác "chưa bấm được".
 
 2. Điểm nghẽn Nhấp không phản hồi (Dead Clicks): ${deadCount} lượt ghi nhận
-   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thẻ giáo viên).
+   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thông tin phương pháp).
    - Vị trí tập trung:
      + Ảnh cơ sở vật chất & phòng học can thiệp cá nhân.
-     + Thẻ hồ sơ giáo viên và chuyên gia tâm lý.
+     + Thẻ các lĩnh vực can thiệp chuyên sâu.
    - Nguyên nhân tâm lý học phụ huynh:
      + Phụ huynh trẻ tự kỷ rất kỹ tính, muốn nhấp vào ảnh để xem to hơn cơ sở vật chất phòng học (ánh sáng, đồ chơi điều hòa cảm giác).
-     + Phụ huynh muốn bấm vào thẻ giáo viên để xem chi tiết bằng cấp, chứng chỉ can thiệp.
+     + Phụ huynh muốn tìm hiểu chi tiết các phương pháp can thiệp sớm và âm ngữ trị liệu của Cô Hương.
 
 3. Điểm rơi phụ huynh trên luồng cuộn (Scroll Drop-off Funnel):
    - 100% Phụ huynh tiếp cận Khối Đầu trang (Hero & Tiêu đề chính)
    - 84% Phụ huynh đọc tiếp đến Khối Sứ mệnh & Can thiệp sớm
-   - 62% Phụ huynh cuộn qua Khối Quy trình 5 bước & Đội ngũ giáo viên
+   - 62% Phụ huynh cuộn qua Khối Quy trình can thiệp & Không gian học tập
    - 48% Phụ huynh cuộn trọn vẹn đến Biểu mẫu đăng ký tư vấn cuối trang
-   - Nhận định: Khối Lộ trình can thiệp và Đội ngũ chuyên gia giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
+   - Nhận định: Khối Lộ trình can thiệp và Không gian phòng học giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
 
 II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION AUDIT)
 --------------------------------------------------------------------------------
@@ -324,7 +324,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     3. Đặt kích thước font chữ ô nhập liệu tối thiểu 16px để ngăn iOS tự động phóng to màn hình khi gõ phím.
 
 [x] ƯU TIÊN 3 - TĂNG TỐC ĐỘ CHUYỂN ĐỔI CHIẾN DỊCH ZALO:
-    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Đội ngũ chuyên gia.
+    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Quy trình can thiệp.
     2. Đưa cam kết "Bảo mật 100% thông tin gia đình" nổi bật hơn ngay trên nút gửi form để phụ huynh hoàn toàn an tâm.
 ================================================================================`;
 

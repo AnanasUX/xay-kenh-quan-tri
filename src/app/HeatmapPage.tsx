@@ -89,10 +89,12 @@ const SECTIONS_NAV = [
   { id: "all", label: "Toàn trang", anchor: "" },
   { id: "hero", label: "1. Đầu trang (Hero)", anchor: "" },
   { id: "mission", label: "2. Sứ mệnh", anchor: "#mission" },
-  { id: "support", label: "3. Lĩnh vực can thiệp", anchor: "#support" },
-  { id: "process", label: "4. Quy trình 5 bước", anchor: "#process" },
-  { id: "team", label: "5. Đội ngũ chuyên gia", anchor: "#team" },
-  { id: "contact", label: "6. Biểu mẫu đăng ký", anchor: "#contact" },
+  { id: "support", label: "3. Lĩnh vực can thiệp", anchor: "#areas" },
+  { id: "process", label: "4. Quy trình can thiệp", anchor: "#process" },
+  { id: "gallery", label: "5. Không gian học tập", anchor: "#gallery" },
+  { id: "resources", label: "6. Góc phụ huynh", anchor: "#resources" },
+  { id: "faq", label: "7. Hỏi đáp FAQ", anchor: "#faq" },
+  { id: "contact", label: "8. Biểu mẫu đăng ký", anchor: "#contact" },
 ];
 
 export function HeatmapPage() {
@@ -313,7 +315,7 @@ export function HeatmapPage() {
       const bands = [
         { depth: 0.25, pct: scrollStats["25"].pct, label: "25% Trang (Khu vực Giới thiệu)" },
         { depth: 0.5, pct: scrollStats["50"].pct, label: "50% Trang (Lĩnh vực can thiệp & Quy trình)" },
-        { depth: 0.75, pct: scrollStats["75"].pct, label: "75% Trang (Đội ngũ & Không gian)" },
+        { depth: 0.75, pct: scrollStats["75"].pct, label: "75% Trang (Không gian & Góc phụ huynh)" },
         { depth: 1.0, pct: scrollStats["100"].pct, label: "100% Trang (Biểu mẫu & Chân trang)" },
       ];
 
@@ -469,7 +471,7 @@ export function HeatmapPage() {
         createEv("faq-expand", "rage_click", 0.72, 0.68, "faq-expand", "Câu hỏi thường gặp FAQ", false, "mobile"),
         createEv("faq-expand", "rage_click", 0.73, 0.69, "faq-expand", "Câu hỏi thường gặp FAQ", false, "mobile"),
         createEv("gallery-img", "dead_click", 0.3, 0.6, "gallery-img", "Ảnh phòng học can thiệp", true, "mobile"),
-        createEv("team-card", "dead_click", 0.5, 0.52, "team-card", "Hồ sơ chuyên gia", true, "mobile")
+        createEv("area-card", "dead_click", 0.5, 0.52, "area-card", "Lĩnh vực can thiệp", true, "mobile")
       );
     }
 
@@ -610,7 +612,7 @@ export function HeatmapPage() {
       badge = "Chuyển đổi cao (A)";
       badgeColor = "#059669";
       commentary =
-        "Biểu mẫu đăng ký thu hút các phụ huynh có nhu cầu cấp thiết sau khi đã đọc kỹ lộ trình can thiệp và đội ngũ giáo viên.";
+        "Biểu mẫu đăng ký thu hút các phụ huynh có nhu cầu cấp thiết sau khi đã đọc kỹ lộ trình can thiệp và phương pháp giáo dục của Cô Hương.";
       recommendation =
         "Đảm bảo các ô nhập Họ tên và Số zalo được điền dễ dàng trên bàn phím điện thoại.";
     } else if (el.rage > 0) {
@@ -665,20 +667,20 @@ I. TỔNG HỢP CÁC ĐIỂM NGHẼN UX GHI NHẬN TRÊN TRANG (FRICTION POINTS)
      + Phụ huynh dùng mạng di động 4G ngoài đường có độ trễ cao, gây cảm giác "chưa bấm được".
 
 2. Điểm nghẽn Nhấp không phản hồi (Dead Clicks): ${deadCount} lượt ghi nhận
-   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thẻ giáo viên).
+   - Triệu chứng: Phụ huynh nhấp vào các phần tử không có tính năng tương tác (ảnh tĩnh, card chữ, thông tin phương pháp).
    - Vị trí tập trung:
      + Ảnh cơ sở vật chất & phòng học can thiệp cá nhân.
-     + Thẻ hồ sơ giáo viên và chuyên gia tâm lý.
+     + Thẻ các lĩnh vực can thiệp chuyên sâu.
    - Nguyên nhân tâm lý học phụ huynh:
      + Phụ huynh trẻ tự kỷ rất kỹ tính, muốn nhấp vào ảnh để xem to hơn cơ sở vật chất phòng học (ánh sáng, đồ chơi điều hòa cảm giác).
-     + Phụ huynh muốn bấm vào thẻ giáo viên để xem chi tiết bằng cấp, chứng chỉ can thiệp.
+     + Phụ huynh muốn tìm hiểu chi tiết các phương pháp can thiệp sớm và âm ngữ trị liệu của Cô Hương.
 
 3. Điểm rơi phụ huynh trên luồng cuộn (Scroll Drop-off Funnel):
    - 100% Phụ huynh tiếp cận Khối Đầu trang (Hero & Tiêu đề chính)
    - ${scrollStats["25"].pct}% Phụ huynh đọc tiếp đến Khối Sứ mệnh & Can thiệp sớm
-   - ${scrollStats["50"].pct}% Phụ huynh cuộn qua Khối Quy trình 5 bước & Đội ngũ giáo viên
+   - ${scrollStats["50"].pct}% Phụ huynh cuộn qua Khối Quy trình can thiệp & Không gian học tập
    - ${scrollStats["100"].pct}% Phụ huynh cuộn trọn vẹn đến Biểu mẫu đăng ký tư vấn cuối trang
-   - Nhận định: Khối Lộ trình can thiệp và Đội ngũ chuyên gia giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
+   - Nhận định: Khối Lộ trình can thiệp và Không gian phòng học giữ chân phụ huynh tốt nhất. Khoảng 30% phụ huynh dừng lại và gọi điện/nhắn Zalo ngay tại các nút nổi trước khi cuộn hết trang.
 
 II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION AUDIT)
 --------------------------------------------------------------------------------
@@ -712,7 +714,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     3. Đặt kích thước font chữ ô nhập liệu tối thiểu 16px để ngăn iOS tự động phóng to màn hình khi gõ phím.
 
 [x] ƯU TIÊN 3 - TĂNG TỐC ĐỘ CHUYỂN ĐỔI CHIẾN DỊCH ZALO:
-    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Đội ngũ chuyên gia.
+    1. Thêm 1 nút "Nhắn tin Zalo với Cô Hương ngay" đặt trực tiếp dưới chân khối Quy trình can thiệp.
     2. Đưa cam kết "Bảo mật 100% thông tin gia đình" nổi bật hơn ngay trên nút gửi form để phụ huynh hoàn toàn an tâm.
 ================================================================================`;
   };
@@ -1781,7 +1783,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                     📋 Kịch bản 2: Phụ huynh Cuộn đọc sâu & Điền Form tư vấn
                   </strong>
                   <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#16a34a", lineHeight: "1.4" }}>
-                    Mô phỏng phụ huynh cuộn qua 100% trang, đọc kỹ Đội ngũ giáo viên và điền biểu mẫu tư vấn IEP.
+                    Mô phỏng phụ huynh cuộn qua 100% trang, đọc kỹ Lộ trình can thiệp và điền biểu mẫu tư vấn IEP.
                   </p>
                 </div>
                 <button
@@ -2094,7 +2096,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                     <span style={{ fontSize: "12px", fontWeight: "700", color: "#50008b" }}>{scrollStats["50"].pct}% đọc sâu</span>
                   </div>
                   <p style={{ margin: 0, fontSize: "13px", color: "#334155", lineHeight: "1.5" }}>
-                    Hơn {scrollStats["50"].pct}% phụ huynh đã cuộn qua khối Lĩnh vực can thiệp và Đội ngũ giáo viên.
+                    Hơn {scrollStats["50"].pct}% phụ huynh đã cuộn qua khối Lĩnh vực can thiệp và Quy trình hỗ trợ của Cô Hương.
                     Đây là các khối nội dung tạo niềm tin vững chắc nhất trước khi phụ huynh để lại số điện thoại/zalo.
                   </p>
                 </div>

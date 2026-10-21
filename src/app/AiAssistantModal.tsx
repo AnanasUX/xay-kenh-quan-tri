@@ -23,8 +23,8 @@ const QUICK_PROMPTS = [
     prompt: "Viết lại mục Lĩnh vực hỗ trợ tập trung vào 6 phương pháp khoa học: Âm ngữ trị liệu, Can thiệp hành vi ABA, Điều hòa giác quan OT, Kỹ năng xã hội, Tiền tiểu học và Tự lập sinh hoạt.",
   },
   {
-    label: "👩‍🏫 Tạo hồ sơ đội ngũ chuyên gia",
-    prompt: "Cập nhật mục Đội ngũ gồm 4 giáo viên và chuyên gia: Giám đốc chuyên môn ThS Tâm lý lâm sàng, Chuyên viên Âm ngữ trị liệu, Chuyên viên Điều hòa Cảm giác và Giáo viên Can thiệp sớm.",
+    label: "🏫 Giới thiệu không gian can thiệp & phòng học",
+    prompt: "Cập nhật mô tả không gian học tập an toàn, thân thiện, trang bị đầy đủ giáo cụ trực quan và phòng vận động cảm giác cá nhân hóa.",
   },
   {
     label: "📋 Cập nhật quy trình 5 bước",
@@ -244,7 +244,7 @@ export function AiAssistantModal({
             <textarea
               id="ai-prompt-input"
               rows={4}
-              placeholder="Ví dụ: Đổi tên thành Trung tâm Can thiệp sớm Sao Mai ở Hà Đông, Hà Nội. Số hotline 0912 345 678. Tập trung vào phương pháp ABA và Âm ngữ trị liệu cho trẻ chậm nói. Bổ sung đội ngũ giáo viên giàu kinh nghiệm..."
+              placeholder="Ví dụ: Cập nhật thông tin TDP Duyên Phúc, xã Hưng Hà, Thái Bình. Số hotline 096 290 3942. Tập trung vào phương pháp ABA và Âm ngữ trị liệu cho trẻ chậm nói. Bổ sung góc tài liệu phụ huynh..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />

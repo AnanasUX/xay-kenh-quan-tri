@@ -18,7 +18,6 @@ const ALL_CONTENT_SECTIONS = [
   { id: "mission", label: "Sứ mệnh" },
   { id: "support", label: "Lĩnh vực can thiệp" },
   { id: "process", label: "Quy trình" },
-  { id: "team", label: "Đội ngũ chuyên gia" },
   { id: "gallery", label: "Không gian & Hình ảnh" },
   { id: "resources", label: "Tài liệu & Góc phụ huynh" },
   { id: "faq", label: "Câu hỏi thường gặp (FAQ)" },

@@ -705,10 +705,10 @@ input[type="text"], input[type="tel"], textarea {
       title: "Tối ưu hóa phễu chuyển đổi Zalo Campaign & Cam kết bảo mật thông tin",
       problemSummary: `Lưu lượng từ chiến dịch Zalo chiếm tới ${Math.round((zaloVisitors / Math.max(visitors, 1)) * 100)}% lượng truy cập, nhưng tỷ lệ thoát ở nửa cuối trang vẫn còn khoảng 30%.`,
       rootCause: "Phụ huynh có tâm lý e ngại bị lộ số điện thoại hoặc bị làm phiền; nhiều phụ huynh muốn hỏi nhanh qua Zalo riêng tư thay vì điền biểu mẫu dài.",
-      technicalFix: "1. Bổ sung nút 'Nhắn tin Zalo với Cô Hương ngay' đặt trực tiếp dưới chân khối Đội ngũ chuyên gia (khối có điểm giữ chân cao nhất).\n2. Đổi nhãn 'Số điện thoại' thành 'Số zalo liên hệ *' kèm huy hiệu 'Cam kết bảo mật 100% thông tin gia đình'.\n3. Giữ nút nổi Zalo ở góc phải màn hình với hiệu ứng nhịp tim (pulse) dịu mắt.",
+      technicalFix: "1. Bổ sung nút 'Nhắn tin Zalo với Cô Hương ngay' đặt trực tiếp dưới chân khối Quy trình can thiệp (khối có điểm giữ chân cao nhất).\n2. Đổi nhãn 'Số điện thoại' thành 'Số zalo liên hệ *' kèm huy hiệu 'Cam kết bảo mật 100% thông tin gia đình'.\n3. Giữ nút nổi Zalo ở góc phải màn hình với hiệu ứng nhịp tim (pulse) dịu mắt.",
       uxImpact: "Dự kiến nâng tỷ lệ kết nối Zalo và nhận tư vấn thành công thêm từ 35% đến 48%.",
       estimatedEffort: "2 Giờ phát triển",
-      actionCodeSnippet: `<!-- Nút phụ trợ Zalo đặt ngay chân khối Đội ngũ -->
+      actionCodeSnippet: `<!-- Nút phụ trợ Zalo đặt ngay chân khối Quy trình -->
 <div className="zalo-direct-cta-card">
   <p>Ba mẹ muốn trao đổi riêng tư về tình trạng của con với Cô Hương?</p>
   <a href="https://zalo.me/0962903942" className="btn-zalo-direct">
@@ -737,7 +737,7 @@ input[type="text"], input[type="tel"], textarea {
       goal: "Khắc phục triệt để các ức chế thao tác làm phụ huynh bực bội và mất kiên nhẫn.",
       actions: [
         "Thêm hiệu ứng phản hồi tức thì và loading spinner khi bấm gửi biểu mẫu để dập tắt hoàn toàn Rage clicks.",
-        "Thiết lập Lightbox xem ảnh to cho cơ sở vật chất phòng học và hiển thị popup bằng cấp giáo viên (xử lý Dead clicks).",
+        "Thiết lập Lightbox xem ảnh to cho cơ sở vật chất phòng học (xử lý Dead clicks).",
         "Khóa tỷ lệ co phóng trên di động (user-scalable=no, font 16px) chống giật màn hình.",
       ],
     },
@@ -746,7 +746,7 @@ input[type="text"], input[type="tel"], textarea {
       timeframe: "Ngày 2 - Ngày 7",
       goal: "Bùng nổ tỷ lệ liên hệ từ chiến dịch Zalo và tăng độ tin cậy của phụ huynh.",
       actions: [
-        "Cài đặt nút CTA 'Nhắn tin Zalo với Cô Hương ngay' trực tiếp dưới khối Đội ngũ chuyên gia.",
+        "Cài đặt nút CTA 'Nhắn tin Zalo với Cô Hương ngay' trực tiếp dưới khối Quy trình can thiệp.",
         "Bổ sung cam kết bảo mật 100% hồ sơ trẻ cạnh ô nhập số Zalo.",
         "Rút gọn biểu mẫu tư vấn còn 3 trường cốt lõi, bật bàn phím số to type='tel'.",
       ],
