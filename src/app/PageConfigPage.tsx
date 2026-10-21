@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { logAuditAction } from "./auditService";
 import { ImageCropperModal, CROP_SPECS, type CropTargetSpec } from "./ImageCropperModal";
@@ -268,26 +268,27 @@ export function PageConfigPage() {
               title="Tự động cấu hình toàn bộ hoặc từng phần website bằng AI"
             >
               <Icon name="sparkle" size={16} />
-              Trợ lý AI
+              <span>Trợ lý AI</span>
             </button>
             {!isStaff && (
               <label className="secondary-button" style={{ cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>
-                <Icon name="page" size={15} />
-                Nhập JSON
+                <Icon name="upload" size={15} />
+                <span>Nhập JSON</span>
                 <input type="file" accept=".json" onChange={importJson} style={{ display: "none" }} />
               </label>
             )}
             <button className="secondary-button" onClick={exportJson} title="Tải file cấu hình JSON về máy">
-              <Icon name="share" size={15} />
-              Xuất JSON
+              <Icon name="download" size={15} />
+              <span>Xuất JSON</span>
             </button>
             <button className="secondary-button" disabled={saving} onClick={() => save(false)}>
-              Lưu bản nháp
+              <Icon name="edit" size={15} />
+              <span>Lưu bản nháp</span>
             </button>
             {!isStaff && (
               <button className="primary-button" disabled={saving} onClick={() => save(true)}>
                 <Icon name="check" size={16} />
-                {saving ? "Đang đồng bộ..." : "Xuất bản thay đổi"}
+                <span>{saving ? "Đang đồng bộ..." : "Xuất bản thay đổi"}</span>
               </button>
             )}
           </div>
@@ -307,8 +308,8 @@ export function PageConfigPage() {
           style={{ padding: "4px 10px", fontSize: "12px", height: "28px", display: "inline-flex", alignItems: "center", gap: "5px", cursor: "pointer" }}
           title="Sao chép liên kết chiến dịch Zalo có tracking zarsrc=30"
         >
-          <Icon name="share" size={13} />
-          Sao chép link Zalo Campaign
+          <Icon name="copy" size={13} />
+          <span>Sao chép link Zalo Campaign</span>
         </button>
         <a className="config-url" href="https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources" target="_blank" rel="noreferrer">
           ↗ Mở Landing Page
@@ -852,7 +853,10 @@ function SectionEditor({
         <div className="form-section">
           <div className="form-section-title form-section-title--action">
             <div><strong>Danh sách nội dung</strong><p>{section.items.length} mục đang được cấu hình.</p></div>
-            <button onClick={onAddItem}><Icon name="plus" size={15} /> Thêm mục</button>
+            <button type="button" className="btn-add-item" onClick={onAddItem}>
+              <Icon name="plus" size={15} />
+              <span>Thêm mục</span>
+            </button>
           </div>
           <div className="repeatable-list">
             {section.items.map((item, index) => (
@@ -860,7 +864,9 @@ function SectionEditor({
                 <header>
                   <span>{item.meta && /^\d+$/.test(item.meta) ? item.meta : String(index + 1).padStart(2, "0")}</span>
                   <strong>Mục {index + 1}</strong>
-                  <button aria-label={`Xóa mục ${index + 1}`} onClick={() => onRemoveItem(item.id)}><Icon name="close" size={15} /></button>
+                  <button type="button" className="btn-remove-item" aria-label={`Xóa mục ${index + 1}`} onClick={() => onRemoveItem(item.id)} title={`Xóa mục ${index + 1}`}>
+                    <Icon name="close" size={14} />
+                  </button>
                 </header>
                 <div className="form-grid">
                   <label className="field-wide">Tiêu đề / Tên<input value={item.title} onChange={(event) => onItemChange(item.id, "title", event.target.value)} /></label>
@@ -942,6 +948,7 @@ function ItemImageField({
   spec?: CropTargetSpec;
 }) {
   const { notify, currentUser } = useCms();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlInput, setUrlInput] = useState(value);
 
@@ -1001,26 +1008,62 @@ function ItemImageField({
           )}
         </div>
         <div className="item-image-controls">
-          <label className="upload-btn">
-            <Icon name="page" size={15} />
-            {value ? "Thay ảnh mới" : "Tải ảnh từ máy"}
-            <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: "none" }} />
-          </label>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleFileUpload}
+            style={{ display: "none" }}
+          />
           <button
             type="button"
-            className="secondary-btn-sm"
-            onClick={() => setEditingUrl(!editingUrl)}
+            className="btn-upload-primary"
+            onClick={() => fileInputRef.current?.click()}
+            title="Tải ảnh lên từ thiết bị của bạn"
           >
-            {editingUrl ? "Đóng URL" : "Dán link ảnh"}
+            <Icon name="upload" size={15} />
+            <span>{value ? "Thay ảnh mới" : "Tải ảnh từ máy"}</span>
+          </button>
+          <button
+            type="button"
+            className="btn-link-action"
+            onClick={() => setEditingUrl(!editingUrl)}
+            title="Dán đường dẫn ảnh online"
+          >
+            <Icon name="link" size={14} />
+            <span>{editingUrl ? "Đóng URL" : "Dán link ảnh"}</span>
           </button>
           {value && (
             <button
               type="button"
-              className="danger-btn-sm"
+              className="btn-crop-action"
+              onClick={() => {
+                const img = new Image();
+                img.onload = () => {
+                  setCropperData({
+                    isOpen: true,
+                    imageSrc: value,
+                    origWidth: img.naturalWidth || img.width,
+                    origHeight: img.naturalHeight || img.height,
+                  });
+                };
+                img.src = value;
+              }}
+              title="Cắt hoặc căn chỉnh lại khuôn hình ảnh"
+            >
+              <Icon name="crop" size={14} />
+              <span>Chỉnh cắt ảnh</span>
+            </button>
+          )}
+          {value && (
+            <button
+              type="button"
+              className="btn-danger-action"
               onClick={() => onChange("")}
               title="Xóa ảnh này"
             >
-              <Icon name="close" size={14} /> Xóa ảnh
+              <Icon name="trash" size={14} />
+              <span>Xóa ảnh</span>
             </button>
           )}
         </div>
@@ -1146,10 +1189,10 @@ function MediaField({
       </div>
 
       <div className="media-field">
-        <span>
-          <Icon name="page" size={18} />
+        <span className="media-icon-badge">
+          <Icon name="image" size={20} />
         </span>
-        <span>
+        <span className="media-info-text">
           <strong>
             {value.startsWith("data:")
               ? "Ảnh tùy chỉnh đã tải lên & tối ưu"
@@ -1157,12 +1200,14 @@ function MediaField({
           </strong>
           <small>JPG, PNG hoặc WEBP · Tối đa 5MB</small>
         </span>
-        <label className="media-upload">
-          Thay ảnh
+        <label className="btn-upload-primary" style={{ cursor: "pointer" }}>
+          <Icon name="upload" size={15} />
+          <span>Thay ảnh</span>
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
             onChange={handleUpload}
+            style={{ display: "none" }}
           />
         </label>
       </div>

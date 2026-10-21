@@ -140,7 +140,7 @@ export function AuditLogsPage() {
               title="Cập nhật dữ liệu mới nhất"
             >
               <Icon name="refresh" size={15} />
-              Làm mới
+              <span>Làm mới</span>
             </button>
             <button
               type="button"
@@ -149,7 +149,7 @@ export function AuditLogsPage() {
               title="Tải báo cáo nhật ký định dạng Excel/CSV"
             >
               <Icon name="download" size={15} />
-              Xuất file CSV
+              <span>Xuất file CSV</span>
             </button>
             <button
               type="button"
@@ -159,7 +159,7 @@ export function AuditLogsPage() {
               title="Xóa sạch nhật ký"
             >
               <Icon name="close" size={14} />
-              Xóa lịch sử
+              <span>Xóa lịch sử</span>
             </button>
           </div>
         }

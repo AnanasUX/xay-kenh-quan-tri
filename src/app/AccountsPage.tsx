@@ -225,11 +225,11 @@ export function AccountsPage() {
               title="Xem toàn bộ lịch sử truy cập và nhật ký thao tác người dùng"
             >
               <Icon name="history" size={16} />
-              Nhật ký thao tác
+              <span>Nhật ký thao tác</span>
             </button>
             <button className="primary-button" type="button" onClick={handleOpenCreate}>
               <Icon name="userPlus" size={16} />
-              Đăng ký tài khoản mới
+              <span>Đăng ký tài khoản mới</span>
             </button>
           </div>
         }

@@ -502,8 +502,8 @@ h1 {
 }
 
 .primary-button {
-  display: flex;
-  min-height: 46px;
+  display: inline-flex;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -511,32 +511,72 @@ h1 {
   border: 0;
   border-radius: 9px;
   color: white;
-  background: var(--color-action-primary);
+  background: linear-gradient(135deg, var(--color-brand-primary) 0%, #6b239f 100%);
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 8px 18px rgb(110 45 143 / 18%);
-  transition: 160ms ease;
+  box-shadow: 0 4px 14px rgba(80, 0, 139, 0.22);
+  cursor: pointer;
+  transition: all 160ms ease;
+  user-select: none;
 }
 
 .primary-button:hover {
-  background: var(--color-action-primary-hover);
+  background: linear-gradient(135deg, var(--color-action-primary-hover) 0%, #50008b 100%);
+  box-shadow: 0 6px 18px rgba(80, 0, 139, 0.32);
   transform: translateY(-1px);
 }
 
+.primary-button:active {
+  transform: translateY(0);
+}
+
+.primary-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .secondary-button {
-  min-height: 46px;
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 0 18px;
-  border: 1px solid var(--color-border-default);
+  border: 1.5px solid var(--color-border-default);
   border-radius: 9px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   background: white;
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+  user-select: none;
+}
+
+.secondary-button:hover {
+  background: var(--purple-50);
+  border-color: #c4b5fd;
+  color: var(--color-brand-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(80, 0, 139, 0.08);
+}
+
+.secondary-button:active {
+  transform: translateY(0);
+}
+
+.secondary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .config-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .config-status {
@@ -2950,59 +2990,284 @@ tbody tr.row-selected {
   flex-wrap: wrap;
 }
 
+/* ==========================================================================
+   BUTTON & MEDIA ACTION SYSTEM (Design System Aligned)
+   ========================================================================== */
+
+/* Upload primary button (works seamlessly as button or label inside .form-grid) */
+.btn-upload-primary,
+.form-grid label.btn-upload-primary,
+.form-grid .btn-upload-primary,
 .upload-btn {
-  background: var(--color-brand-primary);
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, var(--color-brand-primary) 0%, #6b239f 100%) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  gap: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 2px 6px rgba(80, 0, 139, 0.25) !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.16s ease !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  margin: 0 !important;
 }
 
+.btn-upload-primary:hover,
+.form-grid label.btn-upload-primary:hover,
+.form-grid .btn-upload-primary:hover,
 .upload-btn:hover {
-  background: var(--color-action-primary-hover);
+  background: linear-gradient(135deg, var(--color-action-primary-hover) 0%, var(--purple-900) 100%) !important;
+  box-shadow: 0 4px 10px rgba(80, 0, 139, 0.35) !important;
+  transform: translateY(-1px) !important;
+  color: #ffffff !important;
 }
 
+.btn-upload-primary svg,
+.form-grid label.btn-upload-primary svg,
+.form-grid .btn-upload-primary svg,
+.upload-btn svg {
+  flex-shrink: 0 !important;
+  stroke: #ffffff !important;
+}
+
+/* Secondary Link action button */
+.btn-link-action,
+.form-grid .btn-link-action,
 .secondary-btn-sm {
-  background: #ffffff;
-  color: var(--color-text-secondary);
-  border: 1px solid var(--color-border-default);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  margin: 0 !important;
 }
 
+.btn-link-action:hover,
+.form-grid .btn-link-action:hover,
 .secondary-btn-sm:hover {
-  background: #f8f6fc;
-  border-color: #c4b5fd;
-  color: var(--color-brand-primary);
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  transform: translateY(-1px) !important;
 }
 
+.btn-link-action svg,
+.secondary-btn-sm svg {
+  stroke: #64748b !important;
+}
+
+.btn-link-action:hover svg,
+.secondary-btn-sm:hover svg {
+  stroke: #0f172a !important;
+}
+
+/* Crop image action button */
+.btn-crop-action,
+.form-grid .btn-crop-action {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+  border: 1px solid #86efac !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  margin: 0 !important;
+}
+
+.btn-crop-action:hover,
+.form-grid .btn-crop-action:hover {
+  background: #dcfce7 !important;
+  border-color: #4ade80 !important;
+  color: #166534 !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-crop-action svg {
+  stroke: #16a34a !important;
+}
+
+/* Danger / Delete action button */
+.btn-danger-action,
+.form-grid .btn-danger-action,
 .danger-btn-sm {
-  background: #fff5f5;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
+  background: #fff1f2 !important;
+  color: #e11d48 !important;
+  border: 1px solid #fecdd3 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  margin: 0 !important;
+}
+
+.btn-danger-action:hover,
+.form-grid .btn-danger-action:hover,
+.danger-btn-sm:hover {
+  background: #ffe4e6 !important;
+  border-color: #fda4af !important;
+  color: #be123c !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-danger-action svg,
+.danger-btn-sm svg {
+  stroke: #e11d48 !important;
+}
+
+/* Add Item Button (+ Thêm mục) */
+.btn-add-item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 7px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #86efac;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
 }
 
-.danger-btn-sm:hover {
+.btn-add-item:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+  color: #166534;
+  transform: translateY(-1px);
+}
+
+.btn-add-item svg {
+  stroke: #16a34a;
+}
+
+/* Remove item circular button */
+.btn-remove-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+
+.btn-remove-item:hover {
   background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+.btn-remove-item svg {
+  stroke: currentColor;
+}
+
+/* Media Field Badge & Text */
+.media-field {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+}
+
+.media-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--purple-100);
+  color: var(--color-brand-primary);
+  flex-shrink: 0;
+}
+
+.media-icon-badge svg {
+  stroke: var(--color-brand-primary);
+}
+
+.media-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-info-text strong {
+  font-size: 14px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-info-text small {
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .item-image-url-input {

@@ -852,8 +852,8 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             }}
             title="Cuộn tới Báo cáo Điểm nghẽn và Sao chép toàn bộ text"
           >
-            <Icon name="share" size={15} />
-            {copyReportSuccess ? "✓ Đã copy báo cáo" : "📋 Báo cáo Điểm nghẽn (Text)"}
+            <Icon name={copyReportSuccess ? "check" : "copy"} size={15} />
+            <span>{copyReportSuccess ? "Đã copy báo cáo" : "Báo cáo Điểm nghẽn (Text)"}</span>
           </button>
 
           {/* Global Audit Modal */}
@@ -1140,8 +1140,8 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 boxShadow: "0 2px 6px rgba(234, 88, 12, 0.3)",
               }}
             >
-              <Icon name="share" size={14} />
-              {copyReportSuccess ? "✓ ĐÃ SAO CHÉP THÀNH CÔNG!" : "📋 Sao chép Toàn bộ Báo cáo"}
+              <Icon name={copyReportSuccess ? "check" : "copy"} size={14} />
+              <span>{copyReportSuccess ? "✓ ĐÃ SAO CHÉP THÀNH CÔNG!" : "Sao chép Toàn bộ Báo cáo"}</span>
             </button>
             <button
               type="button"
