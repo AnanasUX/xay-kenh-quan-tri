@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { logAuditAction } from "./auditService";
+import { ImageCropperModal, CROP_SPECS, type CropTargetSpec } from "./ImageCropperModal";
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
@@ -611,7 +612,12 @@ function GeneralSettings({
             Nhãn nút tư vấn
             <input value={config.consultationLabel} onChange={(event) => onChange("consultationLabel", event.target.value)} />
           </label>
-          <MediaField label="Logo website" value={config.logo} onChange={(value) => onChange("logo", value)} />
+          <MediaField
+            label="Logo website"
+            value={config.logo}
+            onChange={(value) => onChange("logo", value)}
+            spec={CROP_SPECS.logo}
+          />
         </div>
       </div>
 
@@ -829,7 +835,14 @@ function SectionEditor({
           )}
           <label className="field-wide">Tiêu đề khối<input value={section.title} onChange={(event) => onChange({ title: event.target.value })} /></label>
           <label className="field-wide">Mô tả<textarea value={section.description} onChange={(event) => onChange({ description: event.target.value })} /></label>
-          {section.image && <MediaField label="Hình ảnh chính" value={section.image} onChange={(value) => onChange({ image: value })} />}
+          {section.image && (
+            <MediaField
+              label="Hình ảnh chính"
+              value={section.image}
+              onChange={(value) => onChange({ image: value })}
+              spec={CROP_SPECS.sectionMain}
+            />
+          )}
           {section.primaryAction !== undefined && <label>Nút chính<input value={section.primaryAction} onChange={(event) => onChange({ primaryAction: event.target.value })} /></label>}
           {section.secondaryAction !== undefined && <label>Nút phụ<input value={section.secondaryAction} onChange={(event) => onChange({ secondaryAction: event.target.value })} /></label>}
         </div>
@@ -860,6 +873,7 @@ function SectionEditor({
                       label="Ảnh chân dung giáo viên"
                       value={item.image || ""}
                       onChange={(val) => onItemChange(item.id, "image", val)}
+                      spec={CROP_SPECS.team}
                     />
                   )}
 
@@ -869,6 +883,7 @@ function SectionEditor({
                       label="Hình ảnh không gian"
                       value={item.meta || ""}
                       onChange={(val) => onItemChange(item.id, "meta", val)}
+                      spec={CROP_SPECS.gallery}
                     />
                   )}
                 </div>
@@ -881,74 +896,103 @@ function SectionEditor({
   );
 }
 
-function compressImageFile(file: File, maxWidth = 600, quality = 0.85): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
+function processUploadedImageFile(
+  file: File,
+  spec: CropTargetSpec,
+  onRequiresCrop: (dataUrl: string, width: number, height: number) => void,
+  onDirectApply: (dataUrl: string) => void
+) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target?.result as string;
+    const img = new Image();
+    img.onload = () => {
+      const origW = img.naturalWidth || img.width;
+      const origH = img.naturalHeight || img.height;
+      const userRatio = origW / origH;
+      const ratioDiff = Math.abs(userRatio - spec.aspectRatio) / spec.aspectRatio;
 
-        if (width > maxWidth || height > maxWidth) {
-          if (width > height) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          } else {
-            width = Math.round((width * maxWidth) / height);
-            height = maxWidth;
-          }
-        }
+      // Điều kiện "vừa kích thước hiện tại" (không cần cắt):
+      // 1. Tỉ lệ khung hình khớp chuẩn (chênh lệch <= 4%)
+      // 2. Kích thước không vượt quá 10% kích thước chuẩn
+      const isRatioFit = ratioDiff <= 0.04;
+      const isSizeFit = origW <= spec.targetWidth * 1.1 && origH <= spec.targetHeight * 1.1;
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          resolve(e.target?.result as string);
-          return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = () => resolve(e.target?.result as string);
-      img.src = e.target?.result as string;
+      if (isRatioFit && isSizeFit) {
+        onDirectApply(dataUrl);
+      } else {
+        onRequiresCrop(dataUrl, origW, origH);
+      }
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+    img.onerror = () => onDirectApply(dataUrl);
+    img.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
 }
 
 function ItemImageField({
   label,
   value,
   onChange,
+  spec = CROP_SPECS.team,
 }: {
   label: string;
   value: string;
   onChange: (val: string) => void;
+  spec?: CropTargetSpec;
 }) {
+  const { notify, currentUser } = useCms();
   const [editingUrl, setEditingUrl] = useState(false);
   const [urlInput, setUrlInput] = useState(value);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [cropperData, setCropperData] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    origWidth: number;
+    origHeight: number;
+  }>({
+    isOpen: false,
+    imageSrc: "",
+    origWidth: 0,
+    origHeight: 0,
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    try {
-      const compressedDataUrl = await compressImageFile(file, 480, 0.85);
-      onChange(compressedDataUrl);
-    } catch {
-      alert("Không thể đọc tệp ảnh này");
-    }
+
+    processUploadedImageFile(
+      file,
+      spec,
+      (dataUrl, w, h) => {
+        setCropperData({
+          isOpen: true,
+          imageSrc: dataUrl,
+          origWidth: w,
+          origHeight: h,
+        });
+      },
+      (dataUrl) => {
+        onChange(dataUrl);
+        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã áp dụng trực tiếp!`);
+      }
+    );
+    event.target.value = "";
   };
 
   return (
     <div className="field-wide item-image-field">
-      <span className="item-image-label">{label}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+        <span className="item-image-label">{label}</span>
+        <span className="dimension-badge-inline">
+          📐 Chuẩn: {spec.targetWidth} × {spec.targetHeight} px ({spec.aspectRatioLabel})
+        </span>
+      </div>
+
       <div className="item-image-row">
         <div className="item-image-thumb">
           {value ? (
-            <img src={value} alt="Chân dung" />
+            <img src={value} alt={label} />
           ) : (
             <div className="item-image-empty">
               <Icon name="profile" size={24} />
@@ -974,13 +1018,22 @@ function ItemImageField({
               type="button"
               className="danger-btn-sm"
               onClick={() => onChange("")}
-              title="Xóa ảnh chân dung này"
+              title="Xóa ảnh này"
             >
               <Icon name="close" size={14} /> Xóa ảnh
             </button>
           )}
         </div>
       </div>
+
+      {/* Ghi chú kích thước tiêu chuẩn để sau người dùng làm đúng kích thước */}
+      <div className="dimension-guide-pill">
+        <span className="dimension-tag">
+          📐 Kích thước chuẩn: {spec.targetWidth} × {spec.targetHeight} px ({spec.aspectRatioLabel})
+        </span>
+        <span className="dimension-desc">{spec.tip} (Tự động mở khung cắt nếu ảnh vượt kích thước)</span>
+      </div>
+
       {editingUrl && (
         <div className="item-image-url-input">
           <input
@@ -1001,6 +1054,37 @@ function ItemImageField({
           </button>
         </div>
       )}
+
+      {/* Khung cắt ảnh khi vượt quá kích thước hiện tại */}
+      <ImageCropperModal
+        isOpen={cropperData.isOpen}
+        imageSrc={cropperData.imageSrc}
+        origWidth={cropperData.origWidth}
+        origHeight={cropperData.origHeight}
+        spec={spec}
+        onCropComplete={(croppedDataUrl) => {
+          onChange(croppedDataUrl);
+          setCropperData((p) => ({ ...p, isOpen: false }));
+          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công!`);
+          logAuditAction({
+            username: currentUser?.username || "admin",
+            fullName: currentUser?.fullName || "Người dùng",
+            role: currentUser?.role || "admin",
+            category: "config",
+            action: `Cắt và cập nhật ${spec.name}`,
+            detail: `Đã cắt ảnh kích thước chuẩn ${spec.targetWidth}×${spec.targetHeight} px (${spec.aspectRatioLabel}) cho ${label}`,
+            status: "success",
+          });
+        }}
+        onUseOriginal={() => {
+          onChange(cropperData.imageSrc);
+          setCropperData((p) => ({ ...p, isOpen: false }));
+          notify("Đã áp dụng ảnh gốc nguyên bản.");
+        }}
+        onCancel={() => {
+          setCropperData((p) => ({ ...p, isOpen: false }));
+        }}
+      />
     </div>
   );
 }
@@ -1009,40 +1093,118 @@ function MediaField({
   label,
   value,
   onChange,
+  spec = CROP_SPECS.sectionMain,
 }: {
   label: string;
   value: string;
   onChange?: (value: string) => void;
+  spec?: CropTargetSpec;
 }) {
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const { notify, currentUser } = useCms();
+  const [cropperData, setCropperData] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    origWidth: number;
+    origHeight: number;
+  }>({
+    isOpen: false,
+    imageSrc: "",
+    origWidth: 0,
+    origHeight: 0,
+  });
+
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !onChange) return;
-    try {
-      const dataUrl = await compressImageFile(file, 960, 0.85);
-      onChange(dataUrl);
-    } catch {
-      onChange(file.name);
-    }
+
+    processUploadedImageFile(
+      file,
+      spec,
+      (dataUrl, w, h) => {
+        setCropperData({
+          isOpen: true,
+          imageSrc: dataUrl,
+          origWidth: w,
+          origHeight: h,
+        });
+      },
+      (dataUrl) => {
+        onChange(dataUrl);
+        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã áp dụng trực tiếp!`);
+      }
+    );
+    event.target.value = "";
   };
 
   return (
-    <label className="field-wide">
-      {label}
-      <span className="media-field">
-        <span><Icon name="page" size={18} /></span>
+    <div className="field-wide" style={{ marginBottom: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px", marginBottom: "6px" }}>
+        <span style={{ fontSize: "13px", fontWeight: "600", color: "#334155" }}>{label}</span>
+        <span className="dimension-badge-inline">
+          📐 Chuẩn: {spec.targetWidth} × {spec.targetHeight} px ({spec.aspectRatioLabel})
+        </span>
+      </div>
+
+      <div className="media-field">
         <span>
-          <strong>{value.startsWith("data:") ? "Ảnh đã tải lên (Dung lượng nhẹ)" : value}</strong>
+          <Icon name="page" size={18} />
+        </span>
+        <span>
+          <strong>
+            {value.startsWith("data:")
+              ? "Ảnh tùy chỉnh đã tải lên & tối ưu"
+              : value}
+          </strong>
           <small>JPG, PNG hoặc WEBP · Tối đa 5MB</small>
         </span>
-        <span className="media-upload">
+        <label className="media-upload">
           Thay ảnh
           <input
             type="file"
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
             onChange={handleUpload}
           />
+        </label>
+      </div>
+
+      {/* Ghi chú kích thước tiêu chuẩn để sau người dùng làm đúng kích thước */}
+      <div className="dimension-guide-pill">
+        <span className="dimension-tag">
+          📐 Kích thước chuẩn: {spec.targetWidth} × {spec.targetHeight} px ({spec.aspectRatioLabel})
         </span>
-      </span>
-    </label>
+        <span className="dimension-desc">{spec.tip} (Tự động mở khung cắt nếu ảnh vượt kích thước)</span>
+      </div>
+
+      {/* Khung cắt ảnh khi vượt quá kích thước hiện tại */}
+      <ImageCropperModal
+        isOpen={cropperData.isOpen}
+        imageSrc={cropperData.imageSrc}
+        origWidth={cropperData.origWidth}
+        origHeight={cropperData.origHeight}
+        spec={spec}
+        onCropComplete={(croppedDataUrl) => {
+          if (onChange) onChange(croppedDataUrl);
+          setCropperData((p) => ({ ...p, isOpen: false }));
+          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công!`);
+          logAuditAction({
+            username: currentUser?.username || "admin",
+            fullName: currentUser?.fullName || "Người dùng",
+            role: currentUser?.role || "admin",
+            category: "config",
+            action: `Cắt và cập nhật ${spec.name}`,
+            detail: `Đã cắt ảnh kích thước chuẩn ${spec.targetWidth}×${spec.targetHeight} px (${spec.aspectRatioLabel}) cho ${label}`,
+            status: "success",
+          });
+        }}
+        onUseOriginal={() => {
+          if (onChange) onChange(cropperData.imageSrc);
+          setCropperData((p) => ({ ...p, isOpen: false }));
+          notify("Đã áp dụng ảnh gốc nguyên bản.");
+        }}
+        onCancel={() => {
+          setCropperData((p) => ({ ...p, isOpen: false }));
+        }}
+      />
+    </div>
   );
 }
