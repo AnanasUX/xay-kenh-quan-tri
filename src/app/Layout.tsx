@@ -67,9 +67,12 @@ export default function Layout() {
       role: (currentUser?.role as any) || "guest",
       accessUrl: window.location.href,
       entryPath: location.pathname,
+      featureName: currentPage,
+      campaign: "Kênh Quản trị CMS",
+      isLandingPage: false,
       result: currentUser ? "success" : "pending_login",
       note: currentUser
-        ? `Đang truy cập: ${currentPage} (${currentUser.role === "admin" ? "Quản trị viên" : "Nhân viên"})`
+        ? `Truy cập tính năng: ${currentPage} (${currentUser.role === "admin" ? "Quản trị viên" : "Nhân viên"})`
         : "Khách mở trang quản trị (chưa xác thực)",
     });
   }, [location.pathname, currentUser?.id]);
@@ -136,6 +139,9 @@ export default function Layout() {
         fullName: "Đăng nhập thất bại",
         role: "guest",
         result: "failed",
+        featureName: "Đăng nhập hệ thống",
+        campaign: "Kênh Quản trị CMS",
+        isLandingPage: false,
         note: res.message,
       });
       return;
@@ -159,7 +165,10 @@ export default function Layout() {
       fullName: res.user.fullName,
       role: res.user.role,
       result: "success",
-      note: "Đăng nhập thành công vào hệ thống",
+      featureName: "Đăng nhập hệ thống",
+      campaign: "Kênh Quản trị CMS",
+      isLandingPage: false,
+      note: `Đăng nhập thành công vào Kênh Quản trị (${res.user.role === "admin" ? "Quản trị viên" : "Nhân viên"})`,
     });
 
     if (res.user.role === "staff") {

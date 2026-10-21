@@ -41,6 +41,24 @@ export interface AccessLogEntry {
   note?: string;
   campaign?: string;
   isLandingPage?: boolean;
+  featureName?: string;
+}
+
+// Phân định rõ ràng Lượt truy cập Landing Page vs Kênh Quản trị
+export function isLandingPageLog(entry: AccessLogEntry): boolean {
+  if (entry.isLandingPage === true) return true;
+  if (entry.isLandingPage === false) return false;
+  const url = (entry.accessUrl || "").toLowerCase();
+  const path = (entry.entryPath || "").toLowerCase();
+  const camp = (entry.campaign || "").toLowerCase();
+  const note = (entry.note || "").toLowerCase();
+  if (url.includes("tre-tu-ky-responsive") || path.includes("tre-tu-ky-responsive")) return true;
+  if (url.includes("zarsrc") || camp.includes("zalo") || note.includes("zalo")) return true;
+  return false;
+}
+
+export function isCmsLog(entry: AccessLogEntry): boolean {
+  return !isLandingPageLog(entry);
 }
 
 const STORAGE_AUDIT_LOGS_KEY = "aurora-cms:audit-logs";
@@ -74,8 +92,9 @@ export function detectClientEnvironment(): { device: string; browser: string; sc
   };
 }
 
-// Dữ liệu mẫu khởi tạo sống động
+// Dữ liệu mẫu khởi tạo sống động cho cả 2 phần: Landing Page & Kênh Quản trị
 const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
+  // --- PHẦN 1: LANDING PAGE & CHIẾN DỊCH ZALO ---
   {
     id: "acc_zalo_1",
     timestamp: new Date().toISOString(),
@@ -115,25 +134,6 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     isLandingPage: true,
   },
   {
-    id: "acc_live_1",
-    timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
-    username: "admin",
-    fullName: "Quản trị viên Hệ thống",
-    role: "admin",
-    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/cau-hinh-trang",
-    entryPath: "#/cau-hinh-trang",
-    device: "Windows 11 PC",
-    browser: "Chrome 134.0",
-    screenRes: "1920x1080",
-    ip: "113.190.234.12",
-    location: "Hà Nội, Việt Nam",
-    sessionDuration: "Đang hoạt động",
-    result: "success",
-    note: "Phiên làm việc Quản trị viên hiện tại",
-    campaign: "Kênh Quản trị CMS",
-    isLandingPage: false,
-  },
-  {
     id: "acc_zalo_3",
     timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
     username: "phu_huynh_zalo",
@@ -145,7 +145,7 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     browser: "Zalo In-App Browser",
     screenRes: "392x872",
     ip: "125.235.221.88",
-    location: "Hà Nam, Việt Nam",
+    location: "Bắc Ninh, Việt Nam",
     sessionDuration: "8 phút",
     result: "success",
     note: "Phụ huynh tìm hiểu bài tập điều hòa cảm giác và kích thích bật âm",
@@ -153,7 +153,107 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     isLandingPage: true,
   },
   {
-    id: "acc_live_2",
+    id: "acc_zalo_4",
+    timestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+    username: "phu_huynh_direct",
+    fullName: "Phụ huynh (Truy cập Trực tiếp)",
+    role: "guest",
+    accessUrl: "https://ananasux.github.io/tre-tu-ky-responsive/#resources",
+    entryPath: "/tre-tu-ky-responsive/#resources",
+    device: "iPad Air (iPadOS 17.4)",
+    browser: "Safari 17.4",
+    screenRes: "820x1180",
+    ip: "118.70.184.62",
+    location: "Hà Nam, Việt Nam",
+    sessionDuration: "14 phút",
+    result: "success",
+    note: "Truy cập trực tiếp cẩm nang phương pháp can thiệp sớm PECS",
+    campaign: "Truy cập Trực tiếp (Direct)",
+    isLandingPage: true,
+  },
+  {
+    id: "acc_zalo_5",
+    timestamp: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
+    username: "phu_huynh_zalo",
+    fullName: "Phụ huynh (Chiến dịch Zalo)",
+    role: "guest",
+    accessUrl: "https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    entryPath: "/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources",
+    device: "OPPO Reno 11 5G",
+    browser: "Zalo In-App Browser",
+    screenRes: "393x873",
+    ip: "171.244.15.77",
+    location: "Hải Dương, Việt Nam",
+    sessionDuration: "22 phút",
+    result: "success",
+    note: "Xem danh sách chuyên gia, chứng chỉ và bấm nút kết nối Zalo",
+    campaign: "Chiến dịch Zalo (zarsrc=30, utm_source=zalo)",
+    isLandingPage: true,
+  },
+
+  // --- PHẦN 2: KÊNH QUẢN TRỊ THEO TÀI KHOẢN & TÍNH NĂNG ---
+  {
+    id: "acc_cms_1",
+    timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/chat-khach-hang",
+    entryPath: "#/chat-khach-hang",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "Đang hoạt động",
+    result: "success",
+    featureName: "Live Chat CRM",
+    note: "Trực tuyến tiếp nhận và trao đổi tin nhắn trực tiếp với phụ huynh bé Minh An",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_2",
+    timestamp: new Date(Date.now() - 55 * 60 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/cau-hinh-trang",
+    entryPath: "#/cau-hinh-trang",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "45 phút",
+    result: "success",
+    featureName: "Cấu hình trang",
+    note: "Chỉnh sửa nội dung khối Sứ mệnh và cập nhật hồ sơ chuyên gia can thiệp",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_3",
+    timestamp: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/heatmap",
+    entryPath: "#/heatmap",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "20 phút",
+    result: "success",
+    featureName: "Bản đồ nhiệt UX",
+    note: "Phân tích điểm chạm Rage clicks và tối ưu phễu chuyển đổi cho phụ huynh",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_4",
     timestamp: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
     username: "nhanvien",
     fullName: "Nhân viên Nội dung",
@@ -165,9 +265,110 @@ const INITIAL_ACCESS_LOGS: AccessLogEntry[] = [
     screenRes: "1366x768",
     ip: "14.241.120.45",
     location: "Hưng Yên, Việt Nam",
+    sessionDuration: "30 phút",
+    result: "success",
+    featureName: "Cấu hình trang",
+    note: "Lưu bản nháp nội dung bài viết cẩm nang phụ huynh",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_5",
+    timestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
+    username: "nhanvien",
+    fullName: "Nhân viên Nội dung",
+    role: "staff",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/chat-khach-hang",
+    entryPath: "#/chat-khach-hang",
+    device: "Windows 10 Laptop",
+    browser: "Chrome 133.0",
+    screenRes: "1366x768",
+    ip: "14.241.120.45",
+    location: "Hưng Yên, Việt Nam",
+    sessionDuration: "50 phút",
+    result: "success",
+    featureName: "Live Chat CRM",
+    note: "Phản hồi câu hỏi về can thiệp sớm và lịch đánh giá sàng lọc của phụ huynh",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_6",
+    timestamp: new Date(Date.now() - 5 * 3600 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/tai-khoan",
+    entryPath: "#/tai-khoan",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "15 phút",
+    result: "success",
+    featureName: "Quản lý tài khoản",
+    note: "Kiểm tra danh sách nhân sự và phân quyền chỉnh sửa cho nhân viên",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_7",
+    timestamp: new Date(Date.now() - 7 * 3600 * 1000).toISOString(),
+    username: "vannam",
+    fullName: "Nguyễn Văn Nam",
+    role: "staff",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/cau-hinh-trang",
+    entryPath: "#/cau-hinh-trang",
+    device: "MacBook Air M2",
+    browser: "Safari 17.5",
+    screenRes: "1440x900",
+    ip: "125.235.221.88",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "40 phút",
+    result: "success",
+    featureName: "Cấu hình trang",
+    note: "Cập nhật các hình ảnh hoạt động trải nghiệm thực tế của các bé",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_8",
+    timestamp: new Date(Date.now() - 9 * 3600 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/dang-ky-tu-van",
+    entryPath: "#/dang-ky-tu-van",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
     sessionDuration: "25 phút",
     result: "success",
-    note: "Đăng nhập chỉnh sửa nội dung bài viết",
+    featureName: "Đăng ký tư vấn",
+    note: "Xử lý danh sách đăng ký tư vấn và phân công giáo viên phụ trách",
+    campaign: "Kênh Quản trị CMS",
+    isLandingPage: false,
+  },
+  {
+    id: "acc_cms_9",
+    timestamp: new Date(Date.now() - 12 * 3600 * 1000).toISOString(),
+    username: "admin",
+    fullName: "Quản trị viên Hệ thống",
+    role: "admin",
+    accessUrl: "https://ananasux.github.io/xay-kenh-quan-tri/#/nhat-ky-hoat-dong",
+    entryPath: "#/nhat-ky-hoat-dong",
+    device: "Windows 11 PC",
+    browser: "Chrome 134.0",
+    screenRes: "1920x1080",
+    ip: "113.190.234.12",
+    location: "Hà Nội, Việt Nam",
+    sessionDuration: "12 phút",
+    result: "success",
+    featureName: "Nhật ký hoạt động",
+    note: "Kiểm tra nhật ký kiểm toán và lịch sử truy cập hệ thống",
     campaign: "Kênh Quản trị CMS",
     isLandingPage: false,
   },
@@ -336,16 +537,36 @@ export function logAuditAction(entry: Omit<AuditLogEntry, "id" | "timestamp" | "
 export function getAccessLogs(): AccessLogEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_ACCESS_LOGS_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_ACCESS_LOGS_KEY, JSON.stringify(INITIAL_ACCESS_LOGS));
-      return INITIAL_ACCESS_LOGS;
+    let logs: AccessLogEntry[] = INITIAL_ACCESS_LOGS;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          logs = parsed;
+        }
+      } catch {}
     }
-    const logs = JSON.parse(raw);
-    if (!Array.isArray(logs) || logs.length === 0) {
-      localStorage.setItem(STORAGE_ACCESS_LOGS_KEY, JSON.stringify(INITIAL_ACCESS_LOGS));
-      return INITIAL_ACCESS_LOGS;
-    }
-    return logs;
+
+    return logs.map((l: AccessLogEntry) => {
+      const isLp = isLandingPageLog(l);
+      let feature = l.featureName;
+      if (!feature && !isLp) {
+        const p = (l.entryPath || l.accessUrl || "").toLowerCase();
+        if (p.includes("chat")) feature = "Live Chat CRM";
+        else if (p.includes("tai-khoan")) feature = "Quản lý tài khoản";
+        else if (p.includes("heatmap")) feature = "Bản đồ nhiệt UX";
+        else if (p.includes("dang-ky")) feature = "Đăng ký tư vấn";
+        else if (p.includes("phan-tich")) feature = "Phân tích hệ thống";
+        else if (p.includes("nhat-ky")) feature = "Nhật ký hoạt động";
+        else feature = "Cấu hình trang";
+      }
+      return {
+        ...l,
+        isLandingPage: isLp,
+        featureName: feature,
+        campaign: l.campaign || (isLp ? "Chiến dịch Zalo (zarsrc=30)" : "Kênh Quản trị CMS"),
+      };
+    });
   } catch {
     return INITIAL_ACCESS_LOGS;
   }
@@ -357,24 +578,32 @@ export function recordAccessLog(data: Partial<AccessLogEntry>): void {
     const logs = getAccessLogs();
     const env = detectClientEnvironment();
 
+    const isLanding = data.isLandingPage ?? (
+      (data.accessUrl && (data.accessUrl.includes("tre-tu-ky-responsive") || data.accessUrl.includes("zarsrc"))) || false
+    );
+
     const newAccess: AccessLogEntry = {
       id: "acc_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
-      timestamp: new Date().toISOString(),
-      username: data.username || "khach",
-      fullName: data.fullName || "Khách truy cập",
+      timestamp: data.timestamp || new Date().toISOString(),
+      username: data.username || (isLanding ? "phu_huynh_zalo" : "khach"),
+      fullName: data.fullName || (isLanding ? "Phụ huynh (Chiến dịch Zalo)" : "Khách truy cập"),
       role: data.role || "guest",
       accessUrl: data.accessUrl || window.location.href,
-      entryPath: data.entryPath || window.location.hash || "#/",
+      entryPath: data.entryPath || (isLanding ? "/#resources" : window.location.hash || "#/"),
       device: data.device || env.device,
       browser: data.browser || env.browser,
       screenRes: data.screenRes || env.screenRes,
       ip: data.ip || env.ip,
-      sessionDuration: "Vừa truy cập",
+      location: data.location || "Hà Nội, Việt Nam",
+      sessionDuration: data.sessionDuration || "Vừa truy cập",
       result: data.result || "success",
-      note: data.note || "Truy cập hệ thống quản trị",
+      note: data.note || (isLanding ? "Khách xem tài liệu & tư vấn" : "Truy cập tính năng Kênh Quản trị"),
+      campaign: data.campaign || (isLanding ? "Chiến dịch Zalo (zarsrc=30)" : "Kênh Quản trị CMS"),
+      isLandingPage: isLanding,
+      featureName: data.featureName || (!isLanding ? "Cấu hình trang" : undefined),
     };
 
-    const updated = [newAccess, ...logs].slice(0, 200);
+    const updated = [newAccess, ...logs].slice(0, 300);
     localStorage.setItem(STORAGE_ACCESS_LOGS_KEY, JSON.stringify(updated));
     window.dispatchEvent(new CustomEvent("aurora-access-logged", { detail: newAccess }));
   } catch (e) {
@@ -414,6 +643,59 @@ export function exportAuditLogsToCsv(logs: AuditLogEntry[]): void {
   const a = document.createElement("a");
   a.href = url;
   a.download = `Nhat-Ky-Kiem-Toan-CMS-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Xuất file CSV lịch sử truy cập Landing Page
+export function exportLandingLogsToCsv(logs: AccessLogEntry[]): void {
+  const headers = ["Thời gian truy cập", "Địa chỉ IP", "Vị trí địa lý", "Kênh / Nguồn", "URL chi tiết", "Thiết bị", "Trình duyệt", "Trạng thái", "Ghi chú"];
+  const rows = logs.map((l) => [
+    `"${new Date(l.timestamp).toLocaleString("vi-VN")}"`,
+    `"${l.ip}"`,
+    `"${l.location}"`,
+    `"${l.campaign || "Chiến dịch Zalo"}"`,
+    `"${l.accessUrl}"`,
+    `"${l.device}"`,
+    `"${l.browser}"`,
+    `"${l.result === "success" ? "Thành công" : "Đang chờ"}"`,
+    `"${(l.note || "").replace(/"/g, '""')}"`,
+  ]);
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Truy-Cap-Landing-Page-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Xuất file CSV thống kê tài khoản truy cập tính năng Kênh Quản trị
+export function exportCmsAccessLogsToCsv(logs: AccessLogEntry[]): void {
+  const headers = ["Thời gian", "Tài khoản", "Họ tên", "Vai trò", "Tính năng truy cập", "Chi tiết thao tác", "Địa chỉ IP", "Vị trí", "Thiết bị", "Trạng thái"];
+  const rows = logs.map((l) => [
+    `"${new Date(l.timestamp).toLocaleString("vi-VN")}"`,
+    `"@${l.username}"`,
+    `"${l.fullName}"`,
+    `"${l.role === "admin" ? "Quản trị viên" : "Nhân viên"}"`,
+    `"${l.featureName || "Cấu hình trang"}"`,
+    `"${(l.note || "").replace(/"/g, '""')}"`,
+    `"${l.ip}"`,
+    `"${l.location}"`,
+    `"${l.device} · ${l.browser}"`,
+    `"${l.result === "success" ? "Thành công" : "Cảnh báo"}"`,
+  ]);
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Thong-Ke-Tai-Khoan-Tinh-Nang-CMS-${new Date().toISOString().slice(0, 10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
