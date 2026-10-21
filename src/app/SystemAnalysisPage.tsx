@@ -178,7 +178,7 @@ export function SystemAnalysisPage() {
     try {
       const res = await testGeminiApiKey(apiKey.trim());
       if (res.ok) {
-        setKeyStatus({ ok: true, message: `Kết nối thành công! Mô hình: ${res.model || "gemini-3.8-flash"}` });
+        setKeyStatus({ ok: true, message: `Kết nối thành công! Mô hình: ${res.model || "gemini-2.5-flash"}` });
         localStorage.setItem(API_KEY_STORAGE_KEY_PRIMARY, apiKey.trim());
         localStorage.setItem(API_KEY_STORAGE_KEY_SECONDARY, apiKey.trim());
         notify("Kết nối Google Gemini API thành công!");
