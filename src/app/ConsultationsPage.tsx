@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
 
@@ -17,6 +18,7 @@ const LEADS_API_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/consultation_leads
 
 export function ConsultationsPage() {
   const { notify } = useCms();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<ConsultationLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -244,16 +246,16 @@ export function ConsultationsPage() {
           </p>
         </div>
       ) : (
-        <div style={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e3dcee", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "14px" }}>
+        <div style={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e3dcee", overflowX: "auto", boxShadow: "0 2px 10px rgba(0,0,0,0.02)" }}>
+          <table style={{ width: "100%", minWidth: "880px", borderCollapse: "collapse", textAlign: "left", fontSize: "14px", tableLayout: "auto" }}>
             <thead>
               <tr style={{ background: "#fcfaff", borderBottom: "1px solid #e3dcee", color: "#686279", fontWeight: 600 }}>
-                <th style={{ padding: "14px 18px" }}>Phụ huynh</th>
-                <th style={{ padding: "14px 18px" }}>Số Zalo / Điện thoại</th>
-                <th style={{ padding: "14px 18px" }}>Nhu cầu của con</th>
-                <th style={{ padding: "14px 18px" }}>Thời gian gửi</th>
-                <th style={{ padding: "14px 18px" }}>Trạng thái</th>
-                <th style={{ padding: "14px 18px", textAlign: "right" }}>Thao tác</th>
+                <th style={{ padding: "14px 18px", width: "260px", maxWidth: "260px" }}>Phụ huynh</th>
+                <th style={{ padding: "14px 18px", width: "140px" }}>Số Zalo / Điện thoại</th>
+                <th style={{ padding: "14px 18px", width: "160px" }}>Nhu cầu của con</th>
+                <th style={{ padding: "14px 18px", width: "130px" }}>Thời gian gửi</th>
+                <th style={{ padding: "14px 18px", width: "140px" }}>Trạng thái</th>
+                <th style={{ padding: "14px 18px", width: "150px", textAlign: "right" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -262,13 +264,68 @@ export function ConsultationsPage() {
                 const cleanPhone = lead.phone.replace(/[^0-9]/g, "");
                 return (
                   <tr key={lead.id} style={{ borderBottom: "1px solid #f0eaf8", transition: "background 0.2s" }}>
-                    <td style={{ padding: "14px 18px", fontWeight: 600, color: "#25213b" }}>
-                      {lead.name}
-                      {lead.message && (
-                        <div style={{ fontSize: "12px", color: "#686279", fontWeight: 400, marginTop: "4px" }}>
-                          "{lead.message}"
+                    <td style={{ padding: "14px 18px", maxWidth: "260px", width: "260px" }}>
+                      <div
+                        onClick={() => navigate(`/chat-khach-hang?phone=${cleanPhone}`)}
+                        style={{
+                          cursor: "pointer",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "3px",
+                          maxWidth: "240px",
+                          userSelect: "none",
+                        }}
+                        title={`Nhấp để trò chuyện trực tiếp qua Live Chat với ${lead.name}`}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <strong
+                            style={{
+                              color: "#25213b",
+                              fontSize: "14px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "170px",
+                            }}
+                            title={lead.name}
+                          >
+                            {lead.name}
+                          </strong>
+                          <span
+                            style={{
+                              fontSize: "10.5px",
+                              background: "#f3e8ff",
+                              color: "#6b21a8",
+                              border: "1px solid #d8b4fe",
+                              padding: "1px 6px",
+                              borderRadius: "4px",
+                              fontWeight: 700,
+                              flexShrink: 0,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "2px",
+                            }}
+                          >
+                            💬 Chat
+                          </span>
                         </div>
-                      )}
+                        {lead.message && (
+                          <div
+                            style={{
+                              fontSize: "12px",
+                              color: "#686279",
+                              fontWeight: 400,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: "235px",
+                            }}
+                            title={lead.message}
+                          >
+                            "{lead.message}"
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "14px 18px" }}>
                       <a
