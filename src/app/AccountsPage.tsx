@@ -23,8 +23,7 @@ const ALL_CONTENT_SECTIONS = [
 ];
 
 export function AccountsPage() {
-  const { notify } = useCms();
-  const [currentUser, setLocalCurrentUser] = useState<AccountUser>(getCurrentUser);
+  const { notify, currentUser, switchUser } = useCms();
   const [accounts, setAccounts] = useState<AccountUser[]>(getAccounts);
 
   // Search & Filter
@@ -56,7 +55,6 @@ export function AccountsPage() {
 
   const refreshAccounts = () => {
     setAccounts(getAccounts());
-    setLocalCurrentUser(getCurrentUser());
   };
 
   const togglePasswordVisibility = (id: string) => {
@@ -160,9 +158,8 @@ export function AccountsPage() {
 
   // Quick switch active user
   const handleSwitchUser = (acc: AccountUser) => {
-    setCurrentUser(acc);
-    setLocalCurrentUser(acc);
-    notify(`Đã chuyển phiên làm việc sang tài khoản: ${acc.fullName} (${acc.role === "admin" ? "Quản trị viên" : "Nhân viên"})`);
+    switchUser(acc);
+    refreshAccounts();
   };
 
   // Check role: Staff cannot access this page!
@@ -232,7 +229,7 @@ export function AccountsPage() {
       <div className="accounts-metrics-grid">
         <div className="metric-card">
           <div className="metric-icon metric-icon--purple">
-            <Icon name="users" size={20} />
+            <Icon name="users" size={22} />
           </div>
           <div>
             <strong>{accounts.length}</strong>
@@ -242,7 +239,7 @@ export function AccountsPage() {
 
         <div className="metric-card">
           <div className="metric-icon metric-icon--admin">
-            <Icon name="shield" size={20} />
+            <Icon name="shield" size={22} />
           </div>
           <div>
             <strong>{adminCount}</strong>
@@ -252,7 +249,7 @@ export function AccountsPage() {
 
         <div className="metric-card">
           <div className="metric-icon metric-icon--staff">
-            <Icon name="profile" size={20} />
+            <Icon name="profile" size={22} />
           </div>
           <div>
             <strong>{staffCount}</strong>
@@ -262,11 +259,13 @@ export function AccountsPage() {
 
         <div className="metric-card metric-card--active">
           <div className="metric-icon metric-icon--current">
-            <Icon name="check" size={20} />
+            <Icon name="check" size={22} />
           </div>
           <div>
-            <strong style={{ fontSize: "14px" }}>{currentUser.fullName}</strong>
-            <span style={{ color: "#065f46", fontWeight: "600" }}>Đang hoạt động ({currentUser.role.toUpperCase()})</span>
+            <strong style={{ fontSize: "16px", color: "#176b35" }}>{currentUser.fullName}</strong>
+            <span style={{ color: "#176b35", fontWeight: "600" }}>
+              Đang hoạt động ({currentUser.role === "admin" ? "Quản trị viên" : "Nhân viên"})
+            </span>
           </div>
         </div>
       </div>
@@ -313,13 +312,13 @@ export function AccountsPage() {
         <table className="accounts-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th style={{ width: 44, textAlign: "center" }}>#</th>
               <th>Tài khoản & Người dùng</th>
               <th>Vai trò & Quyền hạn</th>
               <th>Mật khẩu</th>
               <th>Phạm vi được sửa</th>
               <th>Phiên đăng nhập</th>
-              <th style={{ textAlign: "right" }}>Thao tác</th>
+              <th style={{ textAlign: "right", paddingRight: "24px" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>

@@ -24,9 +24,8 @@ export function useCms() {
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState("");
-  const [currentUser, setCurrentUserState] = useState<AccountUser>(getCurrentUser);
+  const [currentUser, setCurrentUserState] = useState<AccountUser | null>(getCurrentUser);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Login form state
   const [loginUser, setLoginUser] = useState("admin");
@@ -39,7 +38,7 @@ export default function Layout() {
 
   useEffect(() => {
     const handleAuthChange = (e: any) => {
-      const user = e.detail || getCurrentUser();
+      const user = e.detail !== undefined ? e.detail : getCurrentUser();
       setCurrentUserState(user);
     };
     window.addEventListener("aurora-auth-changed", handleAuthChange);
@@ -73,16 +72,130 @@ export default function Layout() {
       return;
     }
     setCurrentUserState(res.user);
-    setShowLoginModal(false);
     notify(res.message);
   };
 
   const handleLogout = () => {
     logout();
     setShowProfileMenu(false);
-    setShowLoginModal(true);
+    setCurrentUserState(null);
     setLoginError("");
   };
+
+  // NẾU CHƯA CÓ SESSION ĐĂNG NHẬP: BẮT BUỘC ĐĂNG NHẬP LẦN ĐẦU
+  if (!currentUser) {
+    return (
+      <div className="login-screen-wrapper">
+        <div className="login-card">
+          <div className="login-header">
+            <img
+              src="./logo.png"
+              alt="Logo Trung tâm Cô Hương"
+              className="login-logo"
+            />
+            <h2>Kênh Quản trị Nội dung</h2>
+            <p className="login-subtitle">
+              Trung tâm Can thiệp Sớm & Hỗ trợ Trẻ Tự kỷ Cô Hương
+            </p>
+            <div className="login-badge-pill">
+              <Icon name="lock" size={14} />
+              <span>Yêu cầu đăng nhập để truy cập hệ thống</span>
+            </div>
+          </div>
+
+          <form onSubmit={handlePerformLogin} className="login-form">
+            {loginError && (
+              <div className="login-error-alert">
+                <Icon name="close" size={15} />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <label className="login-field-label">
+              <span>Tên đăng nhập</span>
+              <input
+                type="text"
+                placeholder="Nhập username (admin hoặc nhanvien)"
+                value={loginUser}
+                onChange={(e) => setLoginUser(e.target.value)}
+                required
+                autoFocus
+              />
+            </label>
+
+            <label className="login-field-label">
+              <span>Mật khẩu</span>
+              <div className="input-with-eye">
+                <input
+                  type={showLoginPass ? "text" : "password"}
+                  placeholder="Nhập mật khẩu..."
+                  value={loginPass}
+                  onChange={(e) => setLoginPass(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  className="eye-toggle-btn"
+                  onClick={() => setShowLoginPass(!showLoginPass)}
+                  title={showLoginPass ? "Ẩn" : "Hiện"}
+                >
+                  <Icon name={showLoginPass ? "eyeOff" : "eye"} size={16} />
+                </button>
+              </div>
+            </label>
+
+            {/* Quick account presets */}
+            <div className="login-presets-box">
+              <span className="login-presets-title">Điền nhanh tài khoản mẫu:</span>
+              <div className="login-presets-row">
+                <button
+                  type="button"
+                  className={`login-preset-btn preset-admin ${loginUser === "admin" ? "selected" : ""}`}
+                  onClick={() => {
+                    setLoginUser("admin");
+                    setLoginPass("admin");
+                    setLoginError("");
+                  }}
+                >
+                  <span className="preset-role-badge">👑 Quản trị viên</span>
+                  <strong>admin</strong> / admin
+                </button>
+                <button
+                  type="button"
+                  className={`login-preset-btn preset-staff ${loginUser === "nhanvien" ? "selected" : ""}`}
+                  onClick={() => {
+                    setLoginUser("nhanvien");
+                    setLoginPass("admin");
+                    setLoginError("");
+                  }}
+                >
+                  <span className="preset-role-badge">👤 Nhân viên</span>
+                  <strong>nhanvien</strong> / admin
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="login-submit-btn">
+              <Icon name="check" size={18} />
+              <span>Đăng nhập vào Hệ thống</span>
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <a
+              href="https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="login-landing-link"
+            >
+              <Icon name="eye" size={15} />
+              <span>Xem trang chính (Landing Page)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Filter navigation items by role
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || currentUser.role === "admin");
@@ -156,7 +269,7 @@ export default function Layout() {
               <span className={`avatar ${currentUser.role === "admin" ? "avatar--admin" : "avatar--staff"}`}>
                 {avatarInitials}
               </span>
-              <span>
+              <span className="profile-text-wrap">
                 <strong>{currentUser.fullName}</strong>
                 <small className={currentUser.role === "admin" ? "role-text-admin" : "role-text-staff"}>
                   {currentUser.role === "admin" ? "Quản trị viên" : "Nhân viên"}
@@ -286,93 +399,6 @@ export default function Layout() {
             <Icon name="check" size={15} />
           </span>
           {toast}
-        </div>
-      )}
-
-      {/* LOGIN MODAL */}
-      {showLoginModal && (
-        <div className="auth-modal-backdrop">
-          <div className="auth-modal">
-            <div className="auth-modal-header">
-              <div className="auth-icon-badge">
-                <Icon name="lock" size={24} />
-              </div>
-              <h3>Đăng nhập Hệ thống Quản trị</h3>
-              <p>Chọn tài khoản có sẵn hoặc nhập thông tin đăng nhập của bạn</p>
-            </div>
-
-            <form onSubmit={handlePerformLogin} className="auth-form">
-              {loginError && <div className="auth-error-alert">{loginError}</div>}
-
-              <label>
-                Tên đăng nhập
-                <input
-                  type="text"
-                  placeholder="admin hoặc nhanvien"
-                  value={loginUser}
-                  onChange={(e) => setLoginUser(e.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Mật khẩu
-                <div className="input-with-eye">
-                  <input
-                    type={showLoginPass ? "text" : "password"}
-                    placeholder="Mật khẩu..."
-                    value={loginPass}
-                    onChange={(e) => setLoginPass(e.target.value)}
-                    required
-                  />
-                  <button
-                    type="button"
-                    className="eye-toggle-btn"
-                    onClick={() => setShowLoginPass(!showLoginPass)}
-                    title={showLoginPass ? "Ẩn" : "Hiện"}
-                  >
-                    <Icon name={showLoginPass ? "eyeOff" : "eye"} size={16} />
-                  </button>
-                </div>
-              </label>
-
-              {/* 1-click preset account buttons */}
-              <div className="auth-presets">
-                <span className="presets-label">Điền nhanh tài khoản mẫu:</span>
-                <div className="presets-buttons">
-                  <button
-                    type="button"
-                    className="preset-btn preset-admin"
-                    onClick={() => {
-                      setLoginUser("admin");
-                      setLoginPass("admin");
-                      setLoginError("");
-                    }}
-                  >
-                    👑 <strong>admin</strong> / admin (Quản trị)
-                  </button>
-                  <button
-                    type="button"
-                    className="preset-btn preset-staff"
-                    onClick={() => {
-                      setLoginUser("nhanvien");
-                      setLoginPass("admin");
-                      setLoginError("");
-                    }}
-                  >
-                    👤 <strong>nhanvien</strong> / admin (Nhân viên)
-                  </button>
-                </div>
-              </div>
-
-              <div className="auth-form-actions">
-                <button type="submit" className="primary-button auth-submit-btn">
-                  <Icon name="check" size={16} />
-                  Đăng nhập vào trang quản trị
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

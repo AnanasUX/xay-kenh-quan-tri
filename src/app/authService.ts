@@ -13,6 +13,7 @@ export interface AccountUser {
 
 const STORAGE_ACCOUNTS_KEY = "aurora-cms:accounts";
 const STORAGE_CURRENT_USER_KEY = "aurora-cms:current-user";
+const STORAGE_SESSION_ACTIVE_KEY = "aurora-cms:session-active";
 
 export const DEFAULT_ACCOUNTS: AccountUser[] = [
   {
@@ -33,6 +34,15 @@ export const DEFAULT_ACCOUNTS: AccountUser[] = [
     allowedSections: ["mission", "support", "process", "team", "gallery", "resources", "faq"],
   },
 ];
+
+// Kiểm tra xem trình duyệt hiện tại đã có session đang hoạt động chưa
+export function hasActiveSession(): boolean {
+  try {
+    return sessionStorage.getItem(STORAGE_SESSION_ACTIVE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 // Khởi tạo và lấy danh sách tài khoản
 export function getAccounts(): AccountUser[] {
@@ -58,26 +68,34 @@ export function saveAccounts(accounts: AccountUser[]): void {
   localStorage.setItem(STORAGE_ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
-// Lấy tài khoản đang đăng nhập
-export function getCurrentUser(): AccountUser {
+// Lấy tài khoản đang đăng nhập (trả về null nếu chưa có session)
+export function getCurrentUser(): AccountUser | null {
+  // Nếu chưa có session nào được lưu trước đó thì yêu cầu người dùng đăng nhập lần đầu
+  if (!hasActiveSession()) {
+    return null;
+  }
+
   try {
-    const raw = localStorage.getItem(STORAGE_CURRENT_USER_KEY);
+    const raw =
+      sessionStorage.getItem(STORAGE_CURRENT_USER_KEY) ||
+      localStorage.getItem(STORAGE_CURRENT_USER_KEY);
     if (raw) {
       const user = JSON.parse(raw);
       if (user && user.id && user.role) return user;
     }
   } catch {}
 
-  // Mặc định đăng nhập admin
-  const accounts = getAccounts();
-  const admin = accounts.find((a) => a.role === "admin") || DEFAULT_ACCOUNTS[0];
-  setCurrentUser(admin);
-  return admin;
+  return null;
 }
 
-// Đặt tài khoản đang đăng nhập
+// Đặt tài khoản đang đăng nhập & kích hoạt session
 export function setCurrentUser(user: AccountUser): void {
-  localStorage.setItem(STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
+  try {
+    sessionStorage.setItem(STORAGE_SESSION_ACTIVE_KEY, "true");
+    sessionStorage.setItem(STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
+    localStorage.setItem(STORAGE_CURRENT_USER_KEY, JSON.stringify(user));
+  } catch {}
+
   // Phát sự kiện đồng bộ
   try {
     window.dispatchEvent(new CustomEvent("aurora-auth-changed", { detail: user }));
@@ -108,7 +126,12 @@ export function login(username: string, password: string): { success: boolean; u
 
 // Đăng xuất
 export function logout(): void {
-  localStorage.removeItem(STORAGE_CURRENT_USER_KEY);
+  try {
+    sessionStorage.removeItem(STORAGE_SESSION_ACTIVE_KEY);
+    sessionStorage.removeItem(STORAGE_CURRENT_USER_KEY);
+    localStorage.removeItem(STORAGE_CURRENT_USER_KEY);
+  } catch {}
+
   try {
     window.dispatchEvent(new CustomEvent("aurora-auth-changed", { detail: null }));
   } catch {}
@@ -176,7 +199,7 @@ export function updateAccount(id: string, patch: Partial<Omit<AccountUser, "id" 
 
   // Nếu cập nhật tài khoản đang đăng nhập, cập nhật luôn currentUser
   const currentUser = getCurrentUser();
-  if (currentUser.id === id) {
+  if (currentUser && currentUser.id === id) {
     setCurrentUser(accounts[index]);
   }
 
@@ -188,7 +211,7 @@ export function deleteAccount(id: string): { success: boolean; message: string }
   const accounts = getAccounts();
   const currentUser = getCurrentUser();
 
-  if (currentUser.id === id) {
+  if (currentUser && currentUser.id === id) {
     return { success: false, message: "Bạn không thể xóa tài khoản đang đăng nhập hiện tại." };
   }
 
