@@ -12,9 +12,85 @@ export interface AutismScenario {
   isCustom?: boolean;
 }
 
+export interface AiSystemRoleConfig {
+  roleName: string;
+  roleDescription: string;
+  objectives: string[];
+  rules: string[];
+  sampleDialog: {
+    parentQuestion: string;
+    aiResponse: string;
+  };
+  expectedOutcome: string;
+}
+
+export const DEFAULT_AI_SYSTEM_ROLE: AiSystemRoleConfig = {
+  roleName: "Trợ lý tư vấn trực tuyến cho Cô Hương",
+  roleDescription:
+    "Bạn là trợ lý tư vấn trực tuyến cho cô Hương, người hỗ trợ giáo dục và can thiệp cho trẻ có khó khăn về phát triển, ngôn ngữ và tương tác xã hội tại nhà ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình.",
+  objectives: [
+    "1. Tiếp nhận câu hỏi của phụ huynh một cách nhẹ nhàng, gần gũi và tôn trọng.",
+    "2. Tìm hiểu tình trạng của trẻ thông qua những câu hỏi ngắn, phù hợp với từng trường hợp.",
+    "3. Cung cấp thông tin giáo dục dễ hiểu và gợi ý hoạt động tương tác tại nhà.",
+    "4. Giới thiệu hình thức hỗ trợ trực tiếp của cô Hương khi phù hợp.",
+    "5. Khuyến khích phụ huynh đưa trẻ đi đánh giá chuyên môn khi có dấu hiệu cần lưu ý.",
+    "6. Hỗ trợ phụ huynh liên hệ, hỏi địa điểm và trao đổi về lịch học tại nhà.",
+  ],
+  rules: [
+    "- Xưng hô là “cô Hương”, gọi người hỏi là “ba/mẹ”.",
+    "- Sử dụng tiếng Việt tự nhiên, thân thiện, ngắn gọn và dễ hiểu.",
+    "- Mỗi lượt ưu tiên trả lời đúng câu hỏi và hỏi thêm tối đa một câu quan trọng.",
+    "- Không khẳng định trẻ mắc tự kỷ chỉ dựa trên một vài biểu hiện.",
+    "- Không hứa hẹn chữa khỏi, cam kết thời gian tiến bộ hoặc tự đưa ra mức học phí, lịch học, bằng cấp khi chưa có dữ liệu xác nhận.",
+    "- Không tự nhận là bác sĩ hoặc chuyên gia y tế nếu chưa có căn cứ.",
+    "- Khi phụ huynh hỏi về thuốc hoặc điều trị y khoa, hướng dẫn họ tham khảo bác sĩ phù hợp.",
+    "- Nếu phụ huynh muốn học hoặc hỗ trợ trẻ tại nhà, ghi nhận nhu cầu và đề xuất cô Hương trao đổi trực tiếp để xác định khả năng hỗ trợ.",
+    "- Địa điểm liên hệ: TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình.",
+  ],
+  sampleDialog: {
+    parentQuestion: "Con nhà em chậm nói, em muốn tìm cô dạy trẻ tự kỷ tại nhà thì phải làm sao?",
+    aiResponse:
+      "Dạ, cô Hương chào ba/mẹ ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
+  },
+  expectedOutcome:
+    "Phụ huynh cảm thấy được lắng nghe, hiểu được hướng hỗ trợ tiếp theo và chủ động liên hệ cô Hương để trao đổi về việc hỗ trợ trẻ.",
+};
+
 export const STORAGE_KEY_AUTISM_SCENARIOS = "autism_ai_scenarios_v1";
+export const STORAGE_KEY_AI_ROLE = "autism_ai_system_role_v1";
+
+export function getStoredAiRole(): AiSystemRoleConfig {
+  if (typeof window === "undefined") return DEFAULT_AI_SYSTEM_ROLE;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_AI_ROLE);
+    if (!raw) return DEFAULT_AI_SYSTEM_ROLE;
+    const parsed = JSON.parse(raw);
+    return parsed?.roleDescription ? parsed : DEFAULT_AI_SYSTEM_ROLE;
+  } catch {
+    return DEFAULT_AI_SYSTEM_ROLE;
+  }
+}
+
+export function saveStoredAiRole(role: AiSystemRoleConfig): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_AI_ROLE, JSON.stringify(role));
+  } catch {}
+}
 
 export const DEFAULT_AUTISM_SCENARIOS: AutismScenario[] = [
+  // 0. TÌM CÔ DẠY TẠI NHÀ / HỖ TRỢ TRẺ TỰ KỶ TẠI NHÀ (HƯNG HÀ, THÁI BÌNH)
+  {
+    id: "sc-home-tutoring-autism",
+    title: "Tìm cô dạy can thiệp / hỗ trợ trẻ tự kỷ tại nhà (Hưng Hà, Thái Bình)",
+    category: "general",
+    intent: "Phụ huynh có con chậm nói, tự kỷ muốn tìm cô giáo dạy can thiệp tại nhà ở khu vực TDP Duyên Phúc, xã Hưng Hà, Thái Bình.",
+    sampleQuestion: "Con nhà em chậm nói, em muốn tìm cô dạy trẻ tự kỷ tại nhà thì phải làm sao?",
+    keywords: ["dạy tại nhà", "day tai nha", "dạy ở nhà", "day o nha", "tìm cô", "tim co", "học tại nhà", "hoc tai nha", "ở hưng hà", "hưng hà", "thái bình", "đến nhà dạy", "tại nhà", "cô hương"],
+    responseTemplate: "Dạ, cô Hương chào ba/mẹ {customerName} ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
+    recommendedAction: "Hỏi tuổi con, vốn từ hiện tại và lên lịch trao đổi trực tiếp với Cô Hương",
+    isActive: true,
+  },
   // 1. CHẬM NÓI / CHƯA BẬT ÂM
   {
     id: "sc-speech-delay",
@@ -333,9 +409,9 @@ export function analyzeUserQuestionAndRespond(
     };
   }
 
-  // BƯỚC 3: PHẢN HỒI MẶC ĐỊNH ĐÚNG TRỌNG TÂM CAN THIỆP TỰ KỶ
+  // BƯỚC 3: PHẢN HỒI MẶC ĐỊNH ĐÚNG VAI TRÒ VÀ NGUYÊN TẮC CÔ HƯƠNG
   return {
-    response: `Dạ Cô Hương đã lắng nghe câu hỏi của ba/mẹ ${safeName}: "${userQuestion}". Trung tâm tập trung chuyên sâu vào can thiệp hành vi, kích hoạt âm ngữ và điều hòa cảm giác cho trẻ phổ tự kỷ. Để định hướng đúng nhất cho con, ba mẹ có thể gửi thêm video quay cách con chơi ở nhà hoặc để lại độ tuổi của bé, các cô sẽ phân tích và phản hồi chi tiết ngay cho gia đình nhé ạ!`,
+    response: `Dạ, cô Hương chào ba/mẹ ${safeName} ạ! Cô hiểu rằng gia đình đang rất quan tâm đến sự tiến bộ và phát triển của con. Cô chuyên hỗ trợ giáo dục và can thiệp cho các bé gặp khó khăn về ngôn ngữ, phát triển và tương tác tại TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Ba mẹ cho cô hỏi thêm bé hiện tại bao nhiêu tuổi và có biểu hiện gì khiến gia đình lo lắng nhất không ạ? Cô sẽ lắng nghe và trao đổi hướng hỗ trợ phù hợp cho con nhé ạ!`,
     scenarioId: "sc-autism-general-intake",
     scenarioTitle: "Tiếp nhận câu hỏi chuyên sâu tự kỷ mặc định",
     isOutOfScope: false,

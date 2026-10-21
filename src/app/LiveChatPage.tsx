@@ -4,7 +4,10 @@ import {
   getStoredScenarios,
   saveStoredScenarios,
   resetStoredScenarios,
+  DEFAULT_AI_SYSTEM_ROLE,
+  getStoredAiRole,
   type AutismScenario,
+  type AiSystemRoleConfig,
 } from "./autismKnowledgeBase";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
@@ -1635,6 +1638,7 @@ export function LiveChatPage() {
             >
               {[
                 { id: "all", label: "Tất cả (" + scenariosList.length + ")" },
+                { id: "ai_role", label: "🎯 Vai trò & Nguyên tắc AI" },
                 { id: "speech", label: "🗣️ Âm ngữ / Bật âm" },
                 { id: "behavior", label: "⚡ Hành vi / Cảm giác" },
                 { id: "interaction", label: "👀 Giao tiếp / Chú ý" },
@@ -1682,6 +1686,98 @@ export function LiveChatPage() {
                 background: "#f8fafc",
               }}
             >
+              {/* FEATURED: VAI TRÒ & NGUYÊN TẮC CỐT LÕI CỦA TRỢ LÝ AI CÔ HƯƠNG */}
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fdf8ff 0%, #f5f3ff 100%)",
+                  borderRadius: 14,
+                  border: "1.5px solid #d8b4fe",
+                  padding: "20px 22px",
+                  boxShadow: "0 4px 16px rgba(80, 0, 139, 0.06)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>🎯</span>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#3b0764" }}>
+                        Vai trò & Nguyên tắc Cốt lõi của Trợ lý AI Cô Hương
+                      </h3>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "#7e22ce" }}>
+                        Khung định hướng tư vấn trực tuyến (Autism Q&A Matrix Persona)
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      background: "#50008b",
+                      color: "#ffffff",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "4px 10px",
+                      borderRadius: 999,
+                      letterSpacing: "0.2px",
+                    }}
+                  >
+                    Chuẩn hóa can thiệp tại nhà · Thái Bình
+                  </span>
+                </div>
+
+                {/* VAI TRÒ CỦA AI */}
+                <div style={{ background: "#ffffff", padding: "12px 16px", borderRadius: 10, border: "1px solid #e9d5ff", marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#50008b", marginBottom: 4 }}>
+                    ⭐ Vai trò của AI
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, color: "#1e293b", lineHeight: 1.55 }}>
+                    {DEFAULT_AI_SYSTEM_ROLE.roleDescription}
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14, marginBottom: 14 }}>
+                  {/* MỤC TIÊU */}
+                  <div style={{ background: "#ffffff", padding: "14px 16px", borderRadius: 10, border: "1px solid #e9d5ff" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#0284c7", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>🎯</span> Mục tiêu tư vấn (6 mục tiêu)
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: "#334155", lineHeight: 1.55 }}>
+                      {DEFAULT_AI_SYSTEM_ROLE.objectives.map((obj, i) => (
+                        <li key={i} style={{ marginBottom: 4 }}>{obj.replace(/^\d+\.\s*/, "")}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* QUY TẮC TRẢ LỜI */}
+                  <div style={{ background: "#ffffff", padding: "14px 16px", borderRadius: 10, border: "1px solid #e9d5ff" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#d97706", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>⚖️</span> Quy tắc phản hồi nghiêm ngặt
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, color: "#334155", lineHeight: 1.55 }}>
+                      {DEFAULT_AI_SYSTEM_ROLE.rules.map((rule, i) => (
+                        <li key={i} style={{ marginBottom: 4 }}>{rule.replace(/^-\s*/, "")}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* VÍ DỤ TRẢ LỜI & KẾT QUẢ MONG MUỐN */}
+                <div style={{ background: "#ffffff", padding: "14px 16px", borderRadius: 10, border: "1px solid #e9d5ff" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#10b981", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>💬</span> Ví dụ đối thoại mẫu chuẩn
+                  </div>
+                  <div style={{ background: "#f8fafc", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid #3b82f6", marginBottom: 8 }}>
+                    <strong style={{ fontSize: 12, color: "#1e293b" }}>Phụ huynh: </strong>
+                    <span style={{ fontSize: 12.5, color: "#475569" }}>“{DEFAULT_AI_SYSTEM_ROLE.sampleDialog.parentQuestion}”</span>
+                  </div>
+                  <div style={{ background: "#faf5ff", padding: "10px 14px", borderRadius: 8, borderLeft: "3px solid #50008b", marginBottom: 10 }}>
+                    <strong style={{ fontSize: 12, color: "#50008b" }}>Cô Hương (AI): </strong>
+                    <span style={{ fontSize: 12.5, color: "#3b0764", lineHeight: 1.55 }}>“{DEFAULT_AI_SYSTEM_ROLE.sampleDialog.aiResponse}”</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b", fontStyle: "italic" }}>
+                    ✨ <strong>Kết quả mong muốn:</strong> {DEFAULT_AI_SYSTEM_ROLE.expectedOutcome}
+                  </div>
+                </div>
+              </div>
+
               {/* LIVE SIMULATOR / TESTER CARD */}
               <div
                 style={{

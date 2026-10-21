@@ -59,7 +59,7 @@ export const initialLandingPageConfig: LandingPageConfig = {
   "consultationLabel": "Tư vấn ngay",
   "phone": "096 290 3942",
   "email": "mamnonhpkid@gmail.com",
-  "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+  "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Thái Bình",
   "facebook": "https://www.facebook.com",
   "zalo": "096 290 3942",
   "enableFloatingFacebook": true,
@@ -80,10 +80,6 @@ export const initialLandingPageConfig: LandingPageConfig = {
     {
       "label": "Quy trình",
       "path": "#process"
-    },
-    {
-      "label": "Đội ngũ",
-      "path": "#team"
     },
     {
       "label": "Không gian",
@@ -222,40 +218,6 @@ export const initialLandingPageConfig: LandingPageConfig = {
           "title": "Đánh giá định kỳ & Điều chỉnh",
           "description": "Tổ chức họp đánh giá định kỳ 3–6 tháng để tổng kết kết quả đạt được, từ đó điều chỉnh lộ trình cho giai đoạn tiếp theo.",
           "meta": "05"
-        }
-      ]
-    },
-    {
-      "id": "team",
-      "label": "Đội ngũ",
-      "eyebrow": "Chuyên môn cao · Tận tâm · Giàu tình thương",
-      "title": "Đội ngũ chuyên gia & giáo viên tận tâm",
-      "description": "Được đào tạo bài bản chuyên sâu về Tâm lý học, Giáo dục Đặc biệt và Âm ngữ trị liệu, luôn kiên nhẫn và đồng hành bằng cả trái tim.",
-      "enabled": true,
-      "items": [
-        {
-          "id": "teacher-1",
-          "title": "ThS. Hoàng Thị Hương",
-          "description": "Hơn 10 năm kinh nghiệm trong công tác đánh giá, chẩn đoán và thiết kế chương trình can thiệp sớm cho trẻ tự kỷ, chậm phát triển.",
-          "meta": "Giám đốc chuyên môn • ThS Tâm lý học lâm sàng"
-        },
-        {
-          "id": "teacher-2",
-          "title": "CN. Nguyễn Thu Trang",
-          "description": "Tốt nghiệp Đại học Sư phạm Hà Nội chuyên ngành Giáo dục Đặc biệt, sở hữu chứng chỉ quốc tế về trị liệu ngôn ngữ và phát triển giao tiếp.",
-          "meta": "Chuyên viên Âm ngữ trị liệu"
-        },
-        {
-          "id": "teacher-3",
-          "title": "CN. Lê Hoàng Minh",
-          "description": "Chuyên sâu về trị liệu tích hợp giác quan, vận động chức năng và thiết kế môi trường học tập an toàn, thân thiện cho trẻ.",
-          "meta": "Chuyên viên Điều hòa Cảm giác (OT)"
-        },
-        {
-          "id": "teacher-4",
-          "title": "Cô Vũ Mai Anh",
-          "description": "Giàu kinh nghiệm trong việc xây dựng thói quen tự lập, điều hòa cảm xúc hành vi và chuẩn bị tâm thế vững vàng vào lớp 1 cho trẻ.",
-          "meta": "Giáo viên Can thiệp sớm & Tiền tiểu học"
         }
       ]
     },
