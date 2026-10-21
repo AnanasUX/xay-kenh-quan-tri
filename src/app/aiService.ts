@@ -48,15 +48,48 @@ export async function testGeminiApiKey(
     return { ok: false, error: "API Key quá ngắn hoặc không đúng định dạng." };
   }
 
-  const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+  const cleanKey = apiKey.trim();
   let lastError = "";
+
+  // 1. Thử gọi Interactions API chuẩn mới với gemini-3.8-flash
+  try {
+    const intEndpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    const res = await fetch(intEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": cleanKey,
+      },
+      body: JSON.stringify({
+        model: "gemini-3.8-flash",
+        input: "ping",
+      }),
+    });
+
+    if (res.ok) {
+      return { ok: true, model: "gemini-3.8-flash (Interactions API)" };
+    }
+
+    const errJson = await res.json().catch(() => ({}));
+    if (errJson?.error?.message) {
+      lastError = errJson.error.message;
+    }
+  } catch (e: any) {
+    lastError = e?.message || "Lỗi kết nối";
+  }
+
+  // 2. Fallback sang generateContent API với danh sách model cập nhật (bỏ gemini-2.0-flash đã khai tử)
+  const models = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
   for (const model of models) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": cleanKey,
+        },
         body: JSON.stringify({
           contents: [{ parts: [{ text: "ping" }] }],
         }),
@@ -67,13 +100,22 @@ export async function testGeminiApiKey(
       }
 
       const errJson = await res.json().catch(() => ({}));
-      lastError = errJson?.error?.message || `HTTP ${res.status}`;
+      if (errJson?.error?.message) {
+        lastError = errJson.error.message;
+      } else {
+        lastError = `HTTP ${res.status}`;
+      }
     } catch (e: any) {
       lastError = e?.message || "Lỗi kết nối mạng (CORS/Network)";
     }
   }
 
-  return { ok: false, error: lastError };
+  let userFriendlyError = lastError;
+  if (lastError.includes("ACCESS_TOKEN_TYPE_UNSUPPORTED") || lastError.includes("API key not valid")) {
+    userFriendlyError = `Google AI Studio thông báo: Key chưa được xác thực hoặc dự án Google Cloud chưa kích hoạt Generative Language API. Vui lòng kiểm tra lại cấu hình key trên Google AI Studio. Bạn vẫn có thể dùng "AI Thông minh tích hợp" mà không cần key.`;
+  }
+
+  return { ok: false, error: userFriendlyError };
 }
 
 // 1. Phân tích ngữ nghĩa thông minh cục bộ (Built-in AI Generator - Không cần API Key)
@@ -394,7 +436,8 @@ export async function callGeminiApi(
   targetSectionId: LandingSectionId | "all",
   apiKey: string
 ): Promise<AiGenerateResult> {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-2.0-flash"];
+  const cleanKey = apiKey.trim();
+  const modelsToTry = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
   const systemInstruction = `
 Bạn là chuyên gia thương hiệu và biên tập nội dung y tế / giáo dục đặc biệt (can thiệp sớm, tự kỷ, chậm nói, trị liệu tâm lý cho trẻ em).
@@ -412,62 +455,104 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
    - Mỗi section gồm: id, label, title, description, enabled (boolean), eyebrow, primaryAction, secondaryAction, items: [{ id, title, description, meta, image }]
 `;
 
-  const requestBody = {
-    systemInstruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      {
-        parts: [
-          {
-            text: `Đây là cấu hình website hiện tại:\n${JSON.stringify(currentConfig, null, 2)}\n\nPhạm vi cập nhật: ${targetSectionId === "all" ? "Toàn bộ website" : `Chỉ khối ${targetSectionId}`}\n\nYêu cầu của người dùng:\n${prompt}\n\nHãy trả về JSON cấu hình đã cập nhật hoàn chỉnh:`,
-          },
-        ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.6,
-      topK: 40,
-      topP: 0.95,
-      responseMimeType: "application/json",
-    },
-  };
+  const promptContent = `Đây là cấu hình website hiện tại:\n${JSON.stringify(currentConfig, null, 2)}\n\nPhạm vi cập nhật: ${targetSectionId === "all" ? "Toàn bộ website" : `Chỉ khối ${targetSectionId}`}\n\nYêu cầu của người dùng:\n${prompt}\n\nHãy trả về JSON cấu hình đã cập nhật hoàn chỉnh:`;
 
   let lastError: any = null;
-  let data: any = null;
-  let successfulModel = modelsToTry[0];
+  let rawText = "";
+  let successfulModel = "gemini-3.8-flash";
 
-  for (const model of modelsToTry) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
+  // 1. Thử gọi Google Interactions API (chuẩn tương tác chính thức mới)
+  try {
+    const intEndpoint = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    const intRes = await fetch(intEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": cleanKey,
+      },
+      body: JSON.stringify({
+        model: "gemini-3.8-flash",
+        input: promptContent,
+        system_instruction: systemInstruction,
+        generation_config: {
+          response_mime_type: "application/json",
+        },
+      }),
+    });
 
-      if (res.ok) {
-        data = await res.json();
-        successfulModel = model;
-        break;
+    if (intRes.ok) {
+      const intData = await intRes.json();
+      rawText =
+        intData?.output_text ||
+        intData?.steps?.find((s: any) => s.type === "model_output")?.content ||
+        intData?.outputs?.[0]?.text ||
+        "";
+      if (rawText) {
+        successfulModel = "gemini-3.8-flash (Interactions API)";
       }
+    } else {
+      const errJson = await intRes.json().catch(() => ({}));
+      lastError = new Error(errJson?.error?.message || `Interactions API HTTP ${intRes.status}`);
+      console.warn("Interactions API call failed, falling back to generateContent:", lastError.message);
+    }
+  } catch (err: any) {
+    lastError = err;
+    console.warn("Interactions API request error, falling back to generateContent:", err.message);
+  }
 
-      const errData = await res.json().catch(() => ({}));
-      lastError = new Error(errData?.error?.message || `HTTP ${res.status}: Lỗi khi gọi model ${model}`);
-      console.warn(`Model ${model} failed:`, lastError.message);
-    } catch (err: any) {
-      lastError = err;
-      console.warn(`Fetch to ${model} failed:`, err.message);
+  // 2. Fallback sang generateContent API
+  if (!rawText) {
+    const requestBody = {
+      systemInstruction: {
+        parts: [{ text: systemInstruction }],
+      },
+      contents: [
+        {
+          parts: [
+            {
+              text: promptContent,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+      },
+    };
+
+    for (const model of modelsToTry) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": cleanKey,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (rawText) {
+            successfulModel = model;
+            break;
+          }
+        }
+
+        const errData = await res.json().catch(() => ({}));
+        lastError = new Error(errData?.error?.message || `HTTP ${res.status}: Lỗi khi gọi model ${model}`);
+        console.warn(`Model ${model} failed:`, lastError.message);
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Fetch to ${model} failed:`, err.message);
+      }
     }
   }
 
-  if (!data) {
-    throw lastError || new Error("Không thể kết nối đến máy chủ Google Gemini API.");
-  }
-
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) {
-    throw new Error("Gemini không trả về nội dung.");
+    throw lastError || new Error("Không thể kết nối đến máy chủ Google Gemini API.");
   }
 
   // Parse JSON bằng parser an toàn

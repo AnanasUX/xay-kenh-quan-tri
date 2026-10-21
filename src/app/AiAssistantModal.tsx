@@ -161,7 +161,7 @@ export function AiAssistantModal({
                 <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
                   <input
                     type="password"
-                    placeholder="AIzaSy..."
+                    placeholder="AQ.Ab... hoặc AIzaSy..."
                     value={apiKey}
                     onChange={(e) => {
                       handleSaveKey(e.target.value);
@@ -200,7 +200,7 @@ export function AiAssistantModal({
               )}
 
               <small>
-                Khóa được lưu cục bộ trên trình duyệt (localStorage). Tương thích với các model: gemini-2.5-flash, gemini-1.5-flash, gemini-2.0-flash.{" "}
+                Khóa được lưu cục bộ trên trình duyệt (localStorage). Tương thích với các model: gemini-3.8-flash (khuyên dùng), gemini-3.5-flash, gemini-2.5-flash.{" "}
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
