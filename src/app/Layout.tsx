@@ -8,6 +8,7 @@ import {
   logout,
   type AccountUser,
 } from "./authService";
+import { recordAccessLog, logAuditAction } from "./auditService";
 import { navItems } from "./data";
 import { Icon } from "./ui";
 
@@ -55,18 +56,33 @@ export default function Layout() {
     };
   }, []);
 
-  // Tự động chuyển hướng Nhân viên về Cấu hình trang nếu truy cập đường dẫn Quản trị viên
+  const currentPage =
+    navItems.find((item) => item.path === location.pathname)?.label ?? "Cấu hình trang";
+
+  // Ghi nhận lượt truy cập vào hệ thống https://ananasux.github.io/xay-kenh-quan-tri/
+  useEffect(() => {
+    recordAccessLog({
+      username: currentUser?.username || "khach",
+      fullName: currentUser?.fullName || "Khách truy cập",
+      role: (currentUser?.role as any) || "guest",
+      accessUrl: window.location.href,
+      entryPath: location.pathname,
+      result: currentUser ? "success" : "pending_login",
+      note: currentUser
+        ? `Đang truy cập: ${currentPage} (${currentUser.role === "admin" ? "Quản trị viên" : "Nhân viên"})`
+        : "Khách mở trang quản trị (chưa xác thực)",
+    });
+  }, [location.pathname, currentUser?.id]);
+
+  // Tự động chuyển hướng Nhân viên về Cấu hình trang nếu cố tình truy cập các đường dẫn Quản trị viên
   useEffect(() => {
     if (currentUser?.role === "staff") {
-      const adminOnlyPaths = ["/tai-khoan", "/heatmap", "/dang-ky-tu-van"];
+      const adminOnlyPaths = ["/tai-khoan", "/heatmap", "/dang-ky-tu-van", "/nhat-ky-hoat-dong"];
       if (adminOnlyPaths.includes(location.pathname)) {
         navigate("/cau-hinh-trang", { replace: true });
       }
     }
   }, [currentUser, location.pathname, navigate]);
-
-  const currentPage =
-    navItems.find((item) => item.path === location.pathname)?.label ?? "Cấu hình trang";
 
   const notify = (message: string) => {
     setToast(message);
@@ -74,6 +90,17 @@ export default function Layout() {
   };
 
   const handleSwitchUser = (acc: AccountUser) => {
+    logAuditAction({
+      username: currentUser?.username || "admin",
+      fullName: currentUser?.fullName || "Quản trị viên",
+      role: currentUser?.role || "admin",
+      category: "auth",
+      action: "Chuyển phiên làm việc",
+      detail: `Chuyển phiên sang tài khoản @${acc.username} (${acc.fullName})`,
+      target: `@${acc.username}`,
+      status: "success",
+    });
+
     setCurrentUser(acc);
     setCurrentUserState(acc);
     setShowProfileMenu(false);
@@ -89,16 +116,64 @@ export default function Layout() {
     const res = login(loginUser, loginPass);
     if (!res.success || !res.user) {
       setLoginError(res.message);
+      logAuditAction({
+        username: loginUser || "khach",
+        fullName: "Khách đăng nhập",
+        role: "staff",
+        category: "auth",
+        action: "Đăng nhập thất bại",
+        detail: `Thất bại: ${res.message}`,
+        status: "warning",
+      });
+      recordAccessLog({
+        username: loginUser || "khach",
+        fullName: "Đăng nhập thất bại",
+        role: "guest",
+        result: "failed",
+        note: res.message,
+      });
       return;
     }
+
     setCurrentUserState(res.user);
     notify(res.message);
+
+    logAuditAction({
+      username: res.user.username,
+      fullName: res.user.fullName,
+      role: res.user.role,
+      category: "auth",
+      action: "Đăng nhập thành công",
+      detail: `Đăng nhập vào Kênh Quản trị với vai trò ${res.user.role === "admin" ? "Quản trị viên" : "Nhân viên"}`,
+      status: "success",
+    });
+
+    recordAccessLog({
+      username: res.user.username,
+      fullName: res.user.fullName,
+      role: res.user.role,
+      result: "success",
+      note: "Đăng nhập thành công vào hệ thống",
+    });
+
     if (res.user.role === "staff") {
       navigate("/cau-hinh-trang", { replace: true });
     }
   };
 
   const handleLogout = () => {
+    if (currentUser) {
+      logAuditAction({
+        username: currentUser.username,
+        fullName: currentUser.fullName,
+        role: currentUser.role,
+        category: "auth",
+        action: "Đăng xuất khỏi hệ thống",
+        detail: `Tài khoản ${currentUser.fullName} (@${currentUser.username}) đã đăng xuất`,
+        status: "success",
+      });
+    }
+
     logout();
     setShowProfileMenu(false);
     setCurrentUserState(null);
@@ -372,14 +447,24 @@ export default function Layout() {
                 <div className="dropdown-divider" />
 
                 {currentUser.role === "admin" && (
-                  <NavLink
-                    to="/tai-khoan"
-                    className="dropdown-link-item"
-                    onClick={() => setShowProfileMenu(false)}
-                  >
-                    <Icon name="users" size={15} />
-                    Quản lý danh sách tài khoản
-                  </NavLink>
+                  <>
+                    <NavLink
+                      to="/tai-khoan"
+                      className="dropdown-link-item"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <Icon name="users" size={15} />
+                      Quản lý danh sách tài khoản
+                    </NavLink>
+                    <NavLink
+                      to="/nhat-ky-hoat-dong"
+                      className="dropdown-link-item"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <Icon name="history" size={15} />
+                      Nhật ký hoạt động & Thao tác
+                    </NavLink>
+                  </>
                 )}
 
                 <button

@@ -217,10 +217,21 @@ export function AccountsPage() {
         title="Quản lý tài khoản & Phân quyền"
         description="Thêm, sửa, xóa, quản lý mật khẩu tài khoản và phân quyền chức năng cho Quản trị viên và Nhân viên."
         action={
-          <button className="primary-button" type="button" onClick={handleOpenCreate}>
-            <Icon name="userPlus" size={16} />
-            Đăng ký tài khoản mới
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => navigate("/nhat-ky-hoat-dong")}
+              title="Xem toàn bộ lịch sử truy cập và nhật ký thao tác người dùng"
+            >
+              <Icon name="history" size={16} />
+              Nhật ký thao tác
+            </button>
+            <button className="primary-button" type="button" onClick={handleOpenCreate}>
+              <Icon name="userPlus" size={16} />
+              Đăng ký tài khoản mới
+            </button>
+          </div>
         }
       />
 
@@ -401,6 +412,14 @@ export function AccountsPage() {
                         title="Chỉnh sửa tài khoản"
                       >
                         <Icon name="edit" size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-action"
+                        onClick={() => navigate("/nhat-ky-hoat-dong")}
+                        title="Xem lịch sử thao tác của tài khoản này"
+                      >
+                        <Icon name="history" size={14} />
                       </button>
                       {!isCurrent && (
                         <button

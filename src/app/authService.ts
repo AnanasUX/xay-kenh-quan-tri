@@ -1,3 +1,5 @@
+import { logAuditAction } from "./auditService";
+
 export type UserRole = "admin" | "staff";
 
 export interface AccountUser {
@@ -181,6 +183,19 @@ export function addAccount(accountData: Omit<AccountUser, "id" | "createdAt">): 
 
   accounts.push(newAccount);
   saveAccounts(accounts);
+
+  const currentUser = getCurrentUser();
+  logAuditAction({
+    username: currentUser?.username || "admin",
+    fullName: currentUser?.fullName || "Quản trị viên",
+    role: currentUser?.role || "admin",
+    category: "account",
+    action: `Tạo tài khoản mới @${newAccount.username}`,
+    detail: `Tạo tài khoản ${newAccount.fullName} (@${newAccount.username}) với vai trò ${newAccount.role === "admin" ? "Quản trị viên" : "Nhân viên"}`,
+    target: `@${newAccount.username}`,
+    status: "success",
+  });
+
   return { success: true, account: newAccount, message: `Đã tạo tài khoản "${newAccount.username}" thành công!` };
 }
 
@@ -218,6 +233,17 @@ export function updateAccount(id: string, patch: Partial<Omit<AccountUser, "id" 
     setCurrentUser(accounts[index]);
   }
 
+  logAuditAction({
+    username: currentUser?.username || "admin",
+    fullName: currentUser?.fullName || "Quản trị viên",
+    role: currentUser?.role || "admin",
+    category: "account",
+    action: `Cập nhật tài khoản @${accounts[index].username}`,
+    detail: `Cập nhật thông tin tài khoản ${accounts[index].fullName} (@${accounts[index].username})`,
+    target: `@${accounts[index].username}`,
+    status: "success",
+  });
+
   return { success: true, message: "Đã cập nhật thông tin tài khoản thành công!" };
 }
 
@@ -241,8 +267,21 @@ export function deleteAccount(id: string): { success: boolean; message: string }
     return { success: false, message: "Hệ thống phải có ít nhất 1 tài khoản Quản trị viên." };
   }
 
+  const deletedUser = accounts[index];
   accounts.splice(index, 1);
   saveAccounts(accounts);
+
+  logAuditAction({
+    username: currentUser?.username || "admin",
+    fullName: currentUser?.fullName || "Quản trị viên",
+    role: currentUser?.role || "admin",
+    category: "account",
+    action: `Xóa tài khoản @${deletedUser.username}`,
+    detail: `Đã xóa tài khoản ${deletedUser.fullName} (@${deletedUser.username}) khỏi hệ thống`,
+    target: `@${deletedUser.username}`,
+    status: "warning",
+  });
+
   return { success: true, message: "Đã xóa tài khoản thành công!" };
 }
 

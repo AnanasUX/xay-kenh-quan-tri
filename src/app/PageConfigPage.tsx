@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AiAssistantModal } from "./AiAssistantModal";
+import { logAuditAction } from "./auditService";
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
@@ -126,6 +127,16 @@ export function PageConfigPage() {
     if (publish && isStaff) {
       alert("Tài khoản của bạn là Nhân viên nên chỉ có quyền Lưu bản nháp.\nVui lòng nhờ Quản trị viên (admin) kiểm tra và Xuất bản website.");
       notify("Nhân viên chỉ được phép Lưu bản nháp.");
+      logAuditAction({
+        username: currentUser?.username || "nhanvien",
+        fullName: currentUser?.fullName || "Nhân viên",
+        role: "staff",
+        category: "publish",
+        action: "Từ chối quyền Xuất bản website",
+        detail: "Tài khoản Nhân viên không được phép xuất bản toàn trang. Hệ thống đã ngăn chặn.",
+        target: "Toàn trang",
+        status: "denied",
+      });
       return;
     }
     const targetConfig = overrideConfig || config;
@@ -157,12 +168,34 @@ export function PageConfigPage() {
       setSaving(false);
       setDirty(false);
     }
+
+    logAuditAction({
+      username: currentUser?.username || "admin",
+      fullName: currentUser?.fullName || "Người dùng",
+      role: currentUser?.role || "admin",
+      category: publish ? "publish" : "draft",
+      action: publish ? "Xuất bản website lên trang chính" : `Lưu bản nháp khối: ${activeSection.title}`,
+      detail: publish
+        ? "Đã đồng bộ toàn bộ dữ liệu cấu hình lên máy chủ đám mây và landing page chính"
+        : `Đã lưu bản nháp chỉnh sửa nội dung khối [${activeSection.label || activeSection.id}]`,
+      target: activeSection.id,
+      status: "success",
+    });
   };
 
   const handleApplyAiConfig = async (newConfig: LandingPageConfig, publishImmediately: boolean) => {
     setConfig(newConfig);
     setDirty(!publishImmediately);
     notify(publishImmediately ? "Đang đồng bộ dữ liệu AI lên website..." : "Đã cập nhật cấu hình từ AI!");
+    logAuditAction({
+      username: currentUser?.username || "admin",
+      fullName: currentUser?.fullName || "Quản trị viên",
+      role: currentUser?.role || "admin",
+      category: "ai",
+      action: "Áp dụng nội dung do Trợ lý AI tạo",
+      detail: "Áp dụng cấu hình và nội dung mới do AI đề xuất vào các khối website",
+      status: "success",
+    });
     if (publishImmediately) {
       await save(true, newConfig);
     }
@@ -177,6 +210,15 @@ export function PageConfigPage() {
     downloadAnchor.click();
     downloadAnchor.remove();
     notify("Đã tải file cấu hình JSON");
+    logAuditAction({
+      username: currentUser?.username || "admin",
+      fullName: currentUser?.fullName || "Quản trị viên",
+      role: currentUser?.role || "admin",
+      category: "config",
+      action: "Xuất file cấu hình website (JSON)",
+      detail: "Tải bản sao lưu cấu hình toàn bộ trang về máy tính",
+      status: "success",
+    });
   };
 
   const importJson = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,6 +232,15 @@ export function PageConfigPage() {
           setConfig(parsed);
           setDirty(true);
           notify("Đã nhập cấu hình từ file thành công! Hãy bấm 'Xuất bản thay đổi'");
+          logAuditAction({
+            username: currentUser?.username || "admin",
+            fullName: currentUser?.fullName || "Quản trị viên",
+            role: currentUser?.role || "admin",
+            category: "config",
+            action: "Nhập cấu hình website từ file JSON",
+            detail: `Đã nhập cấu hình thành công từ tệp tin "${file.name}"`,
+            status: "success",
+          });
         } else {
           alert("File JSON không đúng định dạng cấu hình");
         }
