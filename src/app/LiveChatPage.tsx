@@ -1,4 +1,11 @@
-import { DEFAULT_AUTISM_SCENARIOS, analyzeUserQuestionAndRespond, type AutismScenario } from "./autismKnowledgeBase";
+import {
+  DEFAULT_AUTISM_SCENARIOS,
+  analyzeUserQuestionAndRespond,
+  getStoredScenarios,
+  saveStoredScenarios,
+  resetStoredScenarios,
+  type AutismScenario,
+} from "./autismKnowledgeBase";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useCms } from "./Layout";
@@ -64,24 +71,108 @@ export function LiveChatPage() {
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // Scenarios Modal & Testing
+  // Scenarios Modal & Configuration Management
   const [showScenariosModal, setShowScenariosModal] = useState(false);
-  const [scenariosList, setScenariosList] = useState<AutismScenario[]>(DEFAULT_AUTISM_SCENARIOS);
+  const [scenariosList, setScenariosList] = useState<AutismScenario[]>(() => getStoredScenarios());
+  const [editingScenario, setEditingScenario] = useState<AutismScenario | null>(null);
+  const [isNewScenario, setIsNewScenario] = useState(false);
   const [scenarioFilterCategory, setScenarioFilterCategory] = useState<string>("all");
   const [scenarioSearchTerm, setScenarioSearchTerm] = useState("");
   const [testUserQuestion, setTestUserQuestion] = useState("Bé nhà mình 2 tuổi rưỡi chưa biết nói từ nào, hay đi nhón chân");
   const [testAnalysisResult, setTestAnalysisResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Filter & Search
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "waiting" | "replied" | "online">("all");
 
-
   // Phân tích thử nghiệm câu hỏi
   const handleRunScenarioTest = () => {
     if (!testUserQuestion.trim()) return;
-    const res = analyzeUserQuestionAndRespond(testUserQuestion, "Mẹ Bé", "096 290 3942");
+    const res = analyzeUserQuestionAndRespond(testUserQuestion, "Mẹ Bé", "096 290 3942", scenariosList);
     setTestAnalysisResult(res);
+  };
+
+  // Lưu cấu hình kịch bản (Thêm mới hoặc sửa)
+  const handleSaveScenario = (sc: AutismScenario) => {
+    if (!sc.title.trim()) {
+      notify("Vui lòng nhập tên tình huống");
+      return;
+    }
+    if (!sc.responseTemplate.trim()) {
+      notify("Vui lòng nhập câu trả lời của AI");
+      return;
+    }
+    let updatedList: AutismScenario[];
+    const exists = scenariosList.some((item) => item.id === sc.id);
+    if (exists) {
+      updatedList = scenariosList.map((item) => (item.id === sc.id ? sc : item));
+    } else {
+      updatedList = [sc, ...scenariosList];
+    }
+    setScenariosList(updatedList);
+    saveStoredScenarios(updatedList);
+    setEditingScenario(null);
+    notify(isNewScenario ? "Đã thêm kịch bản mới thành công!" : "Đã cập nhật kịch bản thành công!");
+    logAuditAction("Cấu hình kịch bản AI", isNewScenario ? "Tạo mới" : "Chỉnh sửa", sc.title);
+  };
+
+  // Dựa vào câu hỏi mẫu tạo kịch bản tùy biến
+  const handleCloneFromSample = (sample: AutismScenario) => {
+    const cloned: AutismScenario = {
+      ...sample,
+      id: "sc-custom-" + Date.now(),
+      title: `${sample.title} (Tùy biến)`,
+      isCustom: true,
+      isActive: true,
+    };
+    setIsNewScenario(true);
+    setEditingScenario(cloned);
+  };
+
+  // Thêm kịch bản hoàn toàn mới
+  const handleCreateNewScenario = () => {
+    const newSc: AutismScenario = {
+      id: "sc-custom-" + Date.now(),
+      title: "",
+      category: "speech",
+      intent: "",
+      sampleQuestion: "",
+      keywords: [],
+      responseTemplate: "Dạ ba/mẹ {customerName} ơi, Cô Hương đã tiếp nhận thông tin từ gia đình...",
+      recommendedAction: "Tư vấn lộ trình can thiệp và xếp lịch đánh giá miễn phí",
+      isOutOfScope: false,
+      isActive: true,
+      isCustom: true,
+    };
+    setIsNewScenario(true);
+    setEditingScenario(newSc);
+  };
+
+  // Bật / tắt kích hoạt kịch bản
+  const handleToggleScenarioActive = (id: string) => {
+    const updated = scenariosList.map((s) => (s.id === id ? { ...s, isActive: s.isActive === false } : s));
+    setScenariosList(updated);
+    saveStoredScenarios(updated);
+    notify("Đã cập nhật trạng thái kích hoạt kịch bản");
+  };
+
+  // Xóa kịch bản
+  const handleDeleteScenario = (id: string, title: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa kịch bản "${title}" khỏi hệ thống?`)) return;
+    const updated = scenariosList.filter((s) => s.id !== id);
+    setScenariosList(updated);
+    saveStoredScenarios(updated);
+    notify(`Đã xóa kịch bản "${title}"`);
+    logAuditAction("Cấu hình kịch bản AI", "Xóa", title);
+  };
+
+  // Khôi phục bộ kịch bản chuẩn gốc
+  const handleResetScenarios = () => {
+    if (!window.confirm("Bạn có chắc chắn muốn khôi phục về bộ 13 kịch bản chuẩn gốc của chuyên gia? Tất cả các tùy biến sẽ được làm mới.")) return;
+    const defaults = resetStoredScenarios();
+    setScenariosList(defaults);
+    notify("Đã khôi phục về bộ 13 kịch bản chuẩn gốc của chuyên gia!");
   };
 
   // Xuất file JSON bộ kịch bản
@@ -106,6 +197,7 @@ export function LiveChatPage() {
 
     scenariosList.forEach((sc, idx) => {
       txt += (idx + 1) + ". " + sc.title.toUpperCase() + "\n";
+      txt += "   - Trạng thái: " + (sc.isActive !== false ? "ĐANG KÍCH HOẠT" : "ĐÃ TẠM DỪNG") + "\n";
       txt += "   - Phân loại: " + (sc.isOutOfScope ? "[NGOÀI PHẠM VI - CHỈ TIẾP NHẬN]" : "[CHUYÊN SÂU TỰ KỶ]") + "\n";
       txt += "   - Ý định câu hỏi: " + sc.intent + "\n";
       txt += "   - Câu hỏi mẫu: \"" + sc.sampleQuestion + "\"\n";
@@ -136,7 +228,8 @@ export function LiveChatPage() {
         const parsed = JSON.parse(event.target?.result as string);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setScenariosList(parsed);
-          notify("Đã nạp thành công " + parsed.length + " tình huống kịch bản mới vào hệ thống!");
+          saveStoredScenarios(parsed);
+          notify("Đã nạp thành công " + parsed.length + " tình huống kịch bản vào hệ thống!");
         } else {
           notify("File JSON không đúng cấu trúc danh sách kịch bản.");
         }
@@ -157,6 +250,26 @@ export function LiveChatPage() {
     setShowScenariosModal(false);
     notify("Đã chèn câu trả lời vào khung chat");
   };
+
+  // Lọc kịch bản theo phân loại và từ khóa
+  const filteredScenarios = useMemo(() => {
+    return scenariosList.filter((sc) => {
+      if (scenarioFilterCategory === "custom" && !sc.isCustom) return false;
+      if (scenarioFilterCategory !== "all" && scenarioFilterCategory !== "custom" && sc.category !== scenarioFilterCategory) {
+        return false;
+      }
+      if (scenarioSearchTerm.trim()) {
+        const term = scenarioSearchTerm.toLowerCase();
+        const inTitle = sc.title.toLowerCase().includes(term);
+        const inIntent = sc.intent.toLowerCase().includes(term);
+        const inSample = sc.sampleQuestion.toLowerCase().includes(term);
+        const inKeywords = sc.keywords.some((k) => k.toLowerCase().includes(term));
+        const inResponse = sc.responseTemplate.toLowerCase().includes(term);
+        return inTitle || inIntent || inSample || inKeywords || inResponse;
+      }
+      return true;
+    });
+  }, [scenariosList, scenarioFilterCategory, scenarioSearchTerm]);
 
   // Compose
   const [replyText, setReplyText] = useState("");
@@ -1267,7 +1380,1098 @@ export function LiveChatPage() {
             </div>
           )}
         </section>
-      </div>
+      
+      {/* ẨN INPUT NẠP FILE JSON */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportScenariosJson}
+        accept=".json"
+        style={{ display: "none" }}
+      />
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: BỘ KỊCH BẢN & TÌNH HUỐNG AI (Q&A)                                */}
+      {/* ========================================================================= */}
+      {showScenariosModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.75)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 1100,
+              maxHeight: "92vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+            }}
+          >
+            {/* MODAL HEADER */}
+            <div
+              style={{
+                padding: "20px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: "#50008b",
+                    color: "#ffffff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                    boxShadow: "0 4px 12px rgba(80, 0, 139, 0.25)",
+                  }}
+                >
+                  📚
+                </span>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#1e293b" }}>
+                    Bộ kịch bản & Cấu hình Phản hồi AI (Autism Q&A Matrix)
+                  </h2>
+                  <p style={{ margin: 0, fontSize: 12.5, color: "#64748b" }}>
+                    Quản lý các tình huống mẫu, nhân bản câu hỏi để cấu hình câu trả lời, nạp/xuất và kiểm thử AI thời gian thực
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowScenariosModal(false)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  color: "#475569",
+                  fontSize: 18,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ACTION TOOLBAR & SEARCH */}
+            <div
+              style={{
+                padding: "14px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                background: "#f8fafc",
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 280 }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Tìm theo tiêu đề, câu hỏi mẫu, từ khóa nhận diện..."
+                  value={scenarioSearchTerm}
+                  onChange={(e) => setScenarioSearchTerm(e.target.value)}
+                  style={{
+                    flex: 1,
+                    height: 38,
+                    padding: "0 14px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                    background: "#ffffff",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleCreateNewScenario}
+                  style={{
+                    height: 38,
+                    padding: "0 14px",
+                    borderRadius: 10,
+                    border: "none",
+                    background: "#50008b",
+                    color: "#ffffff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  ➕ Thêm kịch bản mới
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    background: "#ffffff",
+                    color: "#334155",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                  title="Nạp file JSON kịch bản mới vào hệ thống"
+                >
+                  📥 Nạp JSON
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportScenariosJson}
+                  style={{
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1px solid #cbd5e1",
+                    background: "#ffffff",
+                    color: "#334155",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  📤 Xuất JSON
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportScenariosTxt}
+                  style={{
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1px solid #fed7aa",
+                    background: "#fffbeb",
+                    color: "#c2410c",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                >
+                  📄 Xuất TXT
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetScenarios}
+                  style={{
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1px solid #e2e8f0",
+                    background: "#ffffff",
+                    color: "#64748b",
+                    fontSize: 12.5,
+                    cursor: "pointer",
+                  }}
+                  title="Khôi phục về 13 kịch bản chuẩn gốc của chuyên gia"
+                >
+                  🔄 Khôi phục chuẩn
+                </button>
+              </div>
+            </div>
+
+            {/* CATEGORY FILTER PILLS */}
+            <div
+              style={{
+                padding: "10px 24px",
+                borderBottom: "1px solid #f1f5f9",
+                background: "#ffffff",
+                display: "flex",
+                gap: 8,
+                overflowX: "auto",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {[
+                { id: "all", label: "Tất cả (" + scenariosList.length + ")" },
+                { id: "speech", label: "🗣️ Âm ngữ / Bật âm" },
+                { id: "behavior", label: "⚡ Hành vi / Cảm giác" },
+                { id: "interaction", label: "👀 Giao tiếp / Chú ý" },
+                { id: "evaluation", label: "📋 Đánh giá / Test Denver" },
+                { id: "tuition", label: "💰 Học phí / Ca học" },
+                { id: "out_of_scope", label: "🛡️ Ngoài phạm vi (Chỉ tiếp nhận)" },
+                { id: "general", label: "📍 Địa chỉ & Gia đình" },
+                { id: "custom", label: "⭐ Kịch bản tùy biến" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setScenarioFilterCategory(tab.id)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    border: scenarioFilterCategory === tab.id ? "1.5px solid #50008b" : "1px solid #e2e8f0",
+                    background: scenarioFilterCategory === tab.id ? "#faf5ff" : "#ffffff",
+                    color: scenarioFilterCategory === tab.id ? "#50008b" : "#64748b",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* SCROLLABLE CONTENT BODY */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "20px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 20,
+                background: "#f8fafc",
+              }}
+            >
+              {/* LIVE SIMULATOR / TESTER CARD */}
+              <div
+                style={{
+                  background: "#ffffff",
+                  borderRadius: 14,
+                  border: "1.5px solid #e9d5ff",
+                  padding: 18,
+                  boxShadow: "0 4px 14px rgba(80, 0, 139, 0.05)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 18 }}>🧪</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#50008b" }}>
+                      Trình kiểm thử phản hồi AI theo tình huống thực tế
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 11.5, color: "#64748b" }}>
+                    Nhập câu hỏi của phụ huynh để kiểm tra cách AI nhận diện và sinh câu trả lời tức thì
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input
+                    type="text"
+                    value={testUserQuestion}
+                    onChange={(e) => setTestUserQuestion(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRunScenarioTest()}
+                    placeholder="Nhập câu hỏi phụ huynh thường hỏi... (ví dụ: Bé 2 tuổi rưỡi chưa biết nói, hay nhón chân)"
+                    style={{
+                      flex: 1,
+                      height: 42,
+                      padding: "0 14px",
+                      borderRadius: 10,
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: 13,
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRunScenarioTest}
+                    style={{
+                      height: 42,
+                      padding: "0 18px",
+                      borderRadius: 10,
+                      border: "none",
+                      background: "#50008b",
+                      color: "#ffffff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    Kiểm tra phản hồi AI ➤
+                  </button>
+                </div>
+
+                {/* TEST RESULT OUTPUT */}
+                {testAnalysisResult && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      padding: 14,
+                      borderRadius: 12,
+                      background: testAnalysisResult.isOutOfScope ? "#fffbeb" : "#faf5ff",
+                      border: testAnalysisResult.isOutOfScope ? "1px solid #fde68a" : "1px solid #e9d5ff",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: 999,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            background: testAnalysisResult.isOutOfScope ? "#fef3c7" : "#ede9fe",
+                            color: testAnalysisResult.isOutOfScope ? "#92400e" : "#5b21b6",
+                          }}
+                        >
+                          {testAnalysisResult.isOutOfScope ? "🛡️ NGOÀI PHẠM VI (CHỈ TIẾP NHẬN)" : "🎯 CHUYÊN SÂU CAN THIỆP TỰ KỶ"}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: "#1e293b" }}>
+                          {testAnalysisResult.scenarioTitle || testAnalysisResult.scenarioId}
+                        </span>
+                      </div>
+                      {testAnalysisResult.score !== undefined && (
+                        <span style={{ fontSize: 11.5, color: "#64748b" }}>
+                          Điểm khớp: <b>{testAnalysisResult.score}</b> {testAnalysisResult.matchedKeywords?.length ? "(" + testAnalysisResult.matchedKeywords.join(", ") + ")" : ""}
+                        </span>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        background: "#ffffff",
+                        border: "1px solid #e2e8f0",
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                        color: "#334155",
+                      }}
+                    >
+                      {testAnalysisResult.response}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => handleUseScenarioResponse(testAnalysisResult.response)}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#50008b",
+                          background: "transparent",
+                          border: "none",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        💬 Điền nội dung này vào ô chat phụ huynh ➤
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* LIST OF SCENARIOS */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "#334155" }}>
+                    Danh sách tình huống ({filteredScenarios.length} / {scenariosList.length})
+                  </span>
+                  <span style={{ fontSize: 12, color: "#64748b" }}>
+                    Gợi ý: Bấm <b>"📋 Dựa vào mẫu này cấu hình"</b> để tùy biến cách trả lời của AI theo tình huống thực tế
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {filteredScenarios.map((sc) => (
+                    <div
+                      key={sc.id}
+                      style={{
+                        background: "#ffffff",
+                        borderRadius: 14,
+                        border: sc.isActive === false ? "1px solid #cbd5e1" : "1px solid #e2e8f0",
+                        opacity: sc.isActive === false ? 0.65 : 1,
+                        padding: 18,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 12,
+                      }}
+                    >
+                      {/* CARD HEADER */}
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                            <span
+                              style={{
+                                padding: "2px 8px",
+                                borderRadius: 6,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: sc.isOutOfScope ? "#fef3c7" : "#ede9fe",
+                                color: sc.isOutOfScope ? "#92400e" : "#5b21b6",
+                              }}
+                            >
+                              {sc.isOutOfScope ? "🛡️ Ngoài phạm vi - Chỉ tiếp nhận" : "🎯 Chuyên sâu Can thiệp Tự kỷ"}
+                            </span>
+
+                            {sc.isCustom && (
+                              <span
+                                style={{
+                                  padding: "2px 8px",
+                                  borderRadius: 6,
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  background: "#dbeafe",
+                                  color: "#1e40af",
+                                }}
+                              >
+                                ⭐ Quản trị tùy biến
+                              </span>
+                            )}
+
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 600,
+                                color: sc.isActive !== false ? "#16a34a" : "#94a3b8",
+                              }}
+                            >
+                              {sc.isActive !== false ? "● Đang kích hoạt" : "○ Đã tạm dừng"}
+                            </span>
+                          </div>
+
+                          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1e293b" }}>
+                            {sc.title}
+                          </h3>
+                        </div>
+
+                        {/* TOGGLE ACTIVE */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleScenarioActive(sc.id)}
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 8,
+                            fontSize: 11.5,
+                            fontWeight: 600,
+                            border: "1px solid #cbd5e1",
+                            background: sc.isActive !== false ? "#f0fdf4" : "#f1f5f9",
+                            color: sc.isActive !== false ? "#15803d" : "#64748b",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {sc.isActive !== false ? "Bật" : "Tắt"}
+                        </button>
+                      </div>
+
+                      {/* INTENT & PSYCHOLOGY */}
+                      <div style={{ fontSize: 12.5, color: "#475569" }}>
+                        <b>Mục đích / Tâm lý phụ huynh:</b> {sc.intent}
+                      </div>
+
+                      {/* SAMPLE QUESTION BOX */}
+                      <div
+                        style={{
+                          padding: "10px 14px",
+                          borderRadius: 10,
+                          background: "#f1f5f9",
+                          borderLeft: "3px solid #64748b",
+                          fontSize: 12.5,
+                          color: "#1e293b",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        💬 <b>Câu hỏi mẫu phụ huynh:</b> "{sc.sampleQuestion}"
+                      </div>
+
+                      {/* KEYWORDS TAGS */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>Từ khóa nhận diện:</span>
+                        {sc.keywords.map((kw, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              padding: "2px 8px",
+                              borderRadius: 6,
+                              background: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                              fontSize: 11,
+                              color: "#334155",
+                            }}
+                          >
+                            {kw}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* CONFIGURED RESPONSE */}
+                      <div
+                        style={{
+                          padding: "12px 14px",
+                          borderRadius: 10,
+                          background: "#faf5ff",
+                          border: "1.5px solid #e9d5ff",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          color: "#1e293b",
+                        }}
+                      >
+                        <div style={{ fontSize: 11.5, fontWeight: 700, color: "#50008b", marginBottom: 4 }}>
+                          ⚡ Cấu hình cách AI trả lời phụ huynh:
+                        </div>
+                        {sc.responseTemplate}
+                      </div>
+
+                      {/* RECOMMENDED ACTION */}
+                      {sc.recommendedAction && (
+                        <div style={{ fontSize: 12, color: "#64748b" }}>
+                          📌 <b>Hành động đề xuất cho trung tâm:</b> {sc.recommendedAction}
+                        </div>
+                      )}
+
+                      {/* CARD FOOTER BUTTONS */}
+                      <div
+                        style={{
+                          paddingTop: 10,
+                          borderTop: "1px solid #f1f5f9",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {/* DỰA VÀO CÂU HỎI MẪU NÀY CẤU HÌNH */}
+                          <button
+                            type="button"
+                            onClick={() => handleCloneFromSample(sc)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              border: "1px solid #c4b5fd",
+                              background: "#f5f3ff",
+                              color: "#6d28d9",
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                            title="Sao chép câu hỏi và mẫu này để tạo kịch bản mới tùy biến"
+                          >
+                            📋 Dựa vào mẫu này cấu hình
+                          </button>
+
+                          {/* SỬA KỊCH BẢN */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsNewScenario(false);
+                              setEditingScenario({ ...sc });
+                            }}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: 8,
+                              border: "1px solid #cbd5e1",
+                              background: "#ffffff",
+                              color: "#334155",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                            }}
+                          >
+                            ✏️ Sửa
+                          </button>
+
+                          {/* XÓA KỊCH BẢN NẾU TÙY BIẾN HOẶC DƯ THỪA */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteScenario(sc.id, sc.title)}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: 8,
+                              border: "1px solid #fecaca",
+                              background: "#fef2f2",
+                              color: "#dc2626",
+                              fontSize: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+
+                        {/* NÚT CHÈN VÀO KHUNG CHAT HIỆN TẠI */}
+                        <button
+                          type="button"
+                          onClick={() => handleUseScenarioResponse(sc.responseTemplate)}
+                          style={{
+                            padding: "6px 14px",
+                            borderRadius: 8,
+                            border: "none",
+                            background: "#50008b",
+                            color: "#ffffff",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                          }}
+                        >
+                          💬 Dùng phản hồi này cho khách
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: CẤU HÌNH / CHỈNH SỬA KỊCH BẢN CHI TIẾT (DRAWER/MODAL)             */}
+      {/* ========================================================================= */}
+      {editingScenario && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            backgroundColor: "rgba(15, 23, 42, 0.8)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 720,
+              maxHeight: "92vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+              overflow: "hidden",
+            }}
+          >
+            {/* HEADER */}
+            <div
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)",
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>
+                  {isNewScenario ? "➕ Tạo mới & Cấu hình Kịch bản AI" : "✏️ Chỉnh sửa Cấu hình Kịch bản AI"}
+                </h3>
+                <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
+                  Thiết lập câu hỏi mẫu, từ khóa kích hoạt và nội dung phản hồi trực tiếp của AI
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setEditingScenario(null)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  fontSize: 16,
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* FORM BODY */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "20px 24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+              }}
+            >
+              {/* TIÊU ĐỀ */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                  Tiêu đề tình huống <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editingScenario.title}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, title: e.target.value })}
+                  placeholder="Ví dụ: Trẻ chậm nói, chưa bật âm (Giai đoạn 18 - 36 tháng)"
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                />
+              </div>
+
+              {/* PHÂN LOẠI & PHẠM VI */}
+              <div style={{ display: "grid", gridColumns: "1fr 1fr", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                    Phân loại chủ đề
+                  </label>
+                  <select
+                    value={editingScenario.category}
+                    onChange={(e) => setEditingScenario({ ...editingScenario, category: e.target.value as any })}
+                    style={{
+                      width: "100%",
+                      height: 40,
+                      padding: "0 10px",
+                      borderRadius: 10,
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: 13,
+                      background: "#ffffff",
+                      outline: "none",
+                    }}
+                  >
+                    <option value="speech">🗣️ Âm ngữ / Bật âm / Nhại lời</option>
+                    <option value="behavior">⚡ Hành vi / Cảm giác / Cơn giận</option>
+                    <option value="interaction">👀 Giao tiếp / Chú ý / Chỉ ngón</option>
+                    <option value="evaluation">📋 Đánh giá / Test Denver</option>
+                    <option value="tuition">💰 Học phí / Ca học</option>
+                    <option value="out_of_scope">🛡️ Ngoài phạm vi (Chỉ tiếp nhận)</option>
+                    <option value="general">📍 Địa chỉ / Đồng hành tại nhà</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                    Phạm vi xử lý (Scope)
+                  </label>
+                  <select
+                    value={editingScenario.isOutOfScope ? "out" : "autism"}
+                    onChange={(e) => setEditingScenario({ ...editingScenario, isOutOfScope: e.target.value === "out" })}
+                    style={{
+                      width: "100%",
+                      height: 40,
+                      padding: "0 10px",
+                      borderRadius: 10,
+                      border: "1.5px solid #cbd5e1",
+                      fontSize: 13,
+                      background: editingScenario.isOutOfScope ? "#fffbeb" : "#faf5ff",
+                      color: editingScenario.isOutOfScope ? "#92400e" : "#5b21b6",
+                      fontWeight: 600,
+                      outline: "none",
+                    }}
+                  >
+                    <option value="autism">🎯 Chuyên sâu Can thiệp Tự kỷ</option>
+                    <option value="out">🛡️ Ngoài phạm vi (Chỉ tiếp nhận lịch sự)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* TÂM LÝ & Ý ĐỊNH PHỤ HUYNH */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                  Ý định & Tâm lý của phụ huynh khi hỏi
+                </label>
+                <textarea
+                  rows={2}
+                  value={editingScenario.intent}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, intent: e.target.value })}
+                  placeholder="Mô tả tâm lý hoặc thắc mắc của phụ huynh..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                    resize: "none",
+                  }}
+                />
+              </div>
+
+              {/* CÂU HỎI MẪU CỦA PHỤ HUYNH */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                  Câu hỏi mẫu của phụ huynh <span style={{ color: "#dc2626" }}>*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={editingScenario.sampleQuestion}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, sampleQuestion: e.target.value })}
+                  placeholder="Ví dụ: Bé nhà mình 2 tuổi rưỡi rồi mà chưa nói được từ nào, chỉ ê a thôi thì có sao không cô?"
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                    resize: "none",
+                  }}
+                />
+              </div>
+
+              {/* TỪ KHÓA NHẬN DIỆN */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                  Từ khóa nhận diện (Keywords) - Phân cách bằng dấu phẩy
+                </label>
+                <input
+                  type="text"
+                  value={Array.isArray(editingScenario.keywords) ? editingScenario.keywords.join(", ") : ""}
+                  onChange={(e) =>
+                    setEditingScenario({
+                      ...editingScenario,
+                      keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean),
+                    })
+                  }
+                  placeholder="Ví dụ: chậm nói, chua noi, bật âm, bat am, chưa nói, không nói, ê a"
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                />
+                <span style={{ fontSize: 11.5, color: "#64748b", display: "block", marginTop: 4 }}>
+                  💡 Gợi ý: Nhập cả có dấu và không dấu để AI nhận biết chính xác khi phụ huynh gõ tắt.
+                </span>
+              </div>
+
+              {/* CẤU HÌNH CÂU TRẢ LỜI CỦA AI */}
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "#334155" }}>
+                    Cấu hình cách AI trả lời <span style={{ color: "#dc2626" }}>*</span>
+                  </label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingScenario({
+                          ...editingScenario,
+                          responseTemplate: editingScenario.responseTemplate + " {customerName} ",
+                        })
+                      }
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        border: "1px solid #c4b5fd",
+                        background: "#faf5ff",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#50008b",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Chèn {"{customerName}"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingScenario({
+                          ...editingScenario,
+                          responseTemplate: editingScenario.responseTemplate + " {customerPhone} ",
+                        })
+                      }
+                      style={{
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        border: "1px solid #c4b5fd",
+                        background: "#faf5ff",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#50008b",
+                        cursor: "pointer",
+                      }}
+                    >
+                      + Chèn {"{customerPhone}"}
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  rows={5}
+                  value={editingScenario.responseTemplate}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, responseTemplate: e.target.value })}
+                  placeholder="Nhập nội dung trả lời đúng trọng tâm câu hỏi của phụ huynh..."
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                    lineHeight: 1.5,
+                  }}
+                />
+                <span style={{ fontSize: 11.5, color: "#64748b", display: "block", marginTop: 4 }}>
+                  📌 Quy chuẩn: Trả lời đi thẳng vào vấn đề con đang gặp, đưa ra giải pháp rõ ràng, tránh giải thích dài dòng lan man.
+                </span>
+              </div>
+
+              {/* HÀNH ĐỘNG ĐỀ XUẤT */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, fontWeight: 700, color: "#334155", marginBottom: 6 }}>
+                  Hành động đề xuất cho trung tâm
+                </label>
+                <input
+                  type="text"
+                  value={editingScenario.recommendedAction || ""}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, recommendedAction: e.target.value })}
+                  placeholder="Ví dụ: Xếp lịch đánh giá phát triển 60 phút miễn phí"
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1.5px solid #cbd5e1",
+                    fontSize: 13,
+                    outline: "none",
+                  }}
+                />
+              </div>
+
+              {/* KÍCH HOẠT */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="checkbox"
+                  id="chk-active-scenario"
+                  checked={editingScenario.isActive !== false}
+                  onChange={(e) => setEditingScenario({ ...editingScenario, isActive: e.target.checked })}
+                  style={{ width: 18, height: 18, accentColor: "#50008b", cursor: "pointer" }}
+                />
+                <label htmlFor="chk-active-scenario" style={{ fontSize: 13, fontWeight: 600, color: "#334155", cursor: "pointer" }}>
+                  Kích hoạt kịch bản này trong hệ thống AI & Live Chat
+                </label>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 12,
+                background: "#f8fafc",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setEditingScenario(null)}
+                style={{
+                  height: 40,
+                  padding: "0 18px",
+                  borderRadius: 10,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#475569",
+                  cursor: "pointer",
+                }}
+              >
+                Hủy bỏ
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveScenario(editingScenario)}
+                style={{
+                  height: 40,
+                  padding: "0 22px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "#50008b",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                💾 Lưu kịch bản & Áp dụng ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
-  );
+  </div>
+);
 }
