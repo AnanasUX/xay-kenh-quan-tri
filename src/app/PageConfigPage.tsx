@@ -17,9 +17,18 @@ function loadLandingPageConfig(): LandingPageConfig {
 }
 
 export function PageConfigPage() {
-  const { notify } = useCms();
+  const { notify, currentUser } = useCms();
   const [config, setConfig] = useState<LandingPageConfig>(loadLandingPageConfig);
-  const [activeId, setActiveId] = useState<LandingSectionId>("general");
+  const [activeId, setActiveId] = useState<LandingSectionId>(() => {
+    return currentUser?.role === "staff" ? "support" : "general";
+  });
+
+  const isStaff = currentUser?.role === "staff";
+  const STAFF_ALLOWED_SECTIONS = ["mission", "support", "process", "team", "gallery", "resources", "faq"];
+  const isSectionLockedForUser = (secId: string) => {
+    if (!isStaff) return false;
+    return !STAFF_ALLOWED_SECTIONS.includes(secId);
+  };
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
@@ -81,6 +90,11 @@ export function PageConfigPage() {
   };
 
   const save = async (publish = false, overrideConfig?: LandingPageConfig) => {
+    if (publish && isStaff) {
+      alert("Tài khoản của bạn là Nhân viên nên chỉ có quyền Lưu bản nháp.\nVui lòng nhờ Quản trị viên (admin) kiểm tra và Xuất bản website.");
+      notify("Nhân viên chỉ được phép Lưu bản nháp.");
+      return;
+    }
     const targetConfig = overrideConfig || config;
     setSaving(true);
     notify(publish ? "Đang xuất bản & đồng bộ đám mây..." : "Đang lưu bản nháp...");
@@ -194,7 +208,7 @@ export function PageConfigPage() {
       <div className="config-status">
         <span className="publish-state"><i /> Website đang hoạt động</span>
         <span>{dirty ? "Có thay đổi chưa lưu" : "Tất cả thay đổi đã được lưu"}</span>
-        <a className="config-url" href="https://ananasux.github.io/tre-tu-ky-responsive/" target="_blank" rel="noreferrer">
+        <a className="config-url" href="https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#resources" target="_blank" rel="noreferrer">
           tre-tu-ky-responsive
         </a>
       </div>
@@ -206,20 +220,41 @@ export function PageConfigPage() {
             <small>{config.sections.filter((section) => section.enabled).length} khối đang hiển thị</small>
           </div>
           <nav aria-label="Các khối nội dung landing page">
-            {config.sections.map((section, index) => (
-              <button
-                className={activeId === section.id ? "active" : ""}
-                key={section.id}
-                onClick={() => setActiveId(section.id)}
-              >
-                <span>{index === 0 ? <Icon name="settings" size={15} /> : String(index).padStart(2, "0")}</span>
-                <span>
-                  <strong>{section.label}</strong>
-                  <small>{section.enabled ? "Đang hiển thị" : "Đang ẩn"}</small>
-                </span>
-                <i className={section.enabled ? "visible" : ""} />
-              </button>
-            ))}
+            {config.sections.map((section, index) => {
+              const locked = isSectionLockedForUser(section.id);
+              return (
+                <button
+                  className={`${activeId === section.id ? "active" : ""} ${locked ? "section-btn--locked" : ""}`}
+                  key={section.id}
+                  onClick={() => {
+                    if (locked) {
+                      notify(`Mục "${section.label}" chỉ dành cho Quản trị viên.`);
+                    }
+                    setActiveId(section.id);
+                  }}
+                  title={locked ? "Chỉ dành cho Quản trị viên" : undefined}
+                >
+                  <span>
+                    {locked ? (
+                      <Icon name="lock" size={14} />
+                    ) : index === 0 ? (
+                      <Icon name="settings" size={15} />
+                    ) : (
+                      String(index).padStart(2, "0")
+                    )}
+                  </span>
+                  <span>
+                    <strong>{section.label}</strong>
+                    <small>{locked ? "🔒 Quản trị viên" : section.enabled ? "Đang hiển thị" : "Đang ẩn"}</small>
+                  </span>
+                  {locked ? (
+                    <span className="lock-pill">Khóa</span>
+                  ) : (
+                    <i className={section.enabled ? "visible" : ""} />
+                  )}
+                </button>
+              );
+            })}
           </nav>
         </aside>
 
@@ -258,7 +293,22 @@ export function PageConfigPage() {
             </div>
           </div>
 
-          {activeSection.id === "general" ? (
+          {isSectionLockedForUser(activeSection.id) ? (
+            <div className="section-locked-view">
+              <div className="locked-view-card">
+                <span className="locked-icon-badge">
+                  <Icon name="lock" size={32} />
+                </span>
+                <h3>Mục "{activeSection.label}" chỉ dành cho Quản trị viên</h3>
+                <p>
+                  Tài khoản của bạn đang là <strong>Nhân viên ({currentUser?.fullName})</strong>. Theo phân quyền, bạn chỉ được phép chỉnh sửa các khối nội dung: Sứ mệnh, Lĩnh vực, Quy trình, Đội ngũ, Không gian, Tài liệu và FAQ.
+                </p>
+                <div className="locked-recommend">
+                  <p>Để chỉnh sửa nhận diện thương hiệu, bộ nút liên hệ nổi hoặc cấu hình xuất bản, vui lòng chuyển sang tài khoản Quản trị viên.</p>
+                </div>
+              </div>
+            </div>
+          ) : activeSection.id === "general" ? (
             <GeneralSettings
               config={config}
               onChange={(field, value) => {

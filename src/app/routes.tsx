@@ -1,4 +1,5 @@
 import { createHashRouter, Navigate } from "react-router";
+import { AccountsPage } from "./AccountsPage";
 import { ConsultationsPage } from "./ConsultationsPage";
 import { HeatmapPage } from "./HeatmapPage";
 import Layout from "./Layout";
@@ -13,6 +14,7 @@ export const router = createHashRouter([
       { path: "cau-hinh-trang", Component: PageConfigPage },
       { path: "dang-ky-tu-van", Component: ConsultationsPage },
       { path: "heatmap", Component: HeatmapPage },
+      { path: "tai-khoan", Component: AccountsPage },
       { path: "*", element: <Navigate to="/cau-hinh-trang" replace /> },
     ],
   },
