@@ -6855,3 +6855,229 @@ select::placeholder {
   font-size: 12.5px;
   font-weight: 600;
 }
+
+/* Multi-AI System Design Extensions */
+.multi-ai-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .multi-ai-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card-action-btn {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.card-action-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.card-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card-action-btn--test {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #6d28d9;
+}
+
+.card-action-btn--test:hover {
+  background: #ede9fe;
+  border-color: #a78bfa;
+}
+
+.card-action-btn--delete {
+  color: #dc2626;
+  border-color: #fecaca;
+  background: #fff5f5;
+  padding: 0 8px;
+}
+
+.card-action-btn--delete:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.multi-ai-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.multi-ai-status-pill--active {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.multi-ai-status-pill--error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.multi-ai-status-pill--untested {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.multi-ai-key-field-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.key-eye-btn {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.key-eye-btn:hover {
+  color: #1e293b;
+  background: #e2e8f0;
+}
+
+.agent-dialogue-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.agent-speech-box {
+  background: #f8fafc;
+  border-left: 3px solid #50008b;
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1e293b;
+}
+
+.agent-speech-box p {
+  margin: 0;
+}
+
+.findings-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.findings-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.findings-list li {
+  font-size: 12px;
+  color: #475569;
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.agent-recommendations-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.analysis-progress-overlay {
+  background: #ffffff;
+  border: 1.5px solid #d8b4fe;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 4px 14px rgba(80, 0, 139, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progress-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: #f3e8ff;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #50008b 0%, #7c3aed 100%);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-agents-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.agent-badge-pill {
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.agent-badge-pill--active {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+  font-weight: 600;
+}
+

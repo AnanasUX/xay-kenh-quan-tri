@@ -15,7 +15,7 @@ import {
   IMMUTABLE_SYSTEM_INFO,
 } from "./aiService";
 import { logAuditAction } from "./auditService";
-import { Icon } from "./ui";
+import { Icon, PageHeading } from "./ui";
 
 const CMS_MODULES = [
   { id: "page_config", name: "Cấu hình trang & 11 khối", path: "/cau-hinh-trang", icon: "page" },
@@ -353,120 +353,101 @@ export function AiManagementPage() {
   const activeKeysCount = multiAiKeys.filter((k) => k.isActive).length;
 
   return (
-    <div className="system-analysis-container" style={{ paddingBottom: 60 }}>
-      {/* HEADER BANNER */}
-      <div className="analysis-hero-card" style={{ background: "linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4c1d95 100%)" }}>
-        <div className="hero-content">
-          <div className="hero-badge">
-            <Icon name="sparkle" size={16} />
-            <span>Google Gemini Multi-Agent Orchestrator • Toàn hệ thống CMS</span>
-          </div>
-
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#ffffff", marginTop: 10, marginBottom: 8 }}>
-            Quản lý AI hệ thống (Multi-Agent Swarm)
-          </h2>
-          <p style={{ color: "#e0e7ff", fontSize: 14, maxWidth: 860, lineHeight: 1.6, margin: 0 }}>
-            Hệ thống điều hành và phân quyền các khóa Google Gemini AI độc lập. Mỗi Tác tử AI đảm nhiệm phạm vi quyền hạn chuyên biệt:
-            Nhân viên rà soát lỗi nội dung & 5 hằng số nhận diện, Quản lý thẩm định quy trình & chiến dịch tiếp thị Zalo, Giám đốc điều hành phê duyệt tối cao toàn diện Kênh Quản trị.
-          </p>
-
-          {/* Quick Metrics Bar */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginTop: 22 }}>
-            <div style={{ background: "rgba(255, 255, 255, 0.1)", backdropFilter: "blur(8px)", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.15)" }}>
-              <div style={{ fontSize: 12, color: "#c7d2fe", fontWeight: 600 }}>TỔNG SỐ KEY AI HỆ THỐNG</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
-                {activeKeysCount} / {multiAiKeys.length} <span style={{ fontSize: 13, fontWeight: 500, color: "#a5b4fc" }}>đang kích hoạt</span>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.1)", backdropFilter: "blur(8px)", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.15)" }}>
-              <div style={{ fontSize: 12, color: "#c7d2fe", fontWeight: 600 }}>KẾT NỐI GOOGLE AI STUDIO</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
-                🟢 Sẵn sàng <span style={{ fontSize: 13, fontWeight: 500, color: "#86efac" }}>(Đa mô hình 2.5)</span>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.1)", backdropFilter: "blur(8px)", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.15)" }}>
-              <div style={{ fontSize: 12, color: "#c7d2fe", fontWeight: 600 }}>HỘI ĐỒNG GIAO BAN ĐA TÁC TỬ</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
-                {agentLogs.length > 0 ? "3 / 3 Cấp" : "Chưa họp"} <span style={{ fontSize: 13, fontWeight: 500, color: "#fde047" }}>{agentLogs.length > 0 ? "Đã đồng thuận" : "Sẵn sàng"}</span>
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(255, 255, 255, 0.1)", backdropFilter: "blur(8px)", padding: "12px 16px", borderRadius: 12, border: "1px solid rgba(255, 255, 255, 0.15)" }}>
-              <div style={{ fontSize: 12, color: "#c7d2fe", fontWeight: 600 }}>BAO PHỦ KÊNH QUẢN TRỊ</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#ffffff", marginTop: 4 }}>
-                100% <span style={{ fontSize: 13, fontWeight: 500, color: "#6ee7b7" }}>6/6 Phân hệ CMS</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions Row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 22, flexWrap: "wrap" }}>
+    <div className="accounts-page" style={{ paddingBottom: 60 }}>
+      <PageHeading
+        eyebrow="Hệ thống & Trí tuệ nhân tạo"
+        title="Quản lý AI hệ thống"
+        description="Cấu hình danh mục Google Gemini API Key riêng biệt, phân cấp quyền hạn tác tử (Nhân viên, Quản lý, Giám đốc), kiểm tra kết nối Ping All và ma trận vận hành toàn diện Kênh Quản trị."
+        action={
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <button
+              className="primary-button"
               type="button"
-              className="run-analysis-main-btn"
               onClick={handleRunSystemSync}
               disabled={isSyncRunning}
-              style={{ background: "#ffffff", color: "#4338ca", boxShadow: "0 4px 14px rgba(0,0,0,0.25)" }}
+              title="Khởi động phiên họp giao ban đa tác tử AI rà soát toàn bộ hệ thống"
             >
-              {isSyncRunning ? (
-                <>
-                  <span className="spinner-inline" /> Đang họp Giao ban Đa Tác tử...
-                </>
-              ) : (
-                <>
-                  <Icon name="sparkle" size={17} />
-                  <span>🚀 Khởi động Giao ban Đa Tác tử (Multi-AI Sync)</span>
-                </>
-              )}
+              <Icon name="sparkle" size={16} />
+              <span>{isSyncRunning ? "Đang giao ban..." : "Giao ban Đa Tác tử (Multi-AI Sync)"}</span>
             </button>
-
             <button
+              className="secondary-button"
               type="button"
-              className="multi-ai-btn"
               onClick={handlePingAllKeys}
               disabled={isPingAllRunning}
-              style={{ background: "rgba(255,255,255,0.15)", color: "#ffffff", borderColor: "rgba(255,255,255,0.3)" }}
+              title="Kiểm tra kết nối và độ trễ toàn bộ Key AI tới Google AI Studio"
             >
-              {isPingAllRunning ? (
-                <>
-                  <span className="spinner-inline" /> Đang kiểm tra...
-                </>
-              ) : (
-                <>
-                  <Icon name="sparkle" size={14} />
-                  <span>Kiểm tra toàn bộ AI (Ping All)</span>
-                </>
-              )}
+              <Icon name="sparkle" size={16} />
+              <span>{isPingAllRunning ? "Đang kiểm tra..." : "Kiểm tra toàn bộ AI (Ping All)"}</span>
             </button>
-
             <button
+              className="secondary-button"
               type="button"
-              className="multi-ai-btn"
               onClick={handleOpenAddModal}
-              style={{ background: "rgba(255,255,255,0.15)", color: "#ffffff", borderColor: "rgba(255,255,255,0.3)" }}
+              title="Thêm Key AI mới vào hệ thống"
             >
-              <Icon name="plus" size={14} />
+              <Icon name="plus" size={16} />
               <span>Thêm Key AI Mới</span>
             </button>
-
             <button
+              className="secondary-button"
               type="button"
-              className="multi-ai-btn"
               onClick={handleExportKeysJson}
-              style={{ background: "rgba(255,255,255,0.15)", color: "#ffffff", borderColor: "rgba(255,255,255,0.3)" }}
+              title="Xuất cấu hình danh mục Key AI ra file JSON"
             >
-              <Icon name="download" size={14} />
-              <span>Xuất Cấu hình Key (.json)</span>
+              <Icon name="download" size={16} />
+              <span>Xuất JSON</span>
             </button>
+          </div>
+        }
+      />
+
+      {/* METRIC CARDS */}
+      <div className="accounts-metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon metric-icon--purple">
+            <Icon name="sparkle" size={22} />
+          </div>
+          <div>
+            <strong>{activeKeysCount} / {multiAiKeys.length}</strong>
+            <span>Key AI đang kích hoạt</span>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon metric-icon--admin">
+            <Icon name="shield" size={22} />
+          </div>
+          <div>
+            <strong>Google AI Studio</strong>
+            <span>Mô hình Gemini 2.5 sẵn sàng</span>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon metric-icon--staff">
+            <Icon name="users" size={22} />
+          </div>
+          <div>
+            <strong>{agentLogs.length > 0 ? "3 / 3 Tác tử" : "Chưa họp"}</strong>
+            <span>{agentLogs.length > 0 ? "Đã đồng thuận vận hành" : "Hội đồng sẵn sàng"}</span>
+          </div>
+        </div>
+
+        <div className="metric-card metric-card--active">
+          <div className="metric-icon metric-icon--current">
+            <Icon name="check" size={22} />
+          </div>
+          <div>
+            <strong style={{ fontSize: "16px", color: "#176b35" }}>100% Bao phủ</strong>
+            <span style={{ color: "#176b35", fontWeight: "600" }}>6/6 Phân hệ Kênh Quản trị</span>
           </div>
         </div>
       </div>
 
       {/* SYNC PROGRESS OVERLAY */}
       {isSyncRunning && (
-        <div className="analysis-progress-overlay" style={{ marginTop: 20 }}>
+        <div className="analysis-progress-overlay">
           <div className="progress-status-row">
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span className="spinner-inline" />
@@ -494,25 +475,70 @@ export function AiManagementPage() {
       {/* BẢO TỒN 5 HẰNG SỐ CỐ ĐỊNH BANNER */}
       <div
         style={{
-          marginTop: 24,
-          padding: "14px 20px",
-          borderRadius: 14,
+          padding: "16px 20px",
+          borderRadius: 12,
           background: "#fffbeb",
           border: "1.5px solid #fde68a",
           display: "flex",
           alignItems: "flex-start",
           gap: 14,
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.02)",
         }}
       >
-        <span style={{ fontSize: 22 }}>🛡️</span>
-        <div style={{ fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>
-          <strong style={{ color: "#78350f" }}>NGUYÊN TẮC BẢO VỆ 5 HẰNG SỐ CỦA HỆ THỐNG (AI TUYỆT ĐỐI KHÔNG SỬA / KHÔNG BỊA ĐẶT):</strong>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px 20px", marginTop: 6, fontWeight: 600 }}>
-            <span>📧 Email: <code>{IMMUTABLE_SYSTEM_INFO.email}</code></span>
-            <span>📍 Địa chỉ: <code>{IMMUTABLE_SYSTEM_INFO.address}</code></span>
-            <span>📞 Hotline: <code>{IMMUTABLE_SYSTEM_INFO.phone}</code></span>
-            <span>🌐 Fanpage: <code>{IMMUTABLE_SYSTEM_INFO.facebook}</code></span>
-            <span>🏷️ Tiêu đề: <code>{IMMUTABLE_SYSTEM_INFO.title}</code></span>
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            background: "#fef3c7",
+            color: "#d97706",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            fontSize: 18,
+          }}
+        >
+          <Icon name="shield" size={20} />
+        </div>
+        <div style={{ flex: 1, fontSize: 13, color: "#92400e", lineHeight: 1.6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+            <strong style={{ color: "#78350f", fontSize: 13.5 }}>
+              NGUYÊN TẮC BẢO VỆ 5 HẰNG SỐ HỆ THỐNG (AI TUYỆT ĐỐI KHÔNG SỬA / KHÔNG BỊA ĐẶT):
+            </strong>
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: "#fef3c7",
+                color: "#b45309",
+                border: "1px solid #fde68a",
+              }}
+            >
+              Bất biến định danh
+            </span>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gap: "8px 16px",
+              fontSize: 12.5,
+              color: "#78350f",
+            }}
+          >
+            <div>📧 Email: <strong style={{ fontFamily: "monospace", color: "#451a03" }}>{IMMUTABLE_SYSTEM_INFO.email}</strong></div>
+            <div>📍 Địa chỉ: <strong style={{ color: "#451a03" }}>{IMMUTABLE_SYSTEM_INFO.address}</strong></div>
+            <div>📞 Hotline: <strong style={{ fontFamily: "monospace", color: "#451a03" }}>{IMMUTABLE_SYSTEM_INFO.phone}</strong></div>
+            <div>
+              🌐 Fanpage:{" "}
+              <a href={IMMUTABLE_SYSTEM_INFO.facebook} target="_blank" rel="noreferrer" style={{ color: "#1d4ed8", textDecoration: "underline" }}>
+                {IMMUTABLE_SYSTEM_INFO.facebook}
+              </a>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>🏷️ Tên đơn vị: <strong style={{ color: "#451a03" }}>{IMMUTABLE_SYSTEM_INFO.title}</strong></div>
           </div>
         </div>
       </div>
@@ -520,37 +546,39 @@ export function AiManagementPage() {
       {/* ========================================================================= */}
       {/* KHỐI 1: DANH MỤC QUẢN LÝ CÁC KEY AI & PHÂN QUYỀN TÁC TỬ */}
       {/* ========================================================================= */}
-      <div className="system-section-card" style={{ marginTop: 24 }}>
-        <div className="section-card-header">
-          <div className="header-left">
-            <span className="step-tag" style={{ background: "#ede9fe", color: "#6d28d9" }}>MỤC 1</span>
-            <div>
-              <h3>Danh mục Quản lý Key AI & Phân quyền Tác tử</h3>
-              <p>
-                Cấu hình các Key Google Gemini API độc lập, kiểm tra trạng thái hoạt động và gán phạm vi quyền hạn chuyên trách
-              </p>
+      <div className="accounts-table-card" style={{ padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>MỤC 1</span>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Danh mục Quản lý Key AI & Phân quyền Tác tử</h3>
             </div>
+            <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
+              Cấu hình các Key Google Gemini API độc lập, kiểm tra trạng thái hoạt động và gán phạm vi quyền hạn chuyên trách
+            </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button
               type="button"
-              className="multi-ai-btn"
+              className="secondary-button"
+              style={{ height: 36, minHeight: 36, fontSize: 13 }}
               onClick={handlePingAllKeys}
               disabled={isPingAllRunning}
               title="Kiểm tra trạng thái kết nối và độ trễ của tất cả API Key"
             >
-              <Icon name="sparkle" size={13} />
+              <Icon name="sparkle" size={14} />
               <span>Kiểm tra toàn bộ AI (Ping All)</span>
             </button>
 
             <button
               type="button"
-              className="multi-ai-btn multi-ai-btn--primary"
+              className="primary-button"
+              style={{ height: 36, minHeight: 36, fontSize: 13 }}
               onClick={handleOpenAddModal}
               title="Thêm Key AI mới kèm phân quyền chức năng riêng"
             >
-              <Icon name="plus" size={13} />
+              <Icon name="plus" size={14} />
               <span>Thêm Key AI</span>
             </button>
           </div>
@@ -689,46 +717,54 @@ export function AiManagementPage() {
                 </div>
 
                 {/* Actions Footer */}
-                <div className="multi-ai-card-footer" style={{ marginTop: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button
-                      type="button"
-                      className="card-action-btn card-action-btn--test"
-                      onClick={() => handleTestSingleKey(item)}
-                      disabled={isTestingThis}
-                      title="Gửi tín hiệu kiểm tra Key này tới Google AI Studio"
-                    >
-                      {isTestingThis ? (
-                        <>
-                          <span className="spinner-inline" /> Đang ping...
-                        </>
-                      ) : (
-                        <>
-                          <Icon name="sparkle" size={12} />
-                          <span>Kiểm tra</span>
-                        </>
-                      )}
-                    </button>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    flexWrap: "wrap",
+                    marginTop: 14,
+                    paddingTop: 10,
+                    borderTop: "1px solid #f1f5f9",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="card-action-btn card-action-btn--test"
+                    onClick={() => handleTestSingleKey(item)}
+                    disabled={isTestingThis}
+                    title="Gửi tín hiệu kiểm tra Key này tới Google AI Studio"
+                  >
+                    {isTestingThis ? (
+                      <>
+                        <span className="spinner-inline" /> Đang ping...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="sparkle" size={12} />
+                        <span>Kiểm tra</span>
+                      </>
+                    )}
+                  </button>
 
-                    <button
-                      type="button"
-                      className="card-action-btn"
-                      onClick={() => handleOpenEditModal(item)}
-                      title="Chỉnh sửa thông tin, phân quyền hoặc khóa API"
-                    >
-                      <Icon name="settings" size={12} />
-                      <span>Sửa</span>
-                    </button>
+                  <button
+                    type="button"
+                    className="card-action-btn"
+                    onClick={() => handleOpenEditModal(item)}
+                    title="Chỉnh sửa thông tin, phân quyền hoặc khóa API"
+                  >
+                    <Icon name="settings" size={12} />
+                    <span>Sửa</span>
+                  </button>
 
-                    <button
-                      type="button"
-                      className="card-action-btn"
-                      onClick={() => handleToggleKeyActive(item.id)}
-                      title={item.isActive ? "Tạm dừng tác tử này" : "Bật tác tử này"}
-                    >
-                      <span>{item.isActive ? "Tạm dừng" : "Kích hoạt"}</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    className="card-action-btn"
+                    onClick={() => handleToggleKeyActive(item.id)}
+                    title={item.isActive ? "Tạm dừng tác tử này" : "Bật tác tử này"}
+                  >
+                    <span>{item.isActive ? "Tạm dừng" : "Kích hoạt"}</span>
+                  </button>
 
                   <button
                     type="button"
@@ -736,7 +772,8 @@ export function AiManagementPage() {
                     onClick={() => handleDeleteKey(item.id)}
                     title="Xóa Key này khỏi hệ thống"
                   >
-                    <Icon name="close" size={12} />
+                    <Icon name="trash" size={12} />
+                    <span>Xóa</span>
                   </button>
                 </div>
               </div>
@@ -748,20 +785,21 @@ export function AiManagementPage() {
       {/* ========================================================================= */}
       {/* KHỐI 2: MA TRẬN PHÂN CÔNG NHIỆM VỤ & BAO PHỦ TOÀN HỆ THỐNG */}
       {/* ========================================================================= */}
-      <div className="system-section-card" style={{ marginTop: 24 }}>
-        <div className="section-card-header">
-          <div className="header-left">
-            <span className="step-tag" style={{ background: "#ecfdf5", color: "#065f46" }}>MỤC 2</span>
-            <div>
-              <h3>Ma trận Phân công Nhiệm vụ & Vận hành Toàn Hệ thống</h3>
-              <p>
-                Phân việc chi tiết cho các Tác tử AI bao phủ 6 phân hệ của Kênh Quản trị ("https://ananasux.github.io/xay-kenh-quan-tri/")
-              </p>
+      <div className="accounts-table-card" style={{ padding: 24, marginTop: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: "#ecfdf5", color: "#065f46", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>MỤC 2</span>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Ma trận Phân công Nhiệm vụ & Vận hành Toàn Hệ thống</h3>
             </div>
+            <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
+              Phân việc chi tiết cho các Tác tử AI bao phủ 6 phân hệ của Kênh Quản trị ("https://ananasux.github.io/xay-kenh-quan-tri/")
+            </p>
           </div>
 
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#059669" }}>
-            🟢 100% Bao phủ hệ thống
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#059669", background: "#ecfdf5", padding: "6px 14px", borderRadius: 999, border: "1px solid #a7f3d0" }}>
+            <span>🟢</span>
+            <span>100% Bao phủ hệ thống</span>
           </div>
         </div>
 
@@ -803,7 +841,7 @@ export function AiManagementPage() {
                   Phê chuẩn xuất bản nội dung chính thức lên Landing Page.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/cau-hinh-trang" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/cau-hinh-trang" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -825,7 +863,7 @@ export function AiManagementPage() {
                   Đánh giá chỉ số hài lòng của phụ huynh và chất lượng tư vấn chuyên môn.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/chat-khach-hang" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/chat-khach-hang" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -847,7 +885,7 @@ export function AiManagementPage() {
                   Theo dõi tỷ lệ chuyển đổi phụ huynh đăng ký và phê duyệt kế hoạch tiếp nhận trẻ can thiệp.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/dang-ky-tu-van" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/dang-ky-tu-van" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -869,7 +907,7 @@ export function AiManagementPage() {
                   Phê chuẩn kế hoạch tối ưu hóa giao diện dựa trên dữ liệu tương tác thực tế của phụ huynh.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/heatmap" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/heatmap" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -891,7 +929,7 @@ export function AiManagementPage() {
                   Phê chuẩn tối cao lộ trình 3 giai đoạn và ký duyệt mục tiêu nâng điểm UX từ 88 lên 96/100.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/phan-tich-he-thong" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/phan-tich-he-thong" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -913,7 +951,7 @@ export function AiManagementPage() {
                   Giám sát toàn diện an toàn thông tin và cấp quyền quản trị cho nhân sự trung tâm.
                 </td>
                 <td style={{ padding: "14px", textAlign: "center", verticalAlign: "middle" }}>
-                  <Link to="/nhat-ky-hoat-dong" className="multi-ai-btn" style={{ padding: "4px 8px", fontSize: 11 }}>
+                  <Link to="/nhat-ky-hoat-dong" className="secondary-button" style={{ height: 28, minHeight: 28, padding: "0 10px", fontSize: 11.5, display: "inline-flex" }}>
                     Mở ↗
                   </Link>
                 </td>
@@ -926,36 +964,38 @@ export function AiManagementPage() {
       {/* ========================================================================= */}
       {/* KHỐI 3: NHẬT KÝ ĐỐI THOẠI & BÁO CÁO GIAO BAN ĐA TÁC TỬ */}
       {/* ========================================================================= */}
-      <div className="system-section-card" style={{ marginTop: 24 }}>
-        <div className="section-card-header">
-          <div className="header-left">
-            <span className="step-tag" style={{ background: "#fef3c7", color: "#92400e" }}>MỤC 3</span>
-            <div>
-              <h3>Nhật ký Đối thoại & Báo cáo Giao ban Đa Tác tử (Multi-Agent Dialogue Log)</h3>
-              <p>
-                Lưu vết toàn bộ quá trình trao đổi, phản biện và phán quyết điều hành Kênh Quản trị giữa các cấp AI
-              </p>
+      <div className="accounts-table-card" style={{ padding: 24, marginTop: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>MỤC 3</span>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Nhật ký Đối thoại & Báo cáo Giao ban Đa Tác tử (Multi-Agent Dialogue Log)</h3>
             </div>
+            <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
+              Lưu vết toàn bộ quá trình trao đổi, phản biện và phán quyết điều hành Kênh Quản trị giữa các cấp AI
+            </p>
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button
               type="button"
-              className="multi-ai-btn"
+              className="secondary-button"
+              style={{ height: 36, minHeight: 36, fontSize: 13 }}
               onClick={handleCopyLogs}
               title="Sao chép toàn bộ nhật ký trao đổi giữa các AI"
             >
-              <Icon name="copy" size={13} />
+              <Icon name="copy" size={14} />
               <span>Sao chép Log</span>
             </button>
 
             <button
               type="button"
-              className="multi-ai-btn"
+              className="secondary-button"
+              style={{ height: 36, minHeight: 36, fontSize: 13 }}
               onClick={handleDownloadLogsTxt}
               title="Tải file text nhật ký đối thoại"
             >
-              <Icon name="download" size={13} />
+              <Icon name="download" size={14} />
               <span>Tải file .txt</span>
             </button>
           </div>
@@ -1370,14 +1410,16 @@ export function AiManagementPage() {
             >
               <button
                 type="button"
-                className="multi-ai-btn"
+                className="secondary-button"
+                style={{ height: 38, minHeight: 38 }}
                 onClick={() => setShowKeyModal(false)}
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
-                className="multi-ai-btn multi-ai-btn--primary"
+                className="primary-button"
+                style={{ height: 38, minHeight: 38 }}
                 onClick={() => handleSaveModal(editingKeyItem)}
               >
                 <Icon name="check" size={14} />
