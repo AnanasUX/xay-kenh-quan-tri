@@ -14,6 +14,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
 import { logAuditAction } from "./auditService";
+import { analyzeChatSessionsAndGenerateScenarios } from "./aiService";
 
 export interface ChatMessage {
   id: string;
@@ -43,6 +44,7 @@ export interface LiveChatSettings {
   updatedAt?: string;
 }
 
+const LEADS_API_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/consultation_leads";
 const CHAT_SESSIONS_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_sessions";
 const CHAT_SETTINGS_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_settings";
 const ADMIN_PRESENCE_URL = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/live_chat_presence";
@@ -76,6 +78,7 @@ export function LiveChatPage() {
 
   // Scenarios Modal & Configuration Management
   const [showScenariosModal, setShowScenariosModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [scenariosList, setScenariosList] = useState<AutismScenario[]>(() => getStoredScenarios());
   const [editingScenario, setEditingScenario] = useState<AutismScenario | null>(null);
   const [isNewScenario, setIsNewScenario] = useState(false);
@@ -493,6 +496,110 @@ export function LiveChatPage() {
     } catch {}
   };
 
+
+  // Helper tự động cập nhật trạng thái CRM Lead (Đăng ký tư vấn) theo quy tắc nghiệp vụ
+  const automateLeadStatusFromMessage = async (
+    phone: string,
+    name: string,
+    messageText: string
+  ) => {
+    const cleanTargetPhone = phone.replace(/[^0-9]/g, "");
+    if (!cleanTargetPhone) return;
+
+    try {
+      const res = await fetch(LEADS_API_URL, { cache: "no-store" });
+      const currentLeads = res.ok ? await res.json() : [];
+      if (!Array.isArray(currentLeads)) return;
+
+      const leadIndex = currentLeads.findIndex(
+        (l: any) => (l.phone || "").replace(/[^0-9]/g, "") === cleanTargetPhone
+      );
+
+      const lowerText = messageText.toLowerCase();
+
+      // Từ khóa hẹn địa điểm
+      const isLocationAppointment =
+        lowerText.includes("chị có thể qua") ||
+        lowerText.includes("chị qua em tư vấn") ||
+        lowerText.includes("chị qua địa chỉ") ||
+        lowerText.includes("địa chỉ nhà em") ||
+        lowerText.includes("mẹ có thể qua") ||
+        lowerText.includes("ba có thể qua") ||
+        lowerText.includes("qua trung tâm") ||
+        lowerText.includes("đến trung tâm") ||
+        lowerText.includes("hẹn gặp ba mẹ");
+
+      // Từ khóa kết thúc cuộc trò chuyện
+      const isClosingConversation =
+        lowerText.includes("em xin phép kết thúc cuộc trò chuyện") ||
+        lowerText.includes("Em xin phép kết thúc cuộc trò chuyện") ||
+        lowerText.includes("cô xin phép kết thúc cuộc trò chuyện") ||
+        lowerText.includes("xin phép kết thúc cuộc trò chuyện") ||
+        lowerText.includes("chúc gia đình");
+
+      let newStatus: "new" | "contacted" | "scheduled" | "completed" = "contacted";
+      let statusLabel = "Đã tư vấn";
+
+      if (isClosingConversation) {
+        newStatus = "completed";
+        statusLabel = "Hoàn thành";
+      } else if (isLocationAppointment) {
+        newStatus = "scheduled";
+        statusLabel = "Đã hẹn lịch";
+      } else {
+        newStatus = "contacted";
+        statusLabel = "Đã tư vấn";
+      }
+
+      let updatedLeads: any[];
+      if (leadIndex !== -1) {
+        const existing = currentLeads[leadIndex];
+        const updatedLead = {
+          ...existing,
+          status: newStatus,
+          notes: `${existing.notes ? existing.notes + " | " : ""}[${new Date().toLocaleTimeString("vi-VN")}] CRM Tự động: ${statusLabel}`,
+          updatedAt: new Date().toISOString(),
+        };
+        updatedLeads = currentLeads.map((l: any, idx: number) =>
+          idx === leadIndex ? updatedLead : l
+        );
+      } else {
+        const newLead = {
+          id: `lead-livechat-${Date.now()}`,
+          name,
+          phone,
+          need: "Live Chat Website (Hỗ trợ trực tuyến)",
+          message: "Tự động tạo từ cuộc trò chuyện Live Chat",
+          status: newStatus,
+          createdAt: new Date().toISOString(),
+        };
+        updatedLeads = [newLead, ...currentLeads];
+      }
+
+      await fetch(LEADS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedLeads),
+      });
+
+      // Bắn tín hiệu BroadcastChannel đồng bộ cho trang Đăng ký tư vấn
+      try {
+        const leadChan = new BroadcastChannel("aurora_leads_channel");
+        leadChan.postMessage({ type: "LEAD_STATUS_UPDATED", phone, status: newStatus });
+        leadChan.close();
+      } catch {}
+      try {
+        const syncChan = new BroadcastChannel("aurora-leads-sync");
+        syncChan.postMessage({ type: "lead_status_changed", phone, status: newStatus });
+        syncChan.close();
+      } catch {}
+
+      notify(`CRM Đăng ký tư vấn: Đã tự động cập nhật trạng thái phụ huynh sang "${statusLabel}"`);
+    } catch (e) {
+      console.warn("Could not auto-update lead status:", e);
+    }
+  };
+
   // 4. Quản trị viên gửi tin nhắn phản hồi
   const handleSendReply = async (customText?: string) => {
     const text = (customText || replyText).trim();
@@ -550,6 +657,13 @@ export function LiveChatPage() {
       });
 
       notify("Đã gửi tin nhắn cho phụ huynh");
+
+      // Tự động hóa CRM Lead (Đăng ký tư vấn)
+      automateLeadStatusFromMessage(
+        selectedSession.customerPhone,
+        selectedSession.customerName,
+        text
+      );
     } catch (err) {
       notify("Lỗi kết nối khi gửi tin nhắn, vui lòng thử lại.");
     } finally {
@@ -598,7 +712,16 @@ export function LiveChatPage() {
     }
   };
 
-  // Lọc phiên chat
+  // Kiểm tra phiên đã được nhân viên trả lời hay chưa:
+  // Nếu nhân viên nhắn 1 tin nhắn bất kỳ cho khách -> Đã trả lời
+  // Nếu chỉ mở xem mà chưa nhắn tin gì -> Vẫn giữ nguyên là "Chờ trả lời"
+  const isSessionRepliedByStaff = (s: LiveChatSession): boolean => {
+    if (!s.messages || s.messages.length === 0) return false;
+    const lastMsg = s.messages[s.messages.length - 1];
+    return lastMsg.sender === "admin" || s.status === "replied";
+  };
+
+  // Lọc phiên chat theo đúng quy tắc
   const filteredSessions = useMemo(() => {
     return sessions.filter((session) => {
       const matchSearch =
@@ -606,10 +729,12 @@ export function LiveChatPage() {
         session.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.customerPhone.includes(searchTerm.trim());
 
+      const isReplied = isSessionRepliedByStaff(session);
+
       const matchStatus =
         statusFilter === "all" ||
-        (statusFilter === "waiting" && session.status === "waiting") ||
-        (statusFilter === "replied" && session.status === "replied") ||
+        (statusFilter === "waiting" && !isReplied) ||
+        (statusFilter === "replied" && isReplied) ||
         (statusFilter === "online" && session.status === "online");
 
       return matchSearch && matchStatus;
@@ -617,7 +742,7 @@ export function LiveChatPage() {
   }, [sessions, searchTerm, statusFilter]);
 
   const totalWaiting = useMemo(() => {
-    return sessions.filter((s) => s.status === "waiting" || (s.unreadAdminCount && s.unreadAdminCount > 0)).length;
+    return sessions.filter((s) => !isSessionRepliedByStaff(s)).length;
   }, [sessions]);
 
   return (
@@ -644,7 +769,14 @@ export function LiveChatPage() {
                 gap: 6,
               }}
             >
-              <Icon name="refresh" size={16} />
+              <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 24 24" width="16">
+                <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
+                  <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                  <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                  <path d="M16 21h5v-5" />
+                </g>
+              </svg>
               {isRefreshing ? "Đang đồng bộ..." : "Làm mới"}
             </button>
             <button
@@ -656,16 +788,15 @@ export function LiveChatPage() {
                 padding: "0 14px",
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#6d28d9",
-                borderColor: "#c4b5fd",
-                background: "#f5f3ff",
+                color: "rgb(109, 40, 217)",
+                borderColor: "rgb(196, 181, 253)",
+                background: "rgb(245, 243, 255)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
               }}
             >
-              <span>📚</span>
-              Bộ kịch bản & Tình huống AI
+              <span>📚</span>Bộ kịch bản &amp; Tình huống AI
             </button>
             <button
               type="button"
@@ -675,16 +806,41 @@ export function LiveChatPage() {
                 padding: "0 14px",
                 fontSize: 13,
                 fontWeight: 600,
-                color: "#50008b",
-                borderColor: "#d8b4fe",
-                background: "#faf5ff",
+                color: "rgb(80, 0, 139)",
+                borderColor: "rgb(216, 180, 254)",
+                background: "rgb(250, 245, 255)",
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 6,
               }}
             >
-              <Icon name="phone" size={16} />
+              <svg aria-hidden="true" fill="none" height="16" viewBox="0 0 24 24" width="16">
+                <g stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
+                  <path d="M6.5 3h3l1.2 5-2.2 1.5a15 15 0 0 0 6 6l1.5-2.2 5 1.2v3c0 2-1.5 3.5-3.5 3.5C9.5 21 3 14.5 3 6.5 3 4.5 4.5 3 6.5 3Z" />
+                </g>
+              </svg>
               Xem Đăng ký tư vấn
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAnalysisModal(true)}
+              className="primary-button"
+              style={{
+                height: 38,
+                padding: "0 14px",
+                fontSize: 13,
+                fontWeight: 600,
+                background: "linear-gradient(135deg, #7c3aed, #50008b)",
+                color: "#ffffff",
+                border: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                boxShadow: "0 2px 8px rgba(124, 58, 237, 0.3)",
+                cursor: "pointer",
+              }}
+            >
+              <span>🧠</span>Phân tích trò chuyện
             </button>
           </div>
         }
@@ -1719,7 +1875,7 @@ export function LiveChatPage() {
                       letterSpacing: "0.2px",
                     }}
                   >
-                    Chuẩn hóa can thiệp tại nhà · Thái Bình
+                    Chuẩn hóa can thiệp tại nhà · Hưng Yên
                   </span>
                 </div>
 

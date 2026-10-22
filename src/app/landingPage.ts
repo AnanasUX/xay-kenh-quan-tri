@@ -45,6 +45,10 @@ export type LandingPageConfig = {
   enableFloatingFacebook?: boolean;
   enableFloatingZalo?: boolean;
   enableFloatingPhone?: boolean;
+  floatingFacebookIcon?: string;
+  floatingZaloIcon?: string;
+  floatingPhoneIcon?: string;
+  floatingButtonSize?: number;
   enableBackToTop?: boolean;
   enableFloatingPulse?: boolean;
   floatingPosition?: "right" | "left";
@@ -59,12 +63,13 @@ export const initialLandingPageConfig: LandingPageConfig = {
   "consultationLabel": "Tư vấn ngay",
   "phone": "096 290 3942",
   "email": "mamnonhpkid@gmail.com",
-  "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Thái Bình",
-  "facebook": "https://www.facebook.com",
+  "address": "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+  "facebook": "https://www.facebook.com/chanh.chua.330",
   "zalo": "096 290 3942",
   "enableFloatingFacebook": true,
   "enableFloatingZalo": true,
   "enableFloatingPhone": true,
+  "floatingButtonSize": 52,
   "enableBackToTop": true,
   "enableFloatingPulse": true,
   "floatingPosition": "right",
@@ -113,7 +118,7 @@ export const initialLandingPageConfig: LandingPageConfig = {
     {
       "id": "hero",
       "label": "Mở đầu",
-      "eyebrow": "Đồng hành cùng trẻ và gia đình tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Thái Bình",
+      "eyebrow": "Đồng hành cùng trẻ và gia đình tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
       "title": "Tôn trọng từng nhịp phát triển, đồng hành cùng gia đình",
       "description": "Mỗi bước tiến của con đều được trân trọng và ghi nhận. Trung tâm chuyên sâu về phát triển ngôn ngữ & âm ngữ trị liệu, can thiệp hành vi ứng dụng ABA, điều hòa cảm giác và vận động, can thiệp sớm & chuẩn bị vào lớp 1. Chúng tôi xây dựng lộ trình khoa học, cá nhân hóa và gắn kết chặt chẽ cùng phụ huynh trên hành trình giúp con hòa nhập.",
       "enabled": true,
@@ -377,7 +382,7 @@ export const initialLandingPageConfig: LandingPageConfig = {
       "id": "footer",
       "label": "Chân trang",
       "title": "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương",
-      "description": "Đồng hành cùng trẻ tự kỷ, chậm nói và gia đình bằng sự thấu hiểu, tôn trọng nhịp phát triển và phương pháp khoa học chuẩn mực tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Thái Bình.",
+      "description": "Đồng hành cùng trẻ tự kỷ, chậm nói và gia đình bằng sự thấu hiểu, tôn trọng nhịp phát triển và phương pháp khoa học chuẩn mực tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên.",
       "enabled": true,
       "items": [
         {

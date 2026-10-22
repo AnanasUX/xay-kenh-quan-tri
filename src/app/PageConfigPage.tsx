@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { AiAssistantModal } from "./AiAssistantModal";
+import { AiSectionRewriteModal } from "./AiSectionRewriteModal";
 import { logAuditAction } from "./auditService";
 import { ImageCropperModal, CROP_SPECS, type CropTargetSpec } from "./ImageCropperModal";
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
@@ -66,6 +67,7 @@ export function PageConfigPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [showRewriteModal, setShowRewriteModal] = useState(false);
 
   useEffect(() => {
     fetch(CLOUD_API_URL, { cache: "no-store" })
@@ -359,8 +361,8 @@ export function PageConfigPage() {
               <button
                 type="button"
                 className="ai-section-button"
-                onClick={() => setShowAiModal(true)}
-                title="Yêu cầu AI viết lại hoặc nâng cấp nội dung mục này"
+                onClick={() => setShowRewriteModal(true)}
+                title="Yêu cầu AI viết lại hoặc nâng cấp nội dung mục này (Có tự động sao lưu dự phòng)"
               >
                 <Icon name="sparkle" size={14} />
                 Viết lại bằng AI
@@ -437,8 +439,8 @@ export function PageConfigPage() {
                 {config.enableFloatingFacebook !== false && (
                   <span
                     style={{
-                      width: 20,
-                      height: 20,
+                      width: Math.round(((config.floatingButtonSize || 52) / 52) * 22),
+                      height: Math.round(((config.floatingButtonSize || 52) / 52) * 22),
                       borderRadius: "50%",
                       background: "linear-gradient(135deg, #1877f2, #0d65d9)",
                       color: "#fff",
@@ -448,17 +450,22 @@ export function PageConfigPage() {
                       fontSize: 11,
                       fontWeight: 700,
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      overflow: "hidden",
                     }}
                     title="Facebook"
                   >
-                    f
+                    {config.floatingFacebookIcon ? (
+                      <img src={config.floatingFacebookIcon} alt="FB" style={{ width: 14, height: 14, objectFit: "contain" }} />
+                    ) : (
+                      "f"
+                    )}
                   </span>
                 )}
                 {config.enableFloatingZalo !== false && (
                   <span
                     style={{
-                      width: 20,
-                      height: 20,
+                      width: Math.round(((config.floatingButtonSize || 52) / 52) * 22),
+                      height: Math.round(((config.floatingButtonSize || 52) / 52) * 22),
                       borderRadius: "50%",
                       background: "linear-gradient(135deg, #0068ff, #0052cc)",
                       color: "#fff",
@@ -468,10 +475,15 @@ export function PageConfigPage() {
                       fontSize: 8,
                       fontWeight: 700,
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      overflow: "hidden",
                     }}
                     title="Zalo"
                   >
-                    Zalo
+                    {config.floatingZaloIcon ? (
+                      <img src={config.floatingZaloIcon} alt="Zalo" style={{ width: 14, height: 14, objectFit: "contain" }} />
+                    ) : (
+                      "Zalo"
+                    )}
                   </span>
                 )}
                 {config.enableFloatingPhone !== false && (
@@ -671,6 +683,45 @@ function GeneralSettings({
                 onChange={(event) => onChange("facebook", event.target.value)}
               />
             </label>
+            <label className="dock-field-label" style={{ marginTop: 8 }}>
+              Ảnh biểu tượng icon Facebook tùy chỉnh (Icon Size: 24×24px)
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+                {config.floatingFacebookIcon && (
+                  <img
+                    src={config.floatingFacebookIcon}
+                    alt="Facebook"
+                    style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 4, background: "#f1f5f9", padding: 2, border: "1px solid #cbd5e1" }}
+                  />
+                )}
+                <input
+                  type="text"
+                  value={config.floatingFacebookIcon || ""}
+                  placeholder="URL ảnh hoặc bấm nút chọn file..."
+                  onChange={(event) => onChange("floatingFacebookIcon", event.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <label className="secondary-button" style={{ padding: "0 10px", height: 36, fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                  <Icon name="upload" size={13} />
+                  <span>Chọn file</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => onChange("floatingFacebookIcon", ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <small style={{ color: "#64748b", fontSize: 11, marginTop: 2, display: "block" }}>
+                Kích thước icon hiển thị: <strong>24 × 24 px</strong>. Hỗ trợ ảnh trong suốt PNG/SVG.
+              </small>
+            </label>
           </div>
 
           {/* Card Zalo */}
@@ -700,6 +751,45 @@ function GeneralSettings({
                 placeholder="096 290 3942 hoặc https://zalo.me/..."
                 onChange={(event) => onChange("zalo", event.target.value)}
               />
+            </label>
+            <label className="dock-field-label" style={{ marginTop: 8 }}>
+              Ảnh biểu tượng icon Zalo tùy chỉnh (Icon Size: 24×24px)
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+                {config.floatingZaloIcon && (
+                  <img
+                    src={config.floatingZaloIcon}
+                    alt="Zalo"
+                    style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 4, background: "#f1f5f9", padding: 2, border: "1px solid #cbd5e1" }}
+                  />
+                )}
+                <input
+                  type="text"
+                  value={config.floatingZaloIcon || ""}
+                  placeholder="URL ảnh hoặc bấm nút chọn file..."
+                  onChange={(event) => onChange("floatingZaloIcon", event.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <label className="secondary-button" style={{ padding: "0 10px", height: 36, fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                  <Icon name="upload" size={13} />
+                  <span>Chọn file</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => onChange("floatingZaloIcon", ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <small style={{ color: "#64748b", fontSize: 11, marginTop: 2, display: "block" }}>
+                Kích thước icon hiển thị: <strong>24 × 24 px</strong>. Hỗ trợ ảnh trong suốt PNG/SVG.
+              </small>
             </label>
           </div>
 
@@ -732,6 +822,45 @@ function GeneralSettings({
                 placeholder="096 290 3942"
                 onChange={(event) => onChange("phone", event.target.value)}
               />
+            </label>
+            <label className="dock-field-label" style={{ marginTop: 8 }}>
+              Ảnh biểu tượng icon Hotline tùy chỉnh (Icon Size: 24×24px)
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 4 }}>
+                {config.floatingPhoneIcon && (
+                  <img
+                    src={config.floatingPhoneIcon}
+                    alt="Hotline"
+                    style={{ width: 28, height: 28, objectFit: "contain", borderRadius: 4, background: "#f1f5f9", padding: 2, border: "1px solid #cbd5e1" }}
+                  />
+                )}
+                <input
+                  type="text"
+                  value={config.floatingPhoneIcon || ""}
+                  placeholder="URL ảnh hoặc bấm nút chọn file..."
+                  onChange={(event) => onChange("floatingPhoneIcon", event.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <label className="secondary-button" style={{ padding: "0 10px", height: 36, fontSize: 12, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                  <Icon name="upload" size={13} />
+                  <span>Chọn file</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => onChange("floatingPhoneIcon", ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              <small style={{ color: "#64748b", fontSize: 11, marginTop: 2, display: "block" }}>
+                Kích thước icon hiển thị: <strong>24 × 24 px</strong>. Hỗ trợ ảnh trong suốt PNG/SVG.
+              </small>
             </label>
           </div>
 
@@ -768,6 +897,22 @@ function GeneralSettings({
                   <strong>Hiệu ứng sóng động lực (Pulse Wave)</strong>
                   <small>Vòng tròn lan tỏa nhấp nháy tạo sự chú ý</small>
                 </div>
+              </div>
+
+              {/* Button Size selector */}
+              <div className="dock-option-item dock-option-item--select">
+                <div>
+                  <strong>Kích thước của các nút liên hệ nổi</strong>
+                  <small>Đường kính chuẩn: {config.floatingButtonSize || 52}px (Icon: 24×24px)</small>
+                </div>
+                <select
+                  value={config.floatingButtonSize || 52}
+                  onChange={(event) => onChange("floatingButtonSize", parseInt(event.target.value, 10))}
+                >
+                  <option value={48}>48 × 48 px — Chuẩn công thái học ngón cái Google/Apple</option>
+                  <option value={52}>52 × 52 px — Tiêu chuẩn cân đối trực quan (Khuyên dùng)</option>
+                  <option value={56}>56 × 56 px — Kích thước lớn, nổi bật dễ thao tác</option>
+                </select>
               </div>
 
               {/* Position selector */}

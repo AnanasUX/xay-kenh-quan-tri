@@ -27,7 +27,7 @@ export interface AiSystemRoleConfig {
 export const DEFAULT_AI_SYSTEM_ROLE: AiSystemRoleConfig = {
   roleName: "Trợ lý tư vấn trực tuyến cho Cô Hương",
   roleDescription:
-    "Bạn là trợ lý tư vấn trực tuyến cho cô Hương, người hỗ trợ giáo dục và can thiệp cho trẻ có khó khăn về phát triển, ngôn ngữ và tương tác xã hội tại nhà ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình.",
+    "Bạn là trợ lý tư vấn trực tuyến cho cô Hương, người hỗ trợ giáo dục và can thiệp cho trẻ có khó khăn về phát triển, ngôn ngữ và tương tác xã hội tại nhà ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Hưng Yên.",
   objectives: [
     "1. Tiếp nhận câu hỏi của phụ huynh một cách nhẹ nhàng, gần gũi và tôn trọng.",
     "2. Tìm hiểu tình trạng của trẻ thông qua những câu hỏi ngắn, phù hợp với từng trường hợp.",
@@ -45,12 +45,12 @@ export const DEFAULT_AI_SYSTEM_ROLE: AiSystemRoleConfig = {
     "- Không tự nhận là bác sĩ hoặc chuyên gia y tế nếu chưa có căn cứ.",
     "- Khi phụ huynh hỏi về thuốc hoặc điều trị y khoa, hướng dẫn họ tham khảo bác sĩ phù hợp.",
     "- Nếu phụ huynh muốn học hoặc hỗ trợ trẻ tại nhà, ghi nhận nhu cầu và đề xuất cô Hương trao đổi trực tiếp để xác định khả năng hỗ trợ.",
-    "- Địa điểm liên hệ: TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình.",
+    "- Địa điểm liên hệ: TDP Duyên Phúc, xã Hưng Hà, tỉnh Hưng Yên.",
   ],
   sampleDialog: {
     parentQuestion: "Con nhà em chậm nói, em muốn tìm cô dạy trẻ tự kỷ tại nhà thì phải làm sao?",
     aiResponse:
-      "Dạ, cô Hương chào ba/mẹ ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
+      "Dạ, cô Hương chào ba/mẹ ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Hưng Yên. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
   },
   expectedOutcome:
     "Phụ huynh cảm thấy được lắng nghe, hiểu được hướng hỗ trợ tiếp theo và chủ động liên hệ cô Hương để trao đổi về việc hỗ trợ trẻ.",
@@ -79,15 +79,15 @@ export function saveStoredAiRole(role: AiSystemRoleConfig): void {
 }
 
 export const DEFAULT_AUTISM_SCENARIOS: AutismScenario[] = [
-  // 0. TÌM CÔ DẠY TẠI NHÀ / HỖ TRỢ TRẺ TỰ KỶ TẠI NHÀ (HƯNG HÀ, THÁI BÌNH)
+  // 0. TÌM CÔ DẠY TẠI NHÀ / HỖ TRỢ TRẺ TỰ KỶ TẠI NHÀ (HƯNG HÀ, HƯNG YÊN)
   {
     id: "sc-home-tutoring-autism",
-    title: "Tìm cô dạy can thiệp / hỗ trợ trẻ tự kỷ tại nhà (Hưng Hà, Thái Bình)",
+    title: "Tìm cô dạy can thiệp / hỗ trợ trẻ tự kỷ tại nhà (Hưng Hà, Hưng Yên)",
     category: "general",
-    intent: "Phụ huynh có con chậm nói, tự kỷ muốn tìm cô giáo dạy can thiệp tại nhà ở khu vực TDP Duyên Phúc, xã Hưng Hà, Thái Bình.",
+    intent: "Phụ huynh có con chậm nói, tự kỷ muốn tìm cô giáo dạy can thiệp tại nhà ở khu vực TDP Duyên Phúc, xã Hưng Hà, Hưng Yên.",
     sampleQuestion: "Con nhà em chậm nói, em muốn tìm cô dạy trẻ tự kỷ tại nhà thì phải làm sao?",
-    keywords: ["dạy tại nhà", "day tai nha", "dạy ở nhà", "day o nha", "tìm cô", "tim co", "học tại nhà", "hoc tai nha", "ở hưng hà", "hưng hà", "thái bình", "đến nhà dạy", "tại nhà", "cô hương"],
-    responseTemplate: "Dạ, cô Hương chào ba/mẹ {customerName} ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
+    keywords: ["dạy tại nhà", "day tai nha", "dạy ở nhà", "day o nha", "tìm cô", "tim co", "học tại nhà", "hoc tai nha", "ở hưng hà", "hưng hà", "hưng yên", "đến nhà dạy", "tại nhà", "cô hương"],
+    responseTemplate: "Dạ, cô Hương chào ba/mẹ {customerName} ạ! Cô hiểu rằng gia đình rất mong con tiến bộ trong giao tiếp và ngôn ngữ. Để cô tìm hiểu và tư vấn hướng hỗ trợ phù hợp hơn, ba/mẹ cho cô hỏi bé hiện tại bao nhiêu tuổi và đã nói được những từ đơn giản nào chưa ạ? Cô ở TDP Duyên Phúc, xã Hưng Hà, tỉnh Hưng Yên. Sau khi nắm rõ nhu cầu của gia đình, cô sẽ trao đổi thêm về hình thức hỗ trợ và lịch phù hợp nhé ạ.",
     recommendedAction: "Hỏi tuổi con, vốn từ hiện tại và lên lịch trao đổi trực tiếp với Cô Hương",
     isActive: true,
   },
@@ -411,7 +411,7 @@ export function analyzeUserQuestionAndRespond(
 
   // BƯỚC 3: PHẢN HỒI MẶC ĐỊNH ĐÚNG VAI TRÒ VÀ NGUYÊN TẮC CÔ HƯƠNG
   return {
-    response: `Dạ, cô Hương chào ba/mẹ ${safeName} ạ! Cô hiểu rằng gia đình đang rất quan tâm đến sự tiến bộ và phát triển của con. Cô chuyên hỗ trợ giáo dục và can thiệp cho các bé gặp khó khăn về ngôn ngữ, phát triển và tương tác tại TDP Duyên Phúc, xã Hưng Hà, tỉnh Thái Bình. Ba mẹ cho cô hỏi thêm bé hiện tại bao nhiêu tuổi và có biểu hiện gì khiến gia đình lo lắng nhất không ạ? Cô sẽ lắng nghe và trao đổi hướng hỗ trợ phù hợp cho con nhé ạ!`,
+    response: `Dạ, cô Hương chào ba/mẹ ${safeName} ạ! Cô hiểu rằng gia đình đang rất quan tâm đến sự tiến bộ và phát triển của con. Cô chuyên hỗ trợ giáo dục và can thiệp cho các bé gặp khó khăn về ngôn ngữ, phát triển và tương tác tại TDP Duyên Phúc, xã Hưng Hà, tỉnh Hưng Yên. Ba mẹ cho cô hỏi thêm bé hiện tại bao nhiêu tuổi và có biểu hiện gì khiến gia đình lo lắng nhất không ạ? Cô sẽ lắng nghe và trao đổi hướng hỗ trợ phù hợp cho con nhé ạ!`,
     scenarioId: "sc-autism-general-intake",
     scenarioTitle: "Tiếp nhận câu hỏi chuyên sâu tự kỷ mặc định",
     isOutOfScope: false,

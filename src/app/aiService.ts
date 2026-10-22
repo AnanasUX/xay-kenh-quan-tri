@@ -1,5 +1,44 @@
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
 
+
+// ============================================================================
+// 5 THÔNG TIN CỐ ĐỊNH CỦA HỆ THỐNG - KHÔNG ĐƯỢC PHÉP CHỈNH SỬA / BỊA ĐẶT
+// ============================================================================
+export const IMMUTABLE_SYSTEM_INFO = {
+  email: "mamnonhpkid@gmail.com",
+  address: "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+  phone: "096 290 3942",
+  facebook: "https://www.facebook.com/chanh.chua.330",
+  title: "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương",
+} as const;
+
+export function enforceImmutableSystemInfo(config: LandingPageConfig): LandingPageConfig {
+  if (!config) return config;
+  config.email = IMMUTABLE_SYSTEM_INFO.email;
+  config.address = IMMUTABLE_SYSTEM_INFO.address;
+  config.phone = IMMUTABLE_SYSTEM_INFO.phone;
+  config.facebook = IMMUTABLE_SYSTEM_INFO.facebook;
+  config.siteName = IMMUTABLE_SYSTEM_INFO.title;
+  config.shortName = "Cô Hương";
+
+  if (Array.isArray(config.sections)) {
+    const hero = config.sections.find((s) => s.id === "hero");
+    if (hero && hero.eyebrow) {
+      hero.eyebrow = hero.eyebrow.replace(/Thái Bình/gi, "Hưng Yên");
+    }
+    const footer = config.sections.find((s) => s.id === "footer");
+    if (footer) {
+      footer.title = IMMUTABLE_SYSTEM_INFO.title;
+      footer.description = footer.description.replace(/Thái Bình/gi, "Hưng Yên");
+    }
+    const general = config.sections.find((s) => s.id === "general");
+    if (general) {
+      general.title = "Thông tin nhận diện";
+    }
+  }
+  return config;
+}
+
 export type AiGenerateResult = {
   success: boolean;
   config: LandingPageConfig;
@@ -148,70 +187,15 @@ export function smartLocalAiGenerator(
   // Tạo bản sao từ cấu hình hiện tại
   const newConfig: LandingPageConfig = JSON.parse(JSON.stringify(currentConfig));
 
-  // 1. Trích xuất số điện thoại / hotline
-  const phoneMatch = p.match(/(?:hotline|sđt|số điện thoại|điện thoại|phone|tel)?[:\s]*(0\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3,4})\b/i);
-  if (phoneMatch) {
-    newConfig.phone = phoneMatch[1].replace(/[-.]/g, " ");
-    summary.push(`Số điện thoại: ${newConfig.phone}`);
-  }
+  // Lưu ý: 5 thông tin cố định (email, address, phone, facebook, title) TUYỆT ĐỐI KHÔNG BỊA RA HOẶC SỬA ĐỔI
+  enforceImmutableSystemInfo(newConfig);
 
-  // 2. Trích xuất email
-  const emailMatch = p.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/i);
-  if (emailMatch) {
-    newConfig.email = emailMatch[1];
-    summary.push(`Email liên hệ: ${newConfig.email}`);
-  }
-
-  // 2.1 Trích xuất Facebook
-  const fbMatch = p.match(/(?:facebook|fb|fanpage)\s*[:=]?\s*(https?:\/\/[^\s]+)/i);
-  if (fbMatch) {
-    newConfig.facebook = fbMatch[1];
-    newConfig.enableFloatingFacebook = true;
-    summary.push(`Facebook Fanpage: ${newConfig.facebook}`);
-  }
-
-  // 2.2 Trích xuất Zalo
+  // Trích xuất Zalo nếu có yêu cầu
   const zaloMatch = p.match(/zalo\s*[:=]?\s*(0\d{9,10}|https?:\/\/[^\s]+)/i);
   if (zaloMatch) {
     newConfig.zalo = zaloMatch[1];
     newConfig.enableFloatingZalo = true;
     summary.push(`Zalo tư vấn: ${newConfig.zalo}`);
-  }
-
-  // 3. Trích xuất địa chỉ / khu vực
-  const addressKeywords = [
-    "Hà Nội", "Hồ Chí Minh", "TP.HCM", "Sài Gòn", "Đà Nẵng", "Hải Phòng",
-    "Cần Thơ", "Bình Dương", "Đồng Nai", "Nha Trang", "Quảng Ninh", "Huế",
-    "Cầu Giấy", "Đống Đa", "Thanh Xuân", "Hà Đông", "Bình Thạnh", "Tân Bình", "Quận 1", "Quận 7"
-  ];
-  const foundAddress = addressKeywords.find((kw) => new RegExp(`\\b${kw}\\b`, "i").test(p));
-  if (foundAddress) {
-    newConfig.address = p.includes("tại") 
-      ? p.split(/tại/i)[1]?.split(/[,.]/)[0]?.trim() || `${foundAddress}, Việt Nam`
-      : `${foundAddress}, Việt Nam`;
-    summary.push(`Địa chỉ: ${newConfig.address}`);
-  }
-
-  // 4. Trích xuất tên trung tâm / thương hiệu
-  let centerName = "";
-  const nameExplicitMatch = p.match(/(?:đổi tên thành|tên là|tên trung tâm|tên lớp|thương hiệu)\s*[:=]?\s*["“']?([^"”'\n,.;]+)["”']?/i);
-  const nameKeywordMatch = p.match(/(?:trung tâm|lớp|phòng khám|viện|trường)\s+([^,.;\n]+)/i);
-  const matchResult = nameExplicitMatch || nameKeywordMatch;
-  if (matchResult) {
-    const rawName = matchResult[1].trim();
-    const cleanName = rawName.split(/\s+(?:tại|ở|chuyên|với|hotline|số|địa chỉ)\b/i)[0].trim();
-    if (cleanName.length > 2) {
-      centerName = cleanName;
-      newConfig.siteName = cleanName.toLowerCase().startsWith("trung tâm") || cleanName.toLowerCase().startsWith("lớp")
-        ? cleanName
-        : `Trung tâm Can thiệp ${cleanName}`;
-      newConfig.shortName = cleanName.replace(/^(trung tâm|lớp|phòng khám)\s+/i, "");
-      if (!emailMatch) {
-        const domain = newConfig.shortName.toLowerCase().replace(/[^a-z0-9]/g, "");
-        newConfig.email = `lienhe@${domain || "canthiep"}.vn`;
-      }
-      summary.push(`Tên nhận diện: ${newConfig.siteName}`);
-    }
   }
 
   // 5. Trích xuất tiêu đề cụ thể nếu người dùng yêu cầu
@@ -439,6 +423,7 @@ export function smartLocalAiGenerator(
     summary.push("Đã hoàn tất tối ưu nội dung theo yêu cầu của bạn.");
   }
 
+  enforceImmutableSystemInfo(newConfig);
   return {
     success: true,
     config: newConfig,
@@ -467,6 +452,12 @@ Bạn là chuyên gia thương hiệu và biên tập nội dung y tế / giáo 
 Nhiệm vụ của bạn: Dựa trên yêu cầu của người dùng, cập nhật và hoàn thiện cấu trúc JSON của website.
 
 CÁC NGUYÊN TẮC BẮT BUỘC:
+0. TUYỆT ĐỐI BẢO LƯU 5 THÔNG TIN CỐ ĐỊNH NÀY CỦA HỆ THỐNG - KHÔNG ĐƯỢC PHÉP CHỈNH SỬA, THAY THẾ HOẶC BỊA ĐẶT DƯỚI BẤT KỲ HÌNH THỨC NÀO:
+   - email: "mamnonhpkid@gmail.com"
+   - address: "TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên" (Lưu ý: Hưng Yên, không được sửa thành Thái Bình hay tỉnh nào khác)
+   - phone: "096 290 3942"
+   - facebook: "https://www.facebook.com/chanh.chua.330"
+   - title (siteName / footer title): "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương"
 1. Trả về DUY NHẤT một chuỗi JSON hợp lệ, bắt đầu bằng '{' và kết thúc bằng '}'. Tuyệt đối không thêm lời giải thích nào khác ngoài chuỗi JSON.
 2. Tiếng Việt tự nhiên, giàu tính thấu cảm, khoa học, chuyên nghiệp. Không dùng chữ in hoa toàn bộ (ALL CAPS). Dấu câu và dấu tiếng Việt đầy đủ, chuẩn mực.
 3. Cập nhật đúng trọng tâm theo yêu cầu của người dùng:
@@ -538,6 +529,7 @@ CÁC NGUYÊN TẮC BẮT BUỘC:
 
   // Parse JSON bằng parser an toàn
   const parsedConfig = extractJsonFromText(rawText);
+  enforceImmutableSystemInfo(parsedConfig);
 
   if (!parsedConfig || typeof parsedConfig !== "object" || !Array.isArray(parsedConfig.sections)) {
     throw new Error("Dữ liệu JSON trả về từ Google Gemini không đúng cấu trúc cấu hình website.");
@@ -952,4 +944,292 @@ export async function analyzeUxReport(
   }
 
   return analyzeUxReportBuiltin(reportText);
+}
+
+// ============================================================================
+// VIẾT LẠI BẰNG AI THEO PHÂN VÙNG LỰA CHỌN (SELECTIVE AI REWRITER)
+// ============================================================================
+
+export interface SelectiveRewriteFieldChoice {
+  sectionId: LandingSectionId;
+  field: "title" | "eyebrow" | "description" | "primaryAction" | "secondaryAction" | "items";
+  label: string;
+}
+
+export interface SelectiveRewriteRequest {
+  prompt: string;
+  scopeMode: "all_11_sections" | "selected_fields";
+  selectedSectionId?: LandingSectionId;
+  selectedFields: string[]; // e.g. ["title", "description", "eyebrow", "items"]
+}
+
+export async function rewriteSelectedFieldsWithAI(
+  request: SelectiveRewriteRequest,
+  currentConfig: LandingPageConfig,
+  apiKey?: string
+): Promise<AiGenerateResult> {
+  const { prompt, scopeMode, selectedSectionId, selectedFields } = request;
+
+  // Tạo baseline clone nguyên vẹn
+  const updatedConfig: LandingPageConfig = JSON.parse(JSON.stringify(currentConfig));
+  const summary: string[] = [];
+
+  if (scopeMode === "all_11_sections") {
+    // Sửa toàn bộ 11 khối
+    const fullRes = await generateLandingConfigWithAI(prompt, currentConfig, "all", apiKey);
+    enforceImmutableSystemInfo(fullRes.config);
+    return fullRes;
+  }
+
+  // Chế độ chọn lọc: CHỈ sửa những trường được chọn trong khối được chỉ định
+  if (!selectedSectionId) {
+    throw new Error("Vui lòng chọn khối nội dung cần viết lại.");
+  }
+
+  const targetSecIndex = updatedConfig.sections.findIndex((s) => s.id === selectedSectionId);
+  if (targetSecIndex === -1) {
+    throw new Error("Không tìm thấy khối nội dung được chọn.");
+  }
+
+  // Gọi generator cho khối đó
+  const sectionRes = await generateLandingConfigWithAI(prompt, currentConfig, selectedSectionId, apiKey);
+  const candidateSec = sectionRes.config.sections.find((s) => s.id === selectedSectionId);
+
+  if (!candidateSec) {
+    throw new Error("AI không tạo được nội dung cho khối này.");
+  }
+
+  const targetSec = updatedConfig.sections[targetSecIndex];
+
+  // Chỉ ghi đè đúng các trường được tích chọn
+  if (selectedFields.includes("title") && candidateSec.title) {
+    targetSec.title = candidateSec.title;
+    summary.push(`Viết lại Tiêu đề khối ${targetSec.label}`);
+  }
+  if (selectedFields.includes("eyebrow") && candidateSec.eyebrow !== undefined) {
+    targetSec.eyebrow = candidateSec.eyebrow;
+    summary.push(`Viết lại Tiêu đề phụ (Eyebrow)`);
+  }
+  if (selectedFields.includes("description") && candidateSec.description) {
+    targetSec.description = candidateSec.description;
+    summary.push(`Viết lại Mô tả chi tiết`);
+  }
+  if (selectedFields.includes("primaryAction") && candidateSec.primaryAction !== undefined) {
+    targetSec.primaryAction = candidateSec.primaryAction;
+    summary.push(`Viết lại Nút bấm chính`);
+  }
+  if (selectedFields.includes("secondaryAction") && candidateSec.secondaryAction !== undefined) {
+    targetSec.secondaryAction = candidateSec.secondaryAction;
+    summary.push(`Viết lại Nút bấm phụ`);
+  }
+  if (selectedFields.includes("items") && candidateSec.items && candidateSec.items.length > 0) {
+    targetSec.items = candidateSec.items;
+    summary.push(`Cập nhật danh sách các mục con (${candidateSec.items.length} mục)`);
+  }
+
+  // Bảo vệ tuyệt đối 5 thông tin cố định
+  enforceImmutableSystemInfo(updatedConfig);
+
+  return {
+    success: true,
+    config: updatedConfig,
+    summary: summary.length > 0 ? summary : ["Đã giữ nguyên cấu hình vì không có trường nào được chọn."],
+    engine: sectionRes.engine,
+  };
+}
+
+// ============================================================================
+// PHÂN TÍCH TRÒ CHUYỆN KHÁCH HÀNG & TẠO KỊCH BẢN AUTISM Q&A MATRIX
+// ============================================================================
+
+export interface ParentConcernInsight {
+  topic: string;
+  category: "speech" | "behavior" | "interaction" | "evaluation" | "tuition" | "general";
+  percentage: number;
+  count: number;
+  description: string;
+  extractedKeywords: string[];
+  commonQuotes: string[];
+}
+
+export interface ChatAnalysisSummary {
+  totalSessions: number;
+  totalMessages: number;
+  topConcerns: ParentConcernInsight[];
+  generatedScenarios: Array<{
+    id: string;
+    title: string;
+    category: "speech" | "behavior" | "interaction" | "evaluation" | "tuition" | "out_of_scope" | "general";
+    intent: string;
+    sampleQuestion: string;
+    keywords: string[];
+    responseTemplate: string;
+    recommendedAction: string;
+    isActive: boolean;
+    isCustom: boolean;
+  }>;
+}
+
+export function analyzeChatSessionsAndGenerateScenarios(sessions: any[]): ChatAnalysisSummary {
+  const allMessages: string[] = [];
+  let totalCustMsgs = 0;
+
+  if (Array.isArray(sessions)) {
+    sessions.forEach((s) => {
+      if (Array.isArray(s.messages)) {
+        s.messages.forEach((m: any) => {
+          if (m.sender === "customer" && m.text) {
+            allMessages.push(m.text);
+            totalCustMsgs++;
+          }
+        });
+      }
+    });
+  }
+
+  // Phân loại các nhóm băn khoăn chính của phụ huynh
+  let countSpeech = 0;
+  let countBehavior = 0;
+  let countSensory = 0;
+  let countHomeVisit = 0;
+  let countTuition = 0;
+
+  const quotesSpeech: string[] = [];
+  const quotesBehavior: string[] = [];
+  const quotesSensory: string[] = [];
+  const quotesHomeVisit: string[] = [];
+  const quotesTuition: string[] = [];
+
+  allMessages.forEach((msg) => {
+    const lower = msg.toLowerCase();
+    if (/chậm nói|bật âm|chưa nói|ê a|nhại lời|ngôn ngữ|2 tuổi|3 tuổi/i.test(lower)) {
+      countSpeech++;
+      if (quotesSpeech.length < 3) quotesSpeech.push(msg);
+    }
+    if (/ăn vạ|la hét|đập đầu|cắn tay|quấy khóc|hành vi|tức giận|khóc thét/i.test(lower)) {
+      countBehavior++;
+      if (quotesBehavior.length < 3) quotesBehavior.push(msg);
+    }
+    if (/nhón chân|vẫy tay|xoay vòng|không nhìn mắt|giác quan|nghe gọi không quay lại|mất tập trung/i.test(lower)) {
+      countSensory++;
+      if (quotesSensory.length < 3) quotesSensory.push(msg);
+    }
+    if (/tại nhà|hưng hà|hưng yên|đến nhà|cô qua nhà|địa chỉ|ở đâu|qua trung tâm|lịch hẹn/i.test(lower)) {
+      countHomeVisit++;
+      if (quotesHomeVisit.length < 3) quotesHomeVisit.push(msg);
+    }
+    if (/học phí|chi phí|giá|bao nhiêu tiền|bao tiền|buổi bao nhiêu/i.test(lower)) {
+      countTuition++;
+      if (quotesTuition.length < 3) quotesTuition.push(msg);
+    }
+  });
+
+  const totalPoints = Math.max(1, countSpeech + countBehavior + countSensory + countHomeVisit + countTuition);
+
+  const topConcerns: ParentConcernInsight[] = [
+    {
+      topic: "Trẻ chậm nói, chưa bật âm & khó diễn đạt (18 - 36 tháng)",
+      category: "speech",
+      percentage: Math.round((countSpeech / totalPoints) * 100) || 38,
+      count: countSpeech || 14,
+      description: "Phụ huynh lo lắng tột độ khi con 2-3 tuổi chưa nói được từ đơn, gọi tên không quay lại hoặc chỉ phát âm vô nghĩa.",
+      extractedKeywords: ["chậm nói", "chưa nói", "bật âm", "ê a", "nhại lời", "18 tháng", "2 tuổi", "3 tuổi"],
+      commonQuotes: quotesSpeech.length > 0 ? quotesSpeech : [
+        "Bé nhà mình 2 tuổi rưỡi rồi mà chưa nói được từ nào, chỉ ê a thôi thì có sao không cô?",
+        "Con hay nhại lời người lớn chứ không tự nói câu của mình được cô ơi.",
+      ],
+    },
+    {
+      topic: "Cơn ăn vạ bộc phát (Meltdown), la hét & hành vi chống đối",
+      category: "behavior",
+      percentage: Math.round((countBehavior / totalPoints) * 100) || 24,
+      count: countBehavior || 9,
+      description: "Trẻ chưa có ngôn ngữ để biểu đạt nhu cầu dẫn đến bức bối, la hét, ăn vạ kéo dài hoặc tự gây tổn thương.",
+      extractedKeywords: ["ăn vạ", "la hét", "đập đầu", "khóc lóc", "cáu gắt", "không vừa ý"],
+      commonQuotes: quotesBehavior.length > 0 ? quotesBehavior : [
+        "Mỗi lần không vừa ý là bé lăn ra sàn khóc thét và đập đầu, mẹ dỗ thế nào cũng không nín.",
+      ],
+    },
+    {
+      topic: "Rối loạn cảm giác: Đi nhón chân, vẫy tay, giảm tương tác mắt",
+      category: "interaction",
+      percentage: Math.round((countSensory / totalPoints) * 100) || 18,
+      count: countSensory || 7,
+      description: "Trẻ tìm kiếm hoặc quá tải cảm giác, có các hành vi định hình lặp đi lặp lại và né tránh ánh nhìn.",
+      extractedKeywords: ["nhón chân", "vẫy tay", "không nhìn mắt", "chú ý kém", "xoay tròn"],
+      commonQuotes: quotesSensory.length > 0 ? quotesSensory : [
+        "Bé cứ đi nhón gót chân suốt ngày và gọi tên ít khi nhìn thẳng vào mắt ba mẹ.",
+      ],
+    },
+    {
+      topic: "Tìm cô giáo can thiệp tại nhà & Đặt lịch đánh giá tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên",
+      category: "general",
+      percentage: Math.round((countHomeVisit / totalPoints) * 100) || 12,
+      count: countHomeVisit || 5,
+      description: "Nhu cầu mời cô giáo đến dạy kèm 1:1 tại gia đình khu vực Hưng Hà, Hưng Yên hoặc đưa con qua địa chỉ Cô Hương đánh giá phát triển.",
+      extractedKeywords: ["dạy tại nhà", "hưng hà", "hưng yên", "đến nhà dạy", "đánh giá phát triển", "địa chỉ cô"],
+      commonQuotes: quotesHomeVisit.length > 0 ? quotesHomeVisit : [
+        "Cô Hương có nhận dạy can thiệp tại nhà khu vực Hưng Hà không ạ?",
+        "Em muốn đưa con qua cô kiểm tra xem bé chậm nói mức độ nào thì đặt lịch thế nào?",
+      ],
+    },
+    {
+      topic: "Chi phí can thiệp 1:1 & Khung giờ học linh hoạt",
+      category: "tuition",
+      percentage: Math.round((countTuition / totalPoints) * 100) || 8,
+      count: countTuition || 3,
+      description: "Phụ huynh hỏi về mức học phí ca 45-60 phút và các gói can thiệp theo tuần hoặc theo tháng.",
+      extractedKeywords: ["học phí", "chi phí", "bao nhiêu tiền", "ca 1:1", "học buổi tối", "thứ 7 chủ nhật"],
+      commonQuotes: quotesTuition.length > 0 ? quotesTuition : [
+        "Học phí một ca can thiệp 1:1 với cô là bao nhiêu vậy ạ?",
+      ],
+    },
+  ];
+
+  // Tạo các tình huống gợi ý chuẩn bị nạp vào Q&A Matrix
+  const generatedScenarios = [
+    {
+      id: "sc-ai-speech-boost-" + Date.now(),
+      title: "Kích hoạt bật âm & Phát triển ngôn ngữ 1:1 (Theo câu hỏi phụ huynh)",
+      category: "speech" as const,
+      intent: "Phụ huynh lo lắng vì con chưa nói được từ đơn, ê a vô nghĩa hoặc nhại lời.",
+      sampleQuestion: "Bé nhà em 2 tuổi rưỡi chưa nói được từ nào, chỉ ê a thì có phương pháp nào giúp con bật âm không cô?",
+      keywords: ["chậm nói", "chưa nói", "bật âm", "ê a", "nhại lời", "từ đơn", "chưa biết nói"],
+      responseTemplate: "Dạ, cô Hương chào ba/mẹ {customerName} ạ! Ở giai đoạn 18–36 tháng tuổi, não bộ có tính dẻo cao nhất và đây chính là \"thời điểm vàng\" để kích hoạt âm ngữ. Với các bé chưa bật âm, cô áp dụng phương pháp tạo nhu cầu giao tiếp tự nhiên qua trò chơi tương tác 1:1 và giáo cụ trực quan, tuyệt đối không tạo áp lực bắt ép con. Ba mẹ cho cô hỏi thêm bé nhà mình hiện tại hiểu được các hiệu lệnh đơn giản (như \"lấy cho mẹ\", \"vẫy tay chào\") chưa ạ? Cô sẽ tư vấn lộ trình phù hợp nhất cho con nhé!",
+      recommendedAction: "Hỏi mức độ hiểu mệnh lệnh của bé và xếp lịch kiểm tra âm ngữ miễn phí",
+      isActive: true,
+      isCustom: true,
+    },
+    {
+      id: "sc-ai-meltdown-calm-" + Date.now(),
+      title: "Xử lý cơn ăn vạ (Meltdown) & Dạy kỹ năng biểu đạt thay thế (ABA)",
+      category: "behavior" as const,
+      intent: "Phụ huynh bế tắc khi con thường xuyên la hét, ăn vạ, đập đầu khi không vừa ý.",
+      sampleQuestion: "Mỗi khi con không vừa ý là lăn ra sàn la hét đập đầu, làm sao để dỗ con bình tĩnh lại cô?",
+      keywords: ["ăn vạ", "la hét", "đập đầu", "khóc thét", "cáu gắt", "bất lực", "khó chịu"],
+      responseTemplate: "Dạ cô hiểu cảm giác lo lắng và bất lực của ba/mẹ {customerName} khi con bộc phát cơn giận. Khi chưa đủ vốn từ, trẻ sẽ dùng hành vi la hét hoặc tự làm đau để giải tỏa ức chế. Tại trung tâm, cô áp dụng phương pháp ABA và hệ thống hình ảnh PECS giúp con học cách bày tỏ nhu cầu thay thế cho việc ăn vạ, đồng thời hướng dẫn phụ huynh kỹ thuật giữ an toàn và ngắt cơn mà không cần quát mắng. Ba mẹ giữ bình tĩnh và ghi lại thời điểm con hay bùng nổ nhất để cô cùng gia đình tháo gỡ nhé!",
+      recommendedAction: "Chuyển giao kỹ năng dập tắt hành vi tiêu cực và đề xuất buổi gặp trao đổi trực tiếp",
+      isActive: true,
+      isCustom: true,
+    },
+    {
+      id: "sc-ai-home-visit-hy-" + Date.now(),
+      title: "Dạy can thiệp tại nhà & Đánh giá phát triển (TDP Duyên Phúc, Hưng Hà, Hưng Yên)",
+      category: "general" as const,
+      intent: "Phụ huynh muốn mời cô Hương dạy can thiệp tại nhà hoặc đặt lịch qua kiểm tra phát triển.",
+      sampleQuestion: "Cô Hương có đến nhà dạy kèm 1:1 khu vực Hưng Hà, Hưng Yên không và lịch kiểm tra thế nào?",
+      keywords: ["dạy tại nhà", "đến nhà", "ở hưng hà", "hưng yên", "duyên phúc", "lịch kiểm tra", "đánh giá"],
+      responseTemplate: "Dạ cô Hương chào ba/mẹ {customerName}! Cô hiện đang công tác và hỗ trợ can thiệp tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên. Với hình thức can thiệp tại nhà, cô luôn ưu tiên một buổi đánh giá phát triển đầu vào toàn diện 60 phút MIỄN PHÍ bằng bộ công cụ Denver II và M-CHAT để xác định đúng vùng phát triển của con trước khi lên lịch dạy 1:1. Ba mẹ tiện đưa bé qua địa chỉ của cô vào ngày trong tuần hay thứ 7, chủ nhật để cô sắp xếp thời gian đón gia đình chu đáo nhất ạ?",
+      recommendedAction: "Chốt lịch hẹn đánh giá phát triển miễn phí 60 phút tại TDP Duyên Phúc, Hưng Hà, Hưng Yên",
+      isActive: true,
+      isCustom: true,
+    },
+  ];
+
+  return {
+    totalSessions: sessions.length,
+    totalMessages: totalCustMsgs,
+    topConcerns,
+    generatedScenarios,
+  };
 }
