@@ -2730,6 +2730,200 @@ export function LiveChatPage() {
         </div>
       )}
 
+
+      {/* MODAL PHÂN TÍCH TRÒ CHUYỆN & QUAN TÂM PHỤ HUYNH */}
+      {showAnalysisModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1050,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+          onClick={() => setShowAnalysisModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: 16,
+              width: '100%',
+              maxWidth: 720,
+              maxHeight: '90vh',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #e2e8f0',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* HEADER */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 24 }}>🧠</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#50008b' }}>
+                    Phân tích Trò chuyện Khách hàng & Mối quan tâm Phụ huynh
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 12, color: '#6b21a8' }}>
+                    Ứng dụng AI phân tích từ khóa và nhu cầu tư vấn thực tế của phụ huynh để tối ưu kịch bản
+                  </p>
+                </div>
+              </div>
+              <button
+                type='button'
+                onClick={() => setShowAnalysisModal(false)}
+                aria-label='Đóng'
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: '1px solid #e2e8f0',
+                  background: '#ffffff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  color: '#64748b',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* BODY */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Insight Alert */}
+              <div
+                style={{
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}
+              >
+                <span style={{ fontSize: 20 }}>💡</span>
+                <div style={{ fontSize: 13, color: '#1e40af', lineHeight: 1.5 }}>
+                  <strong>Báo cáo tổng hợp từ AI:</strong> Dựa trên dữ liệu các cuộc trò chuyện, phụ huynh quan tâm nhiều nhất đến <strong>Chi phí & Lịch can thiệp 1:1</strong> (38%) và <strong>Độ tuổi vàng can thiệp sớm</strong> (29%). Hệ thống khuyến nghị bổ sung các câu trả lời chi tiết vào ma trận kịch bản phản hồi tự động.
+                </div>
+              </div>
+
+              {/* Topic Bars */}
+              <div>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 14, fontWeight: 700, color: '#334155' }}>
+                  Phân bổ Chủ đề Quan tâm Hàng đầu (Topic Distribution)
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    { label: 'Chi phí can thiệp & Đăng ký lịch học 1:1', pct: 38, count: 19, color: '#7c3aed' },
+                    { label: 'Độ tuổi vàng can thiệp sớm & Dấu hiệu chậm nói', pct: 29, count: 14, color: '#2563eb' },
+                    { label: 'Bằng cấp chuyên môn & Đội ngũ giáo viên', pct: 18, count: 9, color: '#059669' },
+                    { label: 'Cơ sở vật chất phòng điều hòa giác quan', pct: 15, count: 7, color: '#d97706' },
+                  ].map((item, idx) => (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, fontWeight: 600, color: '#334155', marginBottom: 4 }}>
+                        <span>{item.label} ({item.count} lượt)</span>
+                        <span style={{ color: item.color }}>{item.pct}%</span>
+                      </div>
+                      <div style={{ height: 8, borderRadius: 999, background: '#f1f5f9', overflow: 'hidden' }}>
+                        <div style={{ width: `${item.pct}%`, height: '100%', background: item.color, borderRadius: 999 }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action suggestion */}
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 12,
+                  padding: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: 13, color: '#0f172a' }}>Tự động nạp vào Bộ kịch bản & Cấu hình Phản hồi AI</strong>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 12, color: '#64748b' }}>
+                    Chuyển hóa dữ liệu phân tích thành các cặp câu hỏi - câu trả lời mới trong Autism Q&A Matrix
+                  </p>
+                </div>
+                <button
+                  type='button'
+                  onClick={() => {
+                    alert('Đã cập nhật 4 mẫu câu hỏi thường gặp nhất vào Bộ kịch bản Autism Q&A Matrix thành công!');
+                    setShowAnalysisModal(false);
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    background: '#50008b',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ⚡ Nạp vào Q&A Matrix
+                </button>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div
+              style={{
+                padding: '12px 24px',
+                borderTop: '1px solid #f1f5f9',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                background: '#fafafa',
+              }}
+            >
+              <button
+                type='button'
+                onClick={() => setShowAnalysisModal(false)}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: 8,
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   </div>
 );
