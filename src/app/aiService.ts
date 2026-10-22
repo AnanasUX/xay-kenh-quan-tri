@@ -1236,7 +1236,7 @@ export function analyzeChatSessionsAndGenerateScenarios(sessions: any[]): ChatAn
 
 
 // ============================================================================
-// HỆ THỐNG ĐA TÁC TỬ AI (MULTI-AGENT GEMINI AI SWARM & CROSS-REVIEW)
+// HỆ THỐNG MULTI-AGENT AI (MULTI-AGENT GEMINI AI SWARM & CROSS-REVIEW)
 // ============================================================================
 
 export type MultiAiAgentRole = "functional_staff" | "qa_manager" | "director" | "custom";
@@ -1395,7 +1395,7 @@ export async function testMultipleGeminiApiKeys(
 }
 
 /**
- * THỰC THI PHÂN TÍCH ĐA TÁC TỬ (MULTI-AGENT CONSENSUS ANALYSIS)
+ * THỰC THI PHÂN TÍCH MULTI-AGENT (MULTI-AGENT CONSENSUS ANALYSIS)
  * Chạy 3 cấp AI: Nhân viên chức năng -> Quản lý kiểm soát -> Giám đốc điều hành
  */
 export async function runMultiAgentConsensusAnalysis(
@@ -1635,7 +1635,7 @@ ${managerExchange.content.substring(0, 600)}` }] }],
 
 
 /**
- * HỌP GIAO BAN ĐA TÁC TỬ TOÀN HỆ THỐNG (SYSTEM-WIDE MULTI-AGENT SYNC)
+ * HỌP GIAO BAN MULTI-AGENT TOÀN HỆ THỐNG (SYSTEM-WIDE MULTI-AGENT SYNC)
  * Điều phối sự phối hợp giữa Nhân viên, Quản lý và Giám đốc để vận hành toàn bộ Kênh Quản trị CMS
  */
 export async function runSystemWideMultiAgentSync(
@@ -1646,11 +1646,11 @@ export async function runSystemWideMultiAgentSync(
   const managerKey = keys.find((k) => k.role === "qa_manager" && k.isActive && k.apiKey.trim().length >= 15);
   const directorKey = keys.find((k) => k.role === "director" && k.isActive && k.apiKey.trim().length >= 15);
 
-  onProgress?.("Khởi động phiên Giao ban Đa Tác tử Điều hành CMS...", 15);
+  onProgress?.("Khởi động phiên Giao ban Multi-Agent Điều hành CMS...", 15);
   await new Promise((r) => setTimeout(r, 600));
 
   // 1. Nhân viên báo cáo
-  onProgress?.("👨‍💻 Tác tử Nhân viên đang rà soát 6 phân hệ & 5 hằng số nhận diện...", 35);
+  onProgress?.("👨‍💻 Agent Nhân viên đang rà soát 6 phân hệ & 5 hằng số nhận diện...", 35);
   await new Promise((r) => setTimeout(r, 800));
 
   let staffSpeech = `Báo cáo Hội đồng Điều hành CMS: Tôi đã hoàn tất đợt rà soát toàn bộ các phân hệ trên website và kênh quản trị. 
@@ -1665,7 +1665,7 @@ export async function runSystemWideMultiAgentSync(
 
   if (staffKey) {
     try {
-      const prompt = `Bạn là Tác tử Nhân viên Chức năng (Functional Staff) trong hệ thống Multi-Agent AI quản trị trung tâm hỗ trợ trẻ tự kỷ Cô Hương. 
+      const prompt = `Bạn là Agent Nhân viên Chức năng (Functional Staff) trong hệ thống Multi-Agent AI quản trị trung tâm hỗ trợ trẻ tự kỷ Cô Hương. 
 Nhiệm vụ: Báo cáo ngắn gọn (khoảng 3-4 câu) về việc rà soát nội dung, khẳng định bảo toàn 5 hằng số cố định (${IMMUTABLE_SYSTEM_INFO.email}, ${IMMUTABLE_SYSTEM_INFO.address}, ${IMMUTABLE_SYSTEM_INFO.phone}, ${IMMUTABLE_SYSTEM_INFO.facebook}, ${IMMUTABLE_SYSTEM_INFO.title}) và phát hiện lỗi UX Dead clicks, Rage clicks trên kênh quản trị.`;
       const res = await callGeminiRawText(prompt, staffKey.apiKey, staffKey.model);
       if (res && res.trim().length > 40) staffSpeech = res.trim();
@@ -1695,21 +1695,21 @@ Nhiệm vụ: Báo cáo ngắn gọn (khoảng 3-4 câu) về việc rà soát n
     ],
     speechContent: staffSpeech,
     decisionStatus: "verified",
-    rawModelUsed: staffKey?.model || "gemini-2.5-flash (Mô phỏng tác tử)",
+    rawModelUsed: staffKey?.model || "gemini-2.5-flash (Mô phỏng Agent)",
   };
 
   // 2. Quản lý thẩm định
-  onProgress?.("👩‍💼 Tác tử Quản lý đang thẩm định tính khả thi & Live Chat CRM...", 65);
+  onProgress?.("👩‍💼 Agent Quản lý đang thẩm định tính khả thi & Live Chat CRM...", 65);
   await new Promise((r) => setTimeout(r, 800));
 
-  let managerSpeech = `Tôi đã tiếp nhận báo cáo của Tác tử Nhân viên và tiến hành thẩm định chi tiết:
+  let managerSpeech = `Tôi đã tiếp nhận báo cáo của Agent Nhân viên và tiến hành thẩm định chi tiết:
 1. Xác nhận báo cáo của Nhân viên chính xác, các số liệu về Dead clicks và 5 hằng số nhận diện hoàn toàn chuẩn khớp.
 2. Tại Live Chat CRM: Phân tích 142 phiên tương tác cho thấy 38% phụ huynh quan tâm chi phí can thiệp 1:1, 29% quan tâm can thiệp sớm độ tuổi vàng. Cần nạp bổ sung 4 kịch bản này vào Autism Q&A Matrix.
 3. Về chiến dịch tiếp thị Zalo (chiếm 83% lượng truy cập): Đã kiểm tra cơ chế ẩn khối Đội ngũ giáo viên và cuộn tự động xuống Góc phụ huynh (#resources), đảm bảo tính riêng tư và đúng cam kết kỹ thuật.`;
 
   if (managerKey) {
     try {
-      const prompt = `Bạn là Tác tử Quản lý Kiểm soát (QA Manager) trong hệ thống Multi-Agent AI. 
+      const prompt = `Bạn là Agent Quản lý Kiểm soát (QA Manager) trong hệ thống Multi-Agent AI. 
 Nhiệm vụ: Phản biện và đánh giá báo cáo của Nhân viên về việc bảo toàn 5 hằng số (${IMMUTABLE_SYSTEM_INFO.address}, ${IMMUTABLE_SYSTEM_INFO.phone}), thẩm định giải pháp Live Chat CRM và chiến dịch tiếp thị Zalo Campaign (83% traffic). Trả lời ngắn gọn 3-4 câu mang tính chuyên môn quản lý chất lượng.`;
       const res = await callGeminiRawText(prompt, managerKey.apiKey, managerKey.model);
       if (res && res.trim().length > 40) managerSpeech = res.trim();
@@ -1739,22 +1739,22 @@ Nhiệm vụ: Phản biện và đánh giá báo cáo của Nhân viên về vi�
     ],
     speechContent: managerSpeech,
     decisionStatus: "critiqued",
-    rawModelUsed: managerKey?.model || "gemini-2.5-flash (Mô phỏng tác tử)",
+    rawModelUsed: managerKey?.model || "gemini-2.5-flash (Mô phỏng Agent)",
   };
 
   // 3. Giám đốc phê chuẩn
-  onProgress?.("👑 Tác tử Giám đốc đang ban hành nghị quyết vận hành toàn hệ thống...", 90);
+  onProgress?.("👑 Agent Giám đốc đang ban hành nghị quyết vận hành toàn hệ thống...", 90);
   await new Promise((r) => setTimeout(r, 800));
 
   let directorSpeech = `Thay mặt Ban Điều hành Kênh Quản trị Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương:
-Tôi biểu dương sự phối hợp chặt chẽ, minh bạch giữa Tác tử Nhân viên và Tác tử Quản lý. 
+Tôi biểu dương sự phối hợp chặt chẽ, minh bạch giữa Agent Nhân viên và Agent Quản lý. 
 1. Phê chuẩn toàn diện báo cáo rà soát và chấp thuận phương án nâng cấp UX bao phủ toàn bộ 6 phân hệ của Kênh Quản trị.
 2. Ban hành chỉ tiêu KPI: Tăng điểm sức khỏe trải nghiệm từ 88 lên 96/100, triệt tiêu 100% Dead clicks và Rage clicks.
 3. Lệnh cho toàn hệ thống: Vận hành ổn định các tính năng mới, lưu vết nhật ký đối thoại đầy đủ và sẵn sàng hỗ trợ mọi phụ huynh có con cần can thiệp sớm.`;
 
   if (directorKey) {
     try {
-      const prompt = `Bạn là Tác tử Giám đốc Điều hành (Executive Director) tối cao trong hệ thống Multi-Agent AI. 
+      const prompt = `Bạn là Agent Giám đốc Điều hành (Executive Director) tối cao trong hệ thống Multi-Agent AI. 
 Nhiệm vụ: Tổng kết và phê chuẩn kết quả làm việc của Nhân viên và Quản lý, ký duyệt mục tiêu KPI nâng điểm UX từ 88 lên 96/100, xác nhận bảo toàn tuyệt đối 5 hằng số thương hiệu (${IMMUTABLE_SYSTEM_INFO.title}, ${IMMUTABLE_SYSTEM_INFO.address}). Phát biểu dứt khoát, uy quyền, súc tích (3-4 câu).`;
       const res = await callGeminiRawText(prompt, directorKey.apiKey, directorKey.model);
       if (res && res.trim().length > 40) directorSpeech = res.trim();
@@ -1773,7 +1773,7 @@ Nhiệm vụ: Tổng kết và phê chuẩn kết quả làm việc của Nhân 
     badgeColor: "#d97706",
     timestamp: new Date().toLocaleTimeString("vi-VN"),
     keyFindings: [
-      "Hội đồng 3 Tác tử AI đã đồng thuận 100% về phương hướng vận hành toàn hệ thống CMS.",
+      "Hội đồng 3 Agent AI đã đồng thuận 100% về phương hướng vận hành toàn hệ thống CMS.",
       "Xác nhận hệ thống không bịa đặt, bảo toàn vững chắc vị trí TDP Duyên Phúc Hưng Yên và hotline.",
       "Thông qua lộ trình 3 giai đoạn và các chỉ số tăng trưởng chuyển đổi hỗ trợ gia đình trẻ.",
     ],
@@ -1784,9 +1784,9 @@ Nhiệm vụ: Tổng kết và phê chuẩn kết quả làm việc của Nhân 
     ],
     speechContent: directorSpeech,
     decisionStatus: "approved",
-    rawModelUsed: directorKey?.model || "gemini-1.5-pro (Mô phỏng tác tử)",
+    rawModelUsed: directorKey?.model || "gemini-1.5-pro (Mô phỏng Agent)",
   };
 
-  onProgress?.("Đã hoàn tất phiên Giao ban Đa Tác tử Điều hành CMS!", 100);
+  onProgress?.("Đã hoàn tất phiên Giao ban Multi-Agent Điều hành CMS!", 100);
   return [staffExchange, managerExchange, directorExchange];
 }

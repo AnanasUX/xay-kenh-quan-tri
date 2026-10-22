@@ -188,7 +188,7 @@ export function SystemAnalysisPage() {
   const handleSaveMultiKeys = (keysToSave?: MultiAiKeyItem[]) => {
     const target = keysToSave || multiAiKeys;
     saveStoredMultiAiKeys(target);
-    notify("Đã lưu danh mục Key AI và phân quyền tác tử thành công!");
+    notify("Đã lưu danh mục Key AI và phân quyền Agent thành công!");
     logAuditAction({
       username: currentUser.username,
       fullName: currentUser.fullName,
@@ -205,7 +205,7 @@ export function SystemAnalysisPage() {
     if (!window.confirm("Bạn có chắc chắn muốn khôi phục về danh mục 3 Key AI mẫu chuẩn của hệ thống (Nhân viên, Quản lý, Giám đốc)?")) return;
     setMultiAiKeys(DEFAULT_MULTI_AI_KEYS);
     saveStoredMultiAiKeys(DEFAULT_MULTI_AI_KEYS);
-    notify("Đã khôi phục về 3 vai trò tác tử chuẩn!");
+    notify("Đã khôi phục về 3 vai trò Agent chuẩn!");
   };
 
   // Kiểm tra 1 Key AI riêng lẻ
@@ -525,7 +525,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
     notify("Đã nạp báo cáo mẫu để trải nghiệm!");
   };
 
-  // Khởi chạy phân tích Đa Tác tử (Multi-AI Consensus)
+  // Khởi chạy phân tích Multi-Agent (Multi-AI Consensus)
   const handleRunAnalysis = async () => {
     if (!reportContent.trim()) {
       notify("Vui lòng nạp file báo cáo hoặc chọn 'Nạp tự động dữ liệu' trước khi bắt đầu phân tích.");
@@ -534,7 +534,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
 
     setIsAnalyzing(true);
     setAnalysisProgress(10);
-    setAnalysisStatusText("Khởi động hệ thống Đa Tác tử AI (Multi-Agent Swarm)...");
+    setAnalysisStatusText("Khởi động hệ thống Multi-Agent AI (Multi-Agent Swarm)...");
 
     try {
       let result: SystemAnalysisResult;
@@ -570,7 +570,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
       setAnalysisProgress(100);
       setAnalysisResult(result);
       setActiveTab("overview");
-      notify("Đã hoàn thành phân tích đa tác tử & thống nhất kế hoạch nâng cấp!");
+      notify("Đã hoàn thành phân tích Multi-Agent & thống nhất kế hoạch nâng cấp!");
 
       logAuditAction({
         username: currentUser.username,
@@ -578,7 +578,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
         role: currentUser.role,
         category: "ai",
         action: "Phân tích hệ thống Multi-AI Consensus",
-        detail: `Hoàn tất phân tích đa tác tử: ${result.modelName}. Các AI đã đồng thuận phê duyệt 6 giải pháp & lộ trình 3 giai đoạn.`,
+        detail: `Hoàn tất phân tích Multi-Agent: ${result.modelName}. Các AI đã đồng thuận phê duyệt 6 giải pháp & lộ trình 3 giai đoạn.`,
         target: fileName || "bao-cao-diem-nghen-ux.txt",
         status: "success",
       });
@@ -639,7 +639,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
   const handleCopyAgentLogs = async () => {
     if (!analysisResult?.multiAgentLogs) return;
     let text = "================================================================================\n";
-    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC TÁC TỬ AI (MULTI-AGENT CONSENSUS LOG)\n";
+    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC AGENT AI (MULTI-AGENT CONSENSUS LOG)\n";
     text += "Dự án: Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương\n";
     text += `Thời gian thực hiện: ${new Date().toLocaleString("vi-VN")}\n`;
     text += "================================================================================\n\n";
@@ -667,7 +667,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
   const handleDownloadAgentLogsTxt = () => {
     if (!analysisResult?.multiAgentLogs) return;
     let text = "================================================================================\n";
-    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC TÁC TỬ AI (MULTI-AGENT CONSENSUS LOG)\n";
+    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC AGENT AI (MULTI-AGENT CONSENSUS LOG)\n";
     text += "Dự án: Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương\n";
     text += `Thời gian: ${new Date().toLocaleString("vi-VN")}\n`;
     text += "================================================================================\n\n";
@@ -744,7 +744,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           </div>
           <h1>Phân tích hệ thống & Lập Kế hoạch Nâng cấp</h1>
           <p className="page-desc">
-            Hệ thống Multi-Agent AI cho phép đưa nhiều Key Google Gemini API với phân quyền tác tử chuyên biệt: Nhân viên rà soát nội dung & 5 hằng số nhận diện, Quản lý thẩm định quy trình & Zalo Campaign, Giám đốc điều hành phê duyệt lộ trình tối cao.
+            Hệ thống Multi-Agent AI cho phép đưa nhiều Key Google Gemini API với phân quyền Agent chuyên biệt: Nhân viên rà soát nội dung & 5 hằng số nhận diện, Quản lý thẩm định quy trình & Zalo Campaign, Giám đốc điều hành phê duyệt lộ trình tối cao.
           </p>
         </div>
 
@@ -772,13 +772,13 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
 
       {/* 2. Hai cột thiết lập: Cấu hình Multi-AI và Nạp Báo cáo */}
       <div className="analysis-setup-grid">
-        {/* CỘT TRÁI: DANH MỤC QUẢN LÝ KEY AI & PHÂN QUYỀN TÁC TỬ */}
+        {/* CỘT TRÁI: DANH MỤC QUẢN LÝ KEY AI & PHÂN QUYỀN AGENT */}
         <div className="setup-card">
           <div className="card-header-row">
             <div className="card-title-wrap">
               <span className="step-number">1</span>
               <div>
-                <h3>Danh mục Quản lý Key AI & Phân quyền Tác tử</h3>
+                <h3>Danh mục Quản lý Key AI & Phân quyền Agent</h3>
                 <p>Cấu hình nhiều Key Gemini AI để các AI tự phân tích và phản biện lẫn nhau</p>
               </div>
             </div>
@@ -867,7 +867,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
                     type="button"
                     className="multi-ai-btn"
                     onClick={handleResetMultiKeys}
-                    title="Khôi phục lại 3 vai trò tác tử chuẩn (Nhân viên, Quản lý, Giám đốc)"
+                    title="Khôi phục lại 3 vai trò Agent chuẩn (Nhân viên, Quản lý, Giám đốc)"
                   >
                     <Icon name="refresh" size={13} />
                     <span>Khôi phục chuẩn</span>
@@ -1016,7 +1016,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
                         )}
                         {k.status === "untested" && (
                           <span style={{ color: "#64748b" }}>
-                            {k.apiKey ? "Chưa kiểm tra kết nối với Google AI Studio" : "Chưa cấu hình API Key (sẽ dùng bộ mô phỏng tác tử tích hợp)"}
+                            {k.apiKey ? "Chưa kiểm tra kết nối với Google AI Studio" : "Chưa cấu hình API Key (sẽ dùng bộ mô phỏng Agent tích hợp)"}
                           </span>
                         )}
                       </div>
@@ -1033,7 +1033,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           {aiMode === "single_gemini" && (
             <div className="api-key-form">
               <label className="field-label">
-                <span>Google AI Studio API Key (Dùng chung cho cả 3 cấp tác tử)</span>
+                <span>Google AI Studio API Key (Dùng chung cho cả 3 cấp Agent)</span>
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
@@ -1104,7 +1104,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
               <div className="info-text">
                 <strong>Sẵn sàng hoạt động ngay lập tức (Không cần Key)</strong>
                 <p>
-                  Hệ thống sử dụng bộ mô phỏng Đa Tác tử Tích hợp sẵn (3 cấp: Nhân viên, Quản lý, Giám đốc) để phân tích báo cáo điểm nghẽn, kiểm tra nghiêm ngặt 5 hằng số nhận diện của Cô Hương tại TDP Duyên Phúc, Hưng Hà, Hưng Yên và lập lộ trình 3 giai đoạn.
+                  Hệ thống sử dụng bộ mô phỏng Multi-Agent Tích hợp sẵn (3 cấp: Nhân viên, Quản lý, Giám đốc) để phân tích báo cáo điểm nghẽn, kiểm tra nghiêm ngặt 5 hằng số nhận diện của Cô Hương tại TDP Duyên Phúc, Hưng Hà, Hưng Yên và lập lộ trình 3 giai đoạn.
                 </p>
               </div>
             </div>
@@ -1233,12 +1233,12 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
         </div>
       </div>
 
-      {/* 3. Khối Chạy Phân Tích & Tiến Trình Đa Tác Tử */}
+      {/* 3. Khối Chạy Phân Tích & Tiến Trình Multi-Agent */}
       <div className="analysis-trigger-bar">
         <div className="trigger-info">
           <div className="step-indicator">
             <span className="step-number">3</span>
-            <h4>Kích hoạt Phân tích Đa Tác tử & Lập Kế hoạch</h4>
+            <h4>Kích hoạt Phân tích Multi-Agent & Lập Kế hoạch</h4>
           </div>
           <p>
             Hệ thống sẽ chạy lần lượt 3 cấp bậc AI: Nhân viên rà soát lỗi thông tin ➔ Quản lý thẩm định tính khả thi ➔ Giám đốc phê duyệt lộ trình toàn hệ thống.
@@ -1250,7 +1250,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           className="run-analysis-main-btn"
           onClick={handleRunAnalysis}
           disabled={isAnalyzing || !reportContent.trim()}
-          title="Bắt đầu chạy phân tích đa tác tử"
+          title="Bắt đầu chạy phân tích Multi-Agent"
         >
           {isAnalyzing ? (
             <>
@@ -1259,7 +1259,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           ) : (
             <>
               <Icon name="sparkle" size={18} />
-              <span>🚀 Chạy Phân tích Đa Tác tử (Multi-AI Consensus)</span>
+              <span>🚀 Chạy Phân tích Multi-Agent (Multi-AI Consensus)</span>
             </>
           )}
         </button>
@@ -1354,7 +1354,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           <div className="executive-summary-card">
             <div className="summary-title-row">
               <Icon name="article" size={18} />
-              <h4>Tổng kết Phán quyết & Đồng thuận Toàn diện từ Đa Tác tử AI</h4>
+              <h4>Tổng kết Phán quyết & Đồng thuận Toàn diện từ Multi-Agent AI</h4>
             </div>
             <p className="summary-paragraph">{analysisResult.executiveSummary}</p>
           </div>
@@ -1676,7 +1676,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
 
                       {msg.keyFindings && msg.keyFindings.length > 0 && (
                         <div className="agent-findings-box">
-                          <strong>Các điểm ghi nhận trọng tâm của tác tử:</strong>
+                          <strong>Các điểm ghi nhận trọng tâm của Agent:</strong>
                           <ul>
                             {msg.keyFindings.map((kf, kfIdx) => (
                               <li key={kfIdx}>{kf}</li>
@@ -1701,7 +1701,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
           {activeTab === "rawReport" && (
             <div className="raw-report-tab-body">
               <div className="raw-report-header">
-                <span className="raw-title">Toàn văn Kế hoạch Nâng cấp Hệ thống (Đã đối chiếu đa tác tử)</span>
+                <span className="raw-title">Toàn văn Kế hoạch Nâng cấp Hệ thống (Đã đối chiếu Multi-Agent)</span>
                 <button type="button" className="copy-raw-btn" onClick={handleCopyReport}>
                   <Icon name={copySuccess ? "check" : "copy"} size={14} />
                   <span>{copySuccess ? "Đã sao chép!" : "Sao chép toàn bộ"}</span>
@@ -1714,7 +1714,7 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: THÊM / CHỈNH SỬA KEY AI & PHÂN QUYỀN TÁC TỬ                         */}
+      {/* MODAL: THÊM / CHỈNH SỬA KEY AI & PHÂN QUYỀN AGENT                         */}
       {/* ========================================================================= */}
       {showKeyModal && editingKeyItem && (
         <div
@@ -1759,10 +1759,10 @@ III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
                 <span style={{ fontSize: 24 }}>{editingKeyItem.icon}</span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#1e293b" }}>
-                    Cấu hình Key AI & Phân quyền Tác tử
+                    Cấu hình Key AI & Phân quyền Agent
                   </h3>
                   <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
-                    Chỉ định phạm vi quyền hạn và API Key cho tác tử trong hệ thống
+                    Chỉ định phạm vi quyền hạn và API Key cho Agent trong hệ thống
                   </p>
                 </div>
               </div>

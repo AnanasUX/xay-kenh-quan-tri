@@ -224,8 +224,8 @@ export function AiManagementPage() {
   const handleRunSystemSync = async () => {
     setIsSyncRunning(true);
     setSyncProgress(10);
-    setSyncStatusText("Khởi động Hội đồng Giao ban Đa Tác tử AI...");
-    notify("Bắt đầu phiên Giao ban Đa Tác tử điều hành Kênh Quản trị...");
+    setSyncStatusText("Khởi động Hội đồng Giao ban Multi-Agent AI...");
+    notify("Bắt đầu phiên Giao ban Multi-Agent điều hành Kênh Quản trị...");
 
     try {
       const logs = await runSystemWideMultiAgentSync(multiAiKeys, (msg, pct) => {
@@ -242,8 +242,8 @@ export function AiManagementPage() {
         fullName: currentUser?.fullName || "Quản trị viên",
         role: currentUser?.role || "admin",
         category: "ai",
-        action: "Họp Giao ban Đa Tác tử Toàn Hệ thống",
-        detail: "Hội đồng 3 Tác tử AI (Nhân viên, Quản lý, Giám đốc) đã hoàn tất rà soát 6 phân hệ CMS & bảo vệ 5 hằng số.",
+        action: "Họp Giao ban Multi-Agent Toàn Hệ thống",
+        detail: "Hội đồng 3 Agent AI (Nhân viên, Quản lý, Giám đốc) đã hoàn tất rà soát 6 phân hệ CMS & bảo vệ 5 hằng số.",
         target: "Kênh Quản trị CMS",
         status: "success",
       });
@@ -264,7 +264,7 @@ export function AiManagementPage() {
       return;
     }
     let text = "================================================================================\n";
-    text += "NHẬT KÝ ĐỐI THOẠI & GIAO BAN ĐIỀU HÀNH ĐA TÁC TỬ AI (MULTI-AGENT SWARM LOG)\n";
+    text += "NHẬT KÝ ĐỐI THOẠI & GIAO BAN ĐIỀU HÀNH MULTI-AGENT AI (MULTI-AGENT SWARM LOG)\n";
     text += "Hệ thống: Kênh Quản trị CMS & Landing Page Trẻ tự kỷ Cô Hương\n";
     text += `Thời gian: ${new Date().toLocaleString("vi-VN")}\n`;
     text += "================================================================================\n\n";
@@ -291,7 +291,7 @@ export function AiManagementPage() {
       return;
     }
     let text = "================================================================================\n";
-    text += "BIÊN BẢN HỘI ĐỒNG ĐA TÁC TỬ GOOGLE GEMINI AI - ĐIỀU HÀNH TOÀN DIỆN HỆ THỐNG\n";
+    text += "BIÊN BẢN HỘI ĐỒNG MULTI-AGENT GOOGLE GEMINI AI - ĐIỀU HÀNH TOÀN DIỆN HỆ THỐNG\n";
     text += "Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương - TDP Duyên Phúc, Hưng Hà, Hưng Yên\n";
     text += `Ngày xuất: ${new Date().toLocaleString("vi-VN")}\n`;
     text += "================================================================================\n\n";
@@ -357,7 +357,7 @@ export function AiManagementPage() {
       <PageHeading
         eyebrow="Hệ thống & Trí tuệ nhân tạo"
         title="Quản lý AI hệ thống"
-        description="Cấu hình danh mục Google Gemini API Key riêng biệt, phân cấp quyền hạn tác tử (Nhân viên, Quản lý, Giám đốc), kiểm tra kết nối Ping All và ma trận vận hành toàn diện Kênh Quản trị."
+        description="Cấu hình danh mục Google Gemini API Key riêng biệt, phân cấp quyền hạn Agent (Nhân viên, Quản lý, Giám đốc), kiểm tra kết nối Ping All và ma trận vận hành toàn diện Kênh Quản trị."
         action={
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <button
@@ -365,10 +365,10 @@ export function AiManagementPage() {
               type="button"
               onClick={handleRunSystemSync}
               disabled={isSyncRunning}
-              title="Khởi động phiên họp giao ban đa tác tử AI rà soát toàn bộ hệ thống"
+              title="Khởi động phiên họp giao ban Multi-Agent AI rà soát toàn bộ hệ thống"
             >
               <Icon name="sparkle" size={16} />
-              <span>{isSyncRunning ? "Đang giao ban..." : "Giao ban Đa Tác tử (Multi-AI Sync)"}</span>
+              <span>{isSyncRunning ? "Đang giao ban..." : "Giao ban Multi-Agent (Multi-AI Sync)"}</span>
             </button>
             <button
               className="secondary-button"
@@ -429,7 +429,7 @@ export function AiManagementPage() {
             <Icon name="users" size={22} />
           </div>
           <div>
-            <strong>{agentLogs.length > 0 ? "3 / 3 Tác tử" : "Chưa họp"}</strong>
+            <strong>{agentLogs.length > 0 ? "3 / 3 Agent" : "Chưa họp"}</strong>
             <span>{agentLogs.length > 0 ? "Đã đồng thuận vận hành" : "Hội đồng sẵn sàng"}</span>
           </div>
         </div>
@@ -544,14 +544,14 @@ export function AiManagementPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* KHỐI 1: DANH MỤC QUẢN LÝ CÁC KEY AI & PHÂN QUYỀN TÁC TỬ */}
+      {/* KHỐI 1: DANH MỤC QUẢN LÝ CÁC KEY AI & PHÂN QUYỀN AGENT */}
       {/* ========================================================================= */}
       <div className="accounts-table-card" style={{ padding: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ background: "#ede9fe", color: "#6d28d9", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>MỤC 1</span>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Danh mục Quản lý Key AI & Phân quyền Tác tử</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Danh mục Quản lý Key AI & Phân quyền Agent</h3>
             </div>
             <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
               Cấu hình các Key Google Gemini API độc lập, kiểm tra trạng thái hoạt động và gán phạm vi quyền hạn chuyên trách
@@ -761,7 +761,7 @@ export function AiManagementPage() {
                     type="button"
                     className="card-action-btn"
                     onClick={() => handleToggleKeyActive(item.id)}
-                    title={item.isActive ? "Tạm dừng tác tử này" : "Bật tác tử này"}
+                    title={item.isActive ? "Tạm dừng Agent này" : "Bật Agent này"}
                   >
                     <span>{item.isActive ? "Tạm dừng" : "Kích hoạt"}</span>
                   </button>
@@ -793,7 +793,7 @@ export function AiManagementPage() {
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Ma trận Phân công Nhiệm vụ & Vận hành Toàn Hệ thống</h3>
             </div>
             <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
-              Phân việc chi tiết cho các Tác tử AI bao phủ 6 phân hệ của Kênh Quản trị ("https://ananasux.github.io/xay-kenh-quan-tri/")
+              Phân việc chi tiết cho các Agent AI bao phủ 6 phân hệ của Kênh Quản trị ("https://ananasux.github.io/xay-kenh-quan-tri/")
             </p>
           </div>
 
@@ -811,13 +811,13 @@ export function AiManagementPage() {
                   Phân hệ Kênh Quản trị
                 </th>
                 <th style={{ padding: "12px 14px", textAlign: "left", fontSize: 12.5, fontWeight: 700, color: "#2563eb", width: "26%" }}>
-                  👨‍💻 Tác tử Nhân viên (Key 1)
+                  👨‍💻 Agent Nhân viên (Key 1)
                 </th>
                 <th style={{ padding: "12px 14px", textAlign: "left", fontSize: 12.5, fontWeight: 700, color: "#7c3aed", width: "26%" }}>
-                  👩‍💼 Tác tử Quản lý (Key 2)
+                  👩‍💼 Agent Quản lý (Key 2)
                 </th>
                 <th style={{ padding: "12px 14px", textAlign: "left", fontSize: 12.5, fontWeight: 700, color: "#d97706", width: "20%" }}>
-                  👑 Tác tử Giám đốc (Key 3)
+                  👑 Agent Giám đốc (Key 3)
                 </th>
                 <th style={{ padding: "12px 14px", textAlign: "center", fontSize: 12.5, fontWeight: 700, color: "#059669", width: "8%" }}>
                   Liên kết
@@ -962,14 +962,14 @@ export function AiManagementPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* KHỐI 3: NHẬT KÝ ĐỐI THOẠI & BÁO CÁO GIAO BAN ĐA TÁC TỬ */}
+      {/* KHỐI 3: NHẬT KÝ ĐỐI THOẠI & BÁO CÁO GIAO BAN MULTI-AGENT */}
       {/* ========================================================================= */}
       <div className="accounts-table-card" style={{ padding: 24, marginTop: 24 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 4 }}>MỤC 3</span>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Nhật ký Đối thoại & Báo cáo Giao ban Đa Tác tử (Multi-Agent Dialogue Log)</h3>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Nhật ký Đối thoại & Báo cáo Giao ban Multi-Agent (Multi-Agent Dialogue Log)</h3>
             </div>
             <p style={{ margin: "4px 0 0 0", fontSize: 12.5, color: "#64748b" }}>
               Lưu vết toàn bộ quá trình trao đổi, phản biện và phán quyết điều hành Kênh Quản trị giữa các cấp AI
@@ -1004,7 +1004,7 @@ export function AiManagementPage() {
         {/* Filter & Search Bar */}
         <div className="agent-dialogue-filter-bar" style={{ marginTop: 18 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginRight: 4 }}>Lọc tác tử:</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginRight: 4 }}>Lọc Agent:</span>
             <button
               type="button"
               className={`agent-filter-pill ${logFilterRole === "all" ? "agent-filter-pill--active" : ""}`}
@@ -1059,7 +1059,7 @@ export function AiManagementPage() {
           <div style={{ padding: "40px 20px", textAlign: "center", color: "#64748b" }}>
             <span style={{ fontSize: 32 }}>💬</span>
             <p style={{ marginTop: 8, fontSize: 14 }}>
-              Chưa có phiên giao ban nào. Hãy bấm <strong>"Khởi động Giao ban Đa Tác tử"</strong> ở đầu trang để các AI tự động trao đổi và báo cáo.
+              Chưa có phiên giao ban nào. Hãy bấm <strong>"Khởi động Giao ban Multi-Agent"</strong> ở đầu trang để các AI tự động trao đổi và báo cáo.
             </p>
           </div>
         ) : (
@@ -1151,7 +1151,7 @@ export function AiManagementPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL: THÊM / CHỈNH SỬA KEY AI & PHÂN QUYỀN TÁC TỬ */}
+      {/* MODAL: THÊM / CHỈNH SỬA KEY AI & PHÂN QUYỀN AGENT */}
       {/* ========================================================================= */}
       {showKeyModal && editingKeyItem && (
         <div
@@ -1196,10 +1196,10 @@ export function AiManagementPage() {
                 <span style={{ fontSize: 24 }}>{editingKeyItem.icon}</span>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#1e293b" }}>
-                    Cấu hình Key AI & Phân quyền Tác tử
+                    Cấu hình Key AI & Phân quyền Agent
                   </h3>
                   <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
-                    Chỉ định phạm vi quyền hạn và API Key cho tác tử trong hệ thống
+                    Chỉ định phạm vi quyền hạn và API Key cho Agent trong hệ thống
                   </p>
                 </div>
               </div>
