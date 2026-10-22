@@ -223,7 +223,44 @@ export function LiveChatPage() {
     notify("Đã xuất báo cáo kịch bản ra file bo-tinh-huong-tu-ky.txt");
   };
 
-  // Nạp file JSON kịch bản mới
+    // Tải file JSON mẫu kịch bản để người dùng thử nghiệm nạp
+  const handleDownloadSampleScenarioJson = () => {
+    const sampleData = [
+      {
+        title: "Hướng dẫn xử lý khi trẻ tự cắn tay hoặc đập đầu (Mẫu nạp)",
+        category: "behavior",
+        intent: "Phụ huynh cần hướng dẫn khẩn cấp khi con có hành vi tự gây tổn thương cơ thể.",
+        sampleQuestion: "Mỗi khi bị mắng hay không được như ý con lại tự cắn tay chảy máu thì phải xử lý thế nào?",
+        keywords: ["tự cắn tay", "đập đầu", "tự làm đau", "hành vi tự hại", "tự thương"],
+        responseTemplate: "Dạ cô Hương chào ba/mẹ {customerName} ạ! Khi con có hành vi tự cắn tay hoặc đập đầu, việc đầu tiên là ba mẹ giữ bình tĩnh, nhẹ nhàng can thiệp bằng cách chặn tay hoặc đệm gối mềm để bảo vệ an toàn cho con, tuyệt đối không la mắng vì sẽ làm con kích động hơn. Đây là phản xạ giải tỏa căng thẳng quá mức khi con chưa biết cách nói ra cảm xúc. Tại cơ sở TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên, cô hướng dẫn kỹ thuật thay thế xúc giác và điều hòa cảm giác để giúp con bình tĩnh lại tự nhiên. Ba mẹ hãy gọi trực tiếp 096 290 3942 để cô hướng dẫn từng bước xử lý ngay cho bé nhé!",
+        recommendedAction: "Hướng dẫn kỹ thuật can thiệp an toàn và hẹn lịch tư vấn trực tiếp",
+        isActive: true,
+        isCustom: true
+      },
+      {
+        title: "Lớp can thiệp kỹ năng tiền học đường cho trẻ 5-6 tuổi (Mẫu nạp)",
+        category: "general",
+        intent: "Phụ huynh muốn chuẩn bị cho con kỹ năng ngồi học, tập trung và giao tiếp trước khi vào lớp 1.",
+        sampleQuestion: "Bé nhà em 5 tuổi sắp vào lớp 1 nhưng chưa biết tập trung ngồi học, bên cô có lớp chuẩn bị không?",
+        keywords: ["tiền học đường", "chuẩn bị vào lớp 1", "5 tuổi", "6 tuổi", "ngồi học", "tập trung"],
+        responseTemplate: "Dạ ba/mẹ {customerName}, giai đoạn 5-6 tuổi chuẩn bị vào lớp 1 là cột mốc rất quan trọng đối với trẻ có khó khăn về tập trung hoặc ngôn ngữ. Tại cơ sở TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên, cô xây dựng chương trình Tiền học đường cá nhân hóa: rèn kỹ năng ngồi yên theo thời lượng, rèn cầm bút, làm theo khẩu lệnh tập thể và tương tác với bạn bè. Cô mời gia đình đưa bé qua buổi đánh giá kỹ năng tiền học đường 60 phút hoàn toàn MIỄN PHÍ để nắm rõ mức độ sẵn sàng của con nhé ạ!",
+        recommendedAction: "Đăng ký buổi đánh giá kỹ năng tiền học đường miễn phí",
+        isActive: true,
+        isCustom: true
+      }
+    ];
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sampleData, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", "kich-ban-mau-tu-ky-import.json");
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    notify("Đã tải file JSON mẫu kich-ban-mau-tu-ky-import.json");
+  };
+
+  // Nạp file JSON kịch bản mới (Smart Append & Merge - Luôn tăng dữ liệu)
   const handleImportScenariosJson = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -231,20 +268,154 @@ export function LiveChatPage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setScenariosList(parsed);
-          saveStoredScenarios(parsed);
-          notify("Đã nạp thành công " + parsed.length + " tình huống kịch bản vào hệ thống!");
-        } else {
-          notify("File JSON không đúng cấu trúc danh sách kịch bản.");
+        const rawContent = event.target?.result as string;
+        const parsed = JSON.parse(rawContent);
+
+        // Hỗ trợ mọi cấu trúc JSON: Mảng trực tiếp, hoặc bọc trong scenarios, data, matrix, items, questions, list, hoặc 1 đối tượng đơn
+        let incomingRaw: any[] = [];
+        if (Array.isArray(parsed)) {
+          incomingRaw = parsed;
+        } else if (parsed && typeof parsed === "object") {
+          if (Array.isArray(parsed.scenarios)) incomingRaw = parsed.scenarios;
+          else if (Array.isArray(parsed.matrix)) incomingRaw = parsed.matrix;
+          else if (Array.isArray(parsed.data)) incomingRaw = parsed.data;
+          else if (Array.isArray(parsed.items)) incomingRaw = parsed.items;
+          else if (Array.isArray(parsed.questions)) incomingRaw = parsed.questions;
+          else if (Array.isArray(parsed.list)) incomingRaw = parsed.list;
+          else if (parsed.title || parsed.sampleQuestion || parsed.responseTemplate) {
+            incomingRaw = [parsed];
+          }
         }
-      } catch {
-        notify("Lỗi đọc file JSON. Vui lòng kiểm tra định dạng.");
+
+        if (!incomingRaw || incomingRaw.length === 0) {
+          notify("File JSON không chứa dữ liệu kịch bản hợp lệ.");
+          return;
+        }
+
+        const validCategories = ["speech", "behavior", "interaction", "evaluation", "tuition", "out_of_scope", "general"];
+
+        // Chuẩn hóa từng kịch bản và sinh ID duy nhất
+        const cleanedIncoming: AutismScenario[] = incomingRaw.map((item: any, idx: number) => {
+          const uniqueId = `sc-imported-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`;
+          
+          let keywords: string[] = [];
+          if (Array.isArray(item.keywords)) {
+            keywords = item.keywords.map((k: any) => String(k).trim()).filter(Boolean);
+          } else if (typeof item.keywords === "string") {
+            keywords = item.keywords.split(",").map((k: string) => k.trim()).filter(Boolean);
+          }
+
+          const title = String(item.title || item.intent || item.sampleQuestion || `Tình huống nạp mới #${scenariosList.length + idx + 1}`).trim();
+          const sampleQuestion = String(item.sampleQuestion || item.question || title).trim();
+
+          // Tự sinh từ khóa nếu mảng rỗng
+          if (keywords.length === 0) {
+            keywords = [title.toLowerCase().substring(0, 30)];
+          }
+
+          let category = item.category;
+          if (!validCategories.includes(category)) {
+            category = item.isOutOfScope ? "out_of_scope" : "general";
+          }
+
+          let responseTemplate = String(item.responseTemplate || item.response || item.answer || "").trim();
+          if (!responseTemplate) {
+            responseTemplate = "Dạ cô Hương chào ba/mẹ {customerName} ạ! Cô ở TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên. Cô đã tiếp nhận câu hỏi của gia đình và sẽ tư vấn hỗ trợ bé sớm nhất nhé ạ.";
+          }
+
+          return {
+            id: uniqueId,
+            title,
+            category: category as any,
+            intent: String(item.intent || title).trim(),
+            sampleQuestion,
+            keywords,
+            responseTemplate,
+            recommendedAction: String(item.recommendedAction || "Tư vấn lộ trình can thiệp và xếp lịch đánh giá miễn phí").trim(),
+            isOutOfScope: Boolean(item.isOutOfScope || category === "out_of_scope"),
+            isActive: item.isActive !== false,
+            isCustom: true,
+          };
+        });
+
+        // Bổ sung các kịch bản nạp mới lên đầu danh sách để người dùng nhìn thấy ngay
+        const previousCount = scenariosList.length;
+        const updatedList = [...cleanedIncoming, ...scenariosList];
+        setScenariosList(updatedList);
+        saveStoredScenarios(updatedList);
+        
+        notify(`Đã nạp thành công ${cleanedIncoming.length} tình huống kịch bản mới! (Tổng số kịch bản tăng từ ${previousCount} lên ${updatedList.length})`);
+        logAuditAction("Cấu hình kịch bản AI", "Nạp JSON", `Nạp thành công ${cleanedIncoming.length} kịch bản từ file "${file.name}" (Tổng cộng: ${updatedList.length})`);
+      } catch (err) {
+        console.error("Lỗi nạp JSON kịch bản:", err);
+        notify("Lỗi đọc file JSON. Vui lòng kiểm tra định dạng tập tin.");
       }
     };
     reader.readAsText(file);
     e.target.value = "";
+  };
+
+  // Nạp 4 kịch bản từ Báo cáo Phân tích AI vào Autism Q&A Matrix
+  const handleInjectAiAnalysisScenarios = () => {
+    const aiAnalysisScenarios: AutismScenario[] = [
+      {
+        id: "sc-ai-tuition-" + Date.now(),
+        title: "Chi phí can thiệp & Đăng ký lịch học 1:1 (Phân tích AI)",
+        category: "tuition",
+        intent: "Phụ huynh hỏi về mức học phí ca 45-60 phút và các gói can thiệp theo tuần hoặc theo tháng.",
+        sampleQuestion: "Học phí một ca can thiệp 1:1 với cô là bao nhiêu vậy ạ, có lớp ngoài giờ không?",
+        keywords: ["học phí", "hoc phi", "chi phí", "chi phi", "bao nhiêu tiền", "bao nhieu", "ca 1:1", "học buổi tối", "thứ 7", "chủ nhật"],
+        responseTemplate: "Dạ ba/mẹ {customerName}, học phí can thiệp cá nhân 1:1 tại trung tâm dao động từ 250.000đ - 350.000đ/buổi (thời lượng 45 - 60 phút) tùy theo kế hoạch can thiệp cá nhân (IEP) của bé. Trung tâm có các ca học linh hoạt sáng, chiều và ngoài giờ hành chính (kèm ca thứ 7). Đặc biệt, buổi đánh giá sàng lọc đầu vào của con hoàn toàn MIỄN PHÍ tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên ạ.",
+        recommendedAction: "Cung cấp biểu phí minh bạch và xếp lịch đánh giá miễn phí cho bé",
+        isActive: true,
+        isCustom: true,
+      },
+      {
+        id: "sc-ai-speech-" + (Date.now() + 1),
+        title: "Độ tuổi vàng can thiệp sớm & Dấu hiệu chậm nói (Phân tích AI)",
+        category: "speech",
+        intent: "Phụ huynh lo lắng vì con chưa nói được từ đơn, ê a vô nghĩa hoặc có dấu hiệu thoái lui ngôn ngữ.",
+        sampleQuestion: "Bé nhà em 2 tuổi rưỡi chưa nói được từ nào, chỉ ê a thì có phương pháp nào giúp con bật âm không cô?",
+        keywords: ["chậm nói", "chua noi", "bật âm", "bat am", "ê a", "nhại lời", "từ đơn", "chưa biết nói", "tuổi vàng"],
+        responseTemplate: "Dạ, cô Hương chào ba/mẹ {customerName} ạ! Ở giai đoạn 18–36 tháng tuổi, não bộ có tính dẻo cao nhất và đây chính là \"thời điểm vàng\" để kích hoạt âm ngữ. Với các bé chưa bật âm, cô áp dụng phương pháp tạo nhu cầu giao tiếp tự nhiên qua trò chơi tương tác 1:1 và giáo cụ trực quan, tuyệt đối không tạo áp lực bắt ép con. Ba mẹ cho cô hỏi thêm bé nhà mình hiện tại hiểu được các hiệu lệnh đơn giản (như \"lấy cho mẹ\", \"vẫy tay chào\") chưa ạ? Cô sẽ tư vấn lộ trình phù hợp nhất cho con nhé!",
+        recommendedAction: "Hỏi mức độ hiểu mệnh lệnh của bé và xếp lịch kiểm tra âm ngữ miễn phí",
+        isActive: true,
+        isCustom: true,
+      },
+      {
+        id: "sc-ai-qualification-" + (Date.now() + 2),
+        title: "Bằng cấp chuyên môn & Đội ngũ giáo viên can thiệp (Phân tích AI)",
+        category: "general",
+        intent: "Phụ huynh muốn xác thực trình độ chuyên môn, bằng cấp và kinh nghiệm can thiệp của Cô Hương.",
+        sampleQuestion: "Cô giáo có bằng cấp chuyên môn về can thiệp đặc biệt không và đã có kinh nghiệm bao nhiêu năm?",
+        keywords: ["bằng cấp", "chuyên môn", "kinh nghiệm", "chứng chỉ", "giáo viên", "sư phạm", "chuyên ngành"],
+        responseTemplate: "Dạ ba/mẹ {customerName} hoàn toàn yên tâm ạ. Cô Hương tốt nghiệp chuyên ngành Giáo dục Đặc biệt với hơn 8 năm kinh nghiệm trực tiếp can thiệp cho trẻ rối loạn phổ tự kỷ, chậm nói và tăng động giảm chú ý. Toàn bộ giáo trình can thiệp đều áp dụng các phương pháp khoa học chuẩn quốc tế như ABA, TEACCH, PECS và Trị liệu Cảm giác SI, có giáo án cá nhân hóa IEP cho từng bé ạ.",
+        recommendedAction: "Gửi hồ sơ năng lực chuyên môn và chứng chỉ đào tạo cho phụ huynh",
+        isActive: true,
+        isCustom: true,
+      },
+      {
+        id: "sc-ai-facility-" + (Date.now() + 3),
+        title: "Cơ sở vật chất phòng điều hòa giác quan & Giáo cụ chuyên biệt (Phân tích AI)",
+        category: "general",
+        intent: "Phụ huynh hỏi về thiết bị, đồ dùng trị liệu và môi trường can thiệp giác quan tại cơ sở.",
+        sampleQuestion: "Phòng học của trung tâm trang bị những gì để hỗ trợ bé điều hòa cảm giác và tập trung ạ?",
+        keywords: ["cơ sở vật chất", "phòng học", "giác quan", "dụng cụ", "xích đu", "thảm gai", "điều hòa cảm giác", "phòng si"],
+        responseTemplate: "Dạ phòng can thiệp của Cô Hương tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên được trang bị đầy đủ hệ thống điều hòa giác quan hiện đại: thảm gai áp lực, xích đu tiền đình, bóng xúc giác và hệ thống bàn ghế chuẩn trị liệu cá nhân 1:1. Không gian yên tĩnh, an toàn, giúp trẻ giảm stress giác quan và tiếp thu bài học đạt hiệu quả cao nhất. Cô mời ba mẹ cùng bé ghé thăm không gian phòng học nhé ạ!",
+        recommendedAction: "Gửi ảnh không gian phòng học thực tế và hẹn lịch phụ huynh đưa bé đến trải nghiệm",
+        isActive: true,
+        isCustom: true,
+      },
+    ];
+
+    const previousCount = scenariosList.length;
+    const updated = [...aiAnalysisScenarios, ...scenariosList];
+    setScenariosList(updated);
+    saveStoredScenarios(updated);
+    notify(`Đã nạp thành công 4 kịch bản từ AI vào Autism Q&A Matrix! (Tổng số kịch bản tăng từ ${previousCount} lên ${updated.length})`);
+    setShowAnalysisModal(false);
+    setShowScenariosModal(true);
+    logAuditAction("Cấu hình kịch bản AI", "Tạo mới từ AI Analysis", `Nạp 4 kịch bản phân tích khách hàng vào Q&A Matrix (Tổng cộng: ${updated.length})`);
   };
 
   // Sử dụng câu trả lời của kịch bản chèn vào khung chat
@@ -1720,6 +1891,28 @@ export function LiveChatPage() {
 
                 <button
                   type="button"
+                  onClick={handleDownloadSampleScenarioJson}
+                  style={{
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 10,
+                    border: "1px solid #c4b5fd",
+                    background: "#f5f3ff",
+                    color: "#6d28d9",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                  }}
+                  title="Tải file JSON mẫu chuẩn để nạp thử nghiệm"
+                >
+                  📋 JSON Mẫu
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleExportScenariosJson}
                   style={{
                     height: 38,
@@ -2872,10 +3065,7 @@ export function LiveChatPage() {
                 </div>
                 <button
                   type='button'
-                  onClick={() => {
-                    alert('Đã cập nhật 4 mẫu câu hỏi thường gặp nhất vào Bộ kịch bản Autism Q&A Matrix thành công!');
-                    setShowAnalysisModal(false);
-                  }}
+                  onClick={handleInjectAiAnalysisScenarios}
                   style={{
                     padding: '8px 14px',
                     borderRadius: 8,
