@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCms } from "./Layout";
 import { Icon, PageHeading } from "./ui";
+import { GoogleSheetsConfigModal } from "./GoogleSheetsConfigModal";
+import {
+  fetchLeadsFromGoogleSheets,
+  updateLeadStatusOnGoogleSheets,
+  getGoogleSheetsUrl,
+} from "./googleSheetsService";
 
 export interface ConsultationLead {
   id: string;
@@ -24,9 +30,30 @@ export function ConsultationsPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<ConsultationLead | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [isGoogleSheetsConnected, setIsGoogleSheetsConnected] = useState(false);
 
   const fetchLeads = async () => {
     setLoading(true);
+    const gsUrl = getGoogleSheetsUrl();
+    if (gsUrl) {
+      try {
+        const gsRes = await fetchLeadsFromGoogleSheets();
+        if (gsRes.success && Array.isArray(gsRes.leads) && gsRes.leads.length > 0) {
+          setLeads(gsRes.leads as ConsultationLead[]);
+          setIsGoogleSheetsConnected(true);
+          setLoading(false);
+          return;
+        } else if (gsRes.success) {
+          setIsGoogleSheetsConnected(true);
+        }
+      } catch (e) {
+        console.warn("GS fetch error:", e);
+      }
+    } else {
+      setIsGoogleSheetsConnected(false);
+    }
+
     try {
       const res = await fetch(LEADS_API_URL, { cache: "no-store" });
       if (res.ok) {
@@ -88,6 +115,10 @@ export function ConsultationsPage() {
   const updateStatus = (id: string, status: ConsultationLead["status"]) => {
     const updated = leads.map((item) => (item.id === id ? { ...item, status } : item));
     saveLeadsToCloud(updated);
+    if (getGoogleSheetsUrl()) {
+      const currentLead = leads.find((l) => l.id === id);
+      updateLeadStatusOnGoogleSheets(id, status, currentLead?.notes);
+    }
   };
 
   const deleteLead = (id: string) => {
@@ -122,6 +153,12 @@ export function ConsultationsPage() {
   const updateNotes = (id: string, notes: string) => {
     const updated = leads.map((item) => (item.id === id ? { ...item, notes } : item));
     saveLeadsToCloud(updated);
+    if (getGoogleSheetsUrl()) {
+      const currentLead = leads.find((l) => l.id === id);
+      if (currentLead) {
+        updateLeadStatusOnGoogleSheets(id, currentLead.status, notes);
+      }
+    }
   };
 
   const filtered = leads.filter((item) => {
@@ -157,7 +194,22 @@ export function ConsultationsPage() {
     <div className="accounts-page" style={{ paddingBottom: 60 }}>
       <PageHeading
         action={
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              className="secondary-button"
+              onClick={() => setShowConfigModal(true)}
+              type="button"
+              style={{
+                borderColor: isGoogleSheetsConnected ? "#52c41a" : "#d9d9d9",
+                color: isGoogleSheetsConnected ? "#237804" : "inherit",
+                backgroundColor: isGoogleSheetsConnected ? "#f6ffed" : "inherit",
+                fontWeight: 600,
+              }}
+              title="Cấu hình hoặc kiểm tra kết nối Google Trang tính miễn phí"
+            >
+              <Icon name="link" size={16} />
+              <span>{isGoogleSheetsConnected ? "✓ Google Trang tính (Đang kết nối)" : "📊 CSDL Google Trang tính"}</span>
+            </button>
             <button className="secondary-button" onClick={exportCsv} type="button">
               <Icon name="download" size={16} />
               <span>Xuất Excel / CSV</span>
@@ -428,6 +480,15 @@ export function ConsultationsPage() {
           </table>
         </div>
       )}
+
+      <GoogleSheetsConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        onSuccess={() => {
+          setIsGoogleSheetsConnected(!!getGoogleSheetsUrl());
+          fetchLeads();
+        }}
+      />
     </div>
   );
 }

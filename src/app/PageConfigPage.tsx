@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { AiAssistantModal } from "./AiAssistantModal";
 import { AiSectionRewriteModal } from "./AiSectionRewriteModal";
+import { GoogleSheetsConfigModal } from "./GoogleSheetsConfigModal";
+import { getGoogleSheetsUrl, backupConfigToGoogleSheets } from "./googleSheetsService";
 import { logAuditAction } from "./auditService";
 import { ImageCropperModal, CROP_SPECS, type CropTargetSpec } from "./ImageCropperModal";
 import { initialLandingPageConfig, type LandingPageConfig, type LandingSection, type LandingSectionId } from "./landingPage";
@@ -68,6 +70,7 @@ export function PageConfigPage() {
   const [saving, setSaving] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [showRewriteModal, setShowRewriteModal] = useState(false);
+  const [showSheetsModal, setShowSheetsModal] = useState(false);
 
   useEffect(() => {
     fetch(CLOUD_API_URL, { cache: "no-store" })
@@ -170,6 +173,11 @@ export function PageConfigPage() {
     } finally {
       setSaving(false);
       setDirty(false);
+    }
+
+    // 4. Tự động sao lưu lên Google Trang tính nếu đã kết nối
+    if (getGoogleSheetsUrl()) {
+      backupConfigToGoogleSheets(targetConfig).catch((e) => console.warn("Google Sheets backup error:", e));
     }
 
     logAuditAction({
@@ -282,6 +290,15 @@ export function PageConfigPage() {
             <button className="secondary-button" onClick={exportJson} title="Tải file cấu hình JSON về máy">
               <Icon name="download" size={15} />
               <span>Xuất JSON</span>
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => setShowSheetsModal(true)}
+              type="button"
+              title="Sao lưu hoặc kết nối cấu hình với Google Trang tính"
+            >
+              <Icon name="link" size={15} />
+              <span>Google Trang tính</span>
             </button>
             <button className="secondary-button" disabled={saving} onClick={() => save(false)}>
               <Icon name="edit" size={15} />
@@ -582,6 +599,12 @@ export function PageConfigPage() {
         currentConfig={config}
         activeSectionId={activeId}
         onApply={handleApplyAiConfig}
+      />
+
+      <GoogleSheetsConfigModal
+        isOpen={showSheetsModal}
+        onClose={() => setShowSheetsModal(false)}
+        currentConfig={config}
       />
     </>
   );
