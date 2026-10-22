@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useCms } from "./Layout";
 import {
   testGeminiApiKey,
-  analyzeUxReport,
+  testMultipleGeminiApiKeys,
+  runMultiAgentConsensusAnalysis,
+  getStoredMultiAiKeys,
+  saveStoredMultiAiKeys,
+  DEFAULT_MULTI_AI_KEYS,
+  type MultiAiKeyItem,
+  type MultiAiAgentExchange,
+  type MultiAiAgentRole,
   type SystemAnalysisResult,
   type SystemUpgradeSolution,
   type UpgradePhase,
@@ -69,14 +76,13 @@ II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION 
    - Đổi nhãn: Việc đổi nhãn thành "Số zalo liên hệ *" giúp phụ huynh an tâm cung cấp thông tin hơn (giảm tâm lý sợ bị gọi làm phiền).
    - Khuyến nghị: Đảm bảo bàn phím số điện thoại tự động bật lên trên điện thoại (type="tel").
 
-III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLAN)
+III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
 --------------------------------------------------------------------------------
-[x] ƯU TIÊN 1 - KHẮC PHỤC TRIỆT ĐỂ DEAD CLICKS & RAGE CLICKS:
-    1. Bổ sung tính năng Phóng to ảnh (Lightbox Gallery):
-       - Cho phép phụ huynh nhấp vào ảnh phòng học, đồ dùng can thiệp để xem ảnh to chất lượng cao.
-    2. Thêm phản hồi trực quan tức thì khi bấm nút (Visual Feedback):
-       - Thêm icon xoay nhẹ (loading spinner) và hiệu ứng đổi màu ngay lập tức khi phụ huynh bấm nút Gửi biểu mẫu.
-       - Tăng độ nhạy mở đóng của các câu hỏi FAQ.
+[x] ƯU TIÊN 1 - TRIỆT TIÊU TOÀN BỘ DEAD CLICKS & RAGE CLICKS:
+    1. Bổ sung modal phóng to ảnh (Lightbox) khi phụ huynh nhấp vào ảnh cơ sở vật chất.
+    2. Thêm hiệu ứng gợn sóng nước (Ripple Effect) khi nhấp vào mọi thẻ và nút bấm.
+    3. Thêm con quay chờ tải (Loading Spinner) và vô hiệu hóa nút gửi form 1.5 giây để chặn bấm gửi trùng lặp.
+    4. Thêm popup xem chi tiết giáo viên can thiệp 1:1 khi nhấp vào thẻ chuyên gia.
 
 [x] ƯU TIÊN 2 - TỐI ƯU CÔNG THÁI HỌC DI ĐỘNG (MOBILE ERGONOMICS):
     1. Mở rộng vùng bấm (Touch Target) của mọi nút bấm trên di động lên tối thiểu 48x48 pixel theo tiêu chuẩn Google Material & Apple HIG.
@@ -92,23 +98,26 @@ export function SystemAnalysisPage() {
   const { notify, currentUser } = useCms();
   const navigate = useNavigate();
 
-  // 1. API Configuration State
-  const [apiKey, setApiKey] = useState(() => {
+  // 1. Multi-Agent AI Keys State
+  const [multiAiKeys, setMultiAiKeys] = useState<MultiAiKeyItem[]>(() => getStoredMultiAiKeys());
+  const [aiMode, setAiMode] = useState<"multi_agent" | "single_gemini" | "builtin">("multi_agent");
+  const [isTestingAllKeys, setIsTestingAllKeys] = useState(false);
+  const [testingKeyId, setTestingKeyId] = useState<string | null>(null);
+  const [showKeyModal, setShowKeyModal] = useState(false);
+  const [editingKeyItem, setEditingKeyItem] = useState<MultiAiKeyItem | null>(null);
+  const [showKeyTextMap, setShowKeyTextMap] = useState<Record<string, boolean>>({});
+
+  // Single Key Fallback State
+  const [singleApiKey, setSingleApiKey] = useState(() => {
     return (
       localStorage.getItem(API_KEY_STORAGE_KEY_PRIMARY) ||
       localStorage.getItem(API_KEY_STORAGE_KEY_SECONDARY) ||
       ""
     );
   });
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [isTestingKey, setIsTestingKey] = useState(false);
-  const [keyStatus, setKeyStatus] = useState<{ ok: boolean; message: string } | null>(null);
-  const [aiMode, setAiMode] = useState<"gemini" | "builtin">(() => {
-    const existing =
-      localStorage.getItem(API_KEY_STORAGE_KEY_PRIMARY) ||
-      localStorage.getItem(API_KEY_STORAGE_KEY_SECONDARY);
-    return existing && existing.length >= 15 ? "gemini" : "builtin";
-  });
+  const [showSingleKey, setShowSingleKey] = useState(false);
+  const [singleKeyStatus, setSingleKeyStatus] = useState<{ ok: boolean; message: string } | null>(null);
+  const [isTestingSingleKey, setIsTestingSingleKey] = useState(false);
 
   // 2. Report File Ingestion State
   const [reportContent, setReportContent] = useState("");
@@ -126,69 +135,238 @@ export function SystemAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<SystemAnalysisResult | null>(null);
 
   // 4. UI Active Tabs
-  const [activeTab, setActiveTab] = useState<"overview" | "solutions" | "roadmap" | "rawReport">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "solutions" | "roadmap" | "multiAgentLogs" | "rawReport">("overview");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [agentLogFilter, setAgentLogFilter] = useState<string>("all");
+  const [agentLogSearch, setAgentLogSearch] = useState("");
 
-  // Tự động kiểm tra API key khi mới load nếu có sẵn
+  // Sync multi-ai keys if single key was previously configured
   useEffect(() => {
-    if (apiKey && apiKey.length >= 15 && !keyStatus) {
-      setKeyStatus({ ok: true, message: "Đã lưu API Key trong hệ thống" });
+    if (singleApiKey && singleApiKey.length >= 15) {
+      setMultiAiKeys((prev) => {
+        // If staff key has no key yet, populate with single key
+        if (!prev[0]?.apiKey) {
+          const updated = [...prev];
+          updated[0] = { ...updated[0], apiKey: singleApiKey, status: "active", statusMessage: "Kế thừa từ khóa hệ thống" };
+          saveStoredMultiAiKeys(updated);
+          return updated;
+        }
+        return prev;
+      });
     }
-  }, [apiKey]);
+  }, [singleApiKey]);
 
-  // Lưu API Key
-  const handleSaveApiKey = () => {
-    const trimmed = apiKey.trim();
-    if (!trimmed) {
-      localStorage.removeItem(API_KEY_STORAGE_KEY_PRIMARY);
-      localStorage.removeItem(API_KEY_STORAGE_KEY_SECONDARY);
-      setKeyStatus(null);
-      setAiMode("builtin");
-      notify("Đã xóa API Key. Chế độ chuyển sang AI Thông minh Tích hợp.");
-      return;
-    }
+  // Đếm số key AI đang hoạt động
+  const activeKeysCount = useMemo(() => {
+    return multiAiKeys.filter((k) => k.isActive && k.apiKey.trim().length >= 15).length;
+  }, [multiAiKeys]);
 
-    localStorage.setItem(API_KEY_STORAGE_KEY_PRIMARY, trimmed);
-    localStorage.setItem(API_KEY_STORAGE_KEY_SECONDARY, trimmed);
-    setAiMode("gemini");
-    notify("Đã lưu API Key Google Gemini thành công!");
+  // Toggle ẩn/hiện văn bản key
+  const toggleKeyVisibility = (keyId: string) => {
+    setShowKeyTextMap((prev) => ({ ...prev, [keyId]: !prev[keyId] }));
+  };
 
+  // Cập nhật giá trị key nhập vào
+  const handleUpdateKeyInput = (keyId: string, val: string) => {
+    setMultiAiKeys((prev) =>
+      prev.map((k) => (k.id === keyId ? { ...k, apiKey: val, status: "untested", statusMessage: undefined } : k))
+    );
+  };
+
+  // Bật / tắt kích hoạt key
+  const handleToggleKeyActive = (keyId: string) => {
+    setMultiAiKeys((prev) => {
+      const updated = prev.map((k) => (k.id === keyId ? { ...k, isActive: !k.isActive } : k));
+      saveStoredMultiAiKeys(updated);
+      return updated;
+    });
+    notify("Đã cập nhật trạng thái kích hoạt của Key AI");
+  };
+
+  // Lưu toàn bộ cấu hình multi-keys
+  const handleSaveMultiKeys = (keysToSave?: MultiAiKeyItem[]) => {
+    const target = keysToSave || multiAiKeys;
+    saveStoredMultiAiKeys(target);
+    notify("Đã lưu danh mục Key AI và phân quyền tác tử thành công!");
     logAuditAction({
       username: currentUser.username,
       fullName: currentUser.fullName,
       role: currentUser.role,
       category: "ai",
-      action: "Cấu hình API Key Gemini",
-      detail: "Cập nhật khóa Google AI Studio API cho Phân tích hệ thống",
+      action: "Cấu hình Danh mục Multi-AI Keys",
+      detail: `Lưu ${target.length} khóa AI phân quyền (Nhân viên, Quản lý, Giám đốc)`,
       status: "success",
     });
   };
 
-  // Kiểm tra kết nối API Key với Google AI Studio
-  const handleTestApiKey = async () => {
-    if (!apiKey.trim()) {
-      setKeyStatus({ ok: false, message: "Vui lòng nhập API Key để kiểm tra." });
+  // Khôi phục 3 vai trò mẫu chuẩn
+  const handleResetMultiKeys = () => {
+    if (!window.confirm("Bạn có chắc chắn muốn khôi phục về danh mục 3 Key AI mẫu chuẩn của hệ thống (Nhân viên, Quản lý, Giám đốc)?")) return;
+    setMultiAiKeys(DEFAULT_MULTI_AI_KEYS);
+    saveStoredMultiAiKeys(DEFAULT_MULTI_AI_KEYS);
+    notify("Đã khôi phục về 3 vai trò tác tử chuẩn!");
+  };
+
+  // Kiểm tra 1 Key AI riêng lẻ
+  const handleTestSingleKey = async (keyItem: MultiAiKeyItem) => {
+    if (!keyItem.apiKey.trim()) {
+      notify(`Vui lòng nhập API Key cho "${keyItem.name}" trước khi kiểm tra.`);
       return;
     }
-
-    setIsTestingKey(true);
-    setKeyStatus(null);
-
+    setTestingKeyId(keyItem.id);
     try {
-      const res = await testGeminiApiKey(apiKey.trim());
+      const t0 = performance.now();
+      const res = await testGeminiApiKey(keyItem.apiKey.trim());
+      const latency = Math.round(performance.now() - t0);
+
+      const updated = multiAiKeys.map((k) => {
+        if (k.id === keyItem.id) {
+          if (res.ok) {
+            return {
+              ...k,
+              status: "active" as const,
+              statusMessage: `Kết nối thành công (${latency}ms) - ${res.model || k.model}`,
+              testedAt: new Date().toLocaleTimeString("vi-VN"),
+              latencyMs: latency,
+            };
+          } else {
+            return {
+              ...k,
+              status: "error" as const,
+              statusMessage: res.error || "Không thể xác thực khóa Google AI Studio",
+              testedAt: new Date().toLocaleTimeString("vi-VN"),
+              latencyMs: latency,
+            };
+          }
+        }
+        return k;
+      });
+
+      setMultiAiKeys(updated);
+      saveStoredMultiAiKeys(updated);
       if (res.ok) {
-        setKeyStatus({ ok: true, message: `Kết nối thành công! Mô hình: ${res.model || "gemini-2.5-flash"}` });
-        localStorage.setItem(API_KEY_STORAGE_KEY_PRIMARY, apiKey.trim());
-        localStorage.setItem(API_KEY_STORAGE_KEY_SECONDARY, apiKey.trim());
-        notify("Kết nối Google Gemini API thành công!");
+        notify(`Kiểm tra "${keyItem.name}": KẾT NỐI THÀNH CÔNG (${latency}ms)!`);
       } else {
-        setKeyStatus({ ok: false, message: res.error || "Không thể kết nối đến Google AI Studio." });
+        notify(`Kiểm tra "${keyItem.name}" THẤT BẠI: ${res.error || "Lỗi khóa"}`);
       }
     } catch (err: any) {
-      setKeyStatus({ ok: false, message: err.message || "Lỗi kiểm tra API Key." });
+      notify(`Lỗi kiểm tra "${keyItem.name}": ${err.message}`);
     } finally {
-      setIsTestingKey(false);
+      setTestingKeyId(null);
+    }
+  };
+
+  // Kiểm tra toàn bộ các Key AI đồng loạt
+  const handleTestAllKeys = async () => {
+    setIsTestingAllKeys(true);
+    notify("Đang kiểm tra đồng loạt kết nối tới Google AI Studio cho các Key AI...");
+    try {
+      const tested = await testMultipleGeminiApiKeys(multiAiKeys);
+      setMultiAiKeys(tested);
+      saveStoredMultiAiKeys(tested);
+      const activeCount = tested.filter((k) => k.status === "active").length;
+      notify(`Đã kiểm tra xong! ${activeCount} / ${tested.length} Key AI hoạt động tốt.`);
+      logAuditAction({
+        username: currentUser.username,
+        fullName: currentUser.fullName,
+        role: currentUser.role,
+        category: "ai",
+        action: "Kiểm tra toàn bộ Key AI (Ping All)",
+        detail: `Kết quả: ${activeCount}/${tested.length} key phản hồi thành công`,
+        status: "success",
+      });
+    } catch (err: any) {
+      notify(`Lỗi kiểm tra toàn bộ: ${err.message}`);
+    } finally {
+      setIsTestingAllKeys(false);
+    }
+  };
+
+  // Mở modal thêm key mới
+  const handleOpenAddKeyModal = () => {
+    setEditingKeyItem({
+      id: "ai-key-custom-" + Date.now(),
+      name: `Key API ${multiAiKeys.length + 1} - Chuyên gia AI Tùy biến`,
+      role: "custom",
+      roleTitle: "Chuyên gia Tư vấn Chuyên sâu",
+      scopeDescription: "Phân tích và kiểm tra chuyên sâu theo yêu cầu của quản trị viên.",
+      apiKey: "",
+      model: "gemini-2.5-flash",
+      isActive: true,
+      status: "untested",
+      icon: "🤖",
+      badgeColor: "#059669",
+    });
+    setShowKeyModal(true);
+  };
+
+  // Mở modal sửa key
+  const handleOpenEditKeyModal = (k: MultiAiKeyItem) => {
+    setEditingKeyItem({ ...k });
+    setShowKeyModal(true);
+  };
+
+  // Lưu key từ modal
+  const handleSaveKeyFromModal = (item: MultiAiKeyItem) => {
+    if (!item.name.trim()) {
+      notify("Vui lòng nhập tên cho Key AI");
+      return;
+    }
+    const exists = multiAiKeys.some((k) => k.id === item.id);
+    let updated: MultiAiKeyItem[];
+    if (exists) {
+      updated = multiAiKeys.map((k) => (k.id === item.id ? item : k));
+    } else {
+      updated = [...multiAiKeys, item];
+    }
+    setMultiAiKeys(updated);
+    saveStoredMultiAiKeys(updated);
+    setShowKeyModal(false);
+    setEditingKeyItem(null);
+    notify(`Đã lưu "${item.name}" thành công!`);
+  };
+
+  // Xóa key
+  const handleDeleteKey = (keyId: string, name: string) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa "${name}" khỏi danh mục?`)) return;
+    const updated = multiAiKeys.filter((k) => k.id !== keyId);
+    setMultiAiKeys(updated);
+    saveStoredMultiAiKeys(updated);
+    notify(`Đã xóa "${name}"`);
+  };
+
+  // Lưu Single API Key (dành cho chế độ 1 key)
+  const handleSaveSingleKey = () => {
+    const trimmed = singleApiKey.trim();
+    if (!trimmed) {
+      localStorage.removeItem(API_KEY_STORAGE_KEY_PRIMARY);
+      localStorage.removeItem(API_KEY_STORAGE_KEY_SECONDARY);
+      setSingleKeyStatus(null);
+      notify("Đã xóa Key đơn.");
+      return;
+    }
+    localStorage.setItem(API_KEY_STORAGE_KEY_PRIMARY, trimmed);
+    localStorage.setItem(API_KEY_STORAGE_KEY_SECONDARY, trimmed);
+    notify("Đã lưu API Key Google Gemini đơn thành công!");
+  };
+
+  const handleTestSingleKeySimple = async () => {
+    if (!singleApiKey.trim()) return;
+    setIsTestingSingleKey(true);
+    setSingleKeyStatus(null);
+    try {
+      const res = await testGeminiApiKey(singleApiKey.trim());
+      if (res.ok) {
+        setSingleKeyStatus({ ok: true, message: `Kết nối thành công! Mô hình: ${res.model || "gemini-2.5-flash"}` });
+        notify("Kết nối Google Gemini API thành công!");
+      } else {
+        setSingleKeyStatus({ ok: false, message: res.error || "Không thể kết nối đến Google AI Studio." });
+      }
+    } catch (err: any) {
+      setSingleKeyStatus({ ok: false, message: err.message || "Lỗi kiểm tra" });
+    } finally {
+      setIsTestingSingleKey(false);
     }
   };
 
@@ -223,7 +401,6 @@ export function SystemAnalysisPage() {
     reader.readAsText(file);
   };
 
-  // Kéo thả file
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -242,7 +419,7 @@ export function SystemAnalysisPage() {
     }
   };
 
-  // Nạp tự động từ bộ nhớ Bản đồ nhiệt UX hiện tại (Cực kỳ thông minh và tiện lợi)
+  // Nạp tự động từ bộ nhớ Bản đồ nhiệt UX hiện tại
   const handleAutoPullFromHeatmap = () => {
     try {
       const cached = localStorage.getItem(LOCAL_STORAGE_HEATMAP_KEY);
@@ -309,14 +486,13 @@ II. ĐÁNH GIÁ HIỆU QUẢ CÁC NÚT KÊU GỌI HÀNH ĐỘNG (CTA CONVERSION 
    - Đổi nhãn: Việc đổi nhãn thành "Số zalo liên hệ *" giúp phụ huynh an tâm cung cấp thông tin hơn (giảm tâm lý sợ bị gọi làm phiền).
    - Khuyến nghị: Đảm bảo bàn phím số điện thoại tự động bật lên trên điện thoại (type="tel").
 
-III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLAN)
+III. KẾ HOẠCH NÂNG CẤP HỆ THỐNG THEO 3 NHÓM ƯU TIÊN HÀNH ĐỘNG
 --------------------------------------------------------------------------------
-[x] ƯU TIÊN 1 - KHẮC PHỤC TRIỆT ĐỂ DEAD CLICKS & RAGE CLICKS:
-    1. Bổ sung tính năng Phóng to ảnh (Lightbox Gallery):
-       - Cho phép phụ huynh nhấp vào ảnh phòng học, đồ dùng can thiệp để xem ảnh to chất lượng cao.
-    2. Thêm phản hồi trực quan tức thì khi bấm nút (Visual Feedback):
-       - Thêm icon xoay nhẹ (loading spinner) và hiệu ứng đổi màu ngay lập tức khi phụ huynh bấm nút Gửi biểu mẫu.
-       - Tăng độ nhạy mở đóng của các câu hỏi FAQ.
+[x] ƯU TIÊN 1 - TRIỆT TIÊU TOÀN BỘ DEAD CLICKS & RAGE CLICKS:
+    1. Bổ sung modal phóng to ảnh (Lightbox) khi phụ huynh nhấp vào ảnh cơ sở vật chất.
+    2. Thêm hiệu ứng gợn sóng nước (Ripple Effect) khi nhấp vào mọi thẻ và nút bấm.
+    3. Thêm con quay chờ tải (Loading Spinner) và vô hiệu hóa nút gửi form 1.5 giây để chặn bấm gửi trùng lặp.
+    4. Thêm popup xem chi tiết giáo viên can thiệp 1:1 khi nhấp vào thẻ chuyên gia.
 
 [x] ƯU TIÊN 2 - TỐI ƯU CÔNG THÁI HỌC DI ĐỘNG (MOBILE ERGONOMICS):
     1. Mở rộng vùng bấm (Touch Target) của mọi nút bấm trên di động lên tối thiểu 48x48 pixel theo tiêu chuẩn Google Material & Apple HIG.
@@ -329,23 +505,18 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
 ================================================================================`;
 
         setReportContent(generatedText);
-        setFileName("bao-cao-diem-nghen-ux (Đồng bộ trực tiếp từ Heatmap Store)");
+        setFileName(`heatmap-auto-export-${new Date().toISOString().slice(0, 10)}.txt`);
         setFileSize(`${(generatedText.length / 1024).toFixed(1)} KB`);
         setFileLoadDate(dateStr);
-        notify("Đã đồng bộ trực tiếp báo cáo mới nhất từ Bản đồ nhiệt UX!");
-        return;
+        notify("Đã trích xuất dữ liệu bản đồ nhiệt thời gian thực thành công!");
+      } else {
+        handleLoadSampleReport();
       }
-    } catch (e) {}
-
-    // Fallback nếu chưa có cache
-    setReportContent(SAMPLE_REPORT_TEXT);
-    setFileName("bao-cao-diem-nghen-ux (Dữ liệu thực tế hệ thống)");
-    setFileSize(`${(SAMPLE_REPORT_TEXT.length / 1024).toFixed(1)} KB`);
-    setFileLoadDate(new Date().toLocaleTimeString("vi-VN"));
-    notify("Đã nạp báo cáo điểm nghẽn thực tế từ dữ liệu hệ thống!");
+    } catch {
+      handleLoadSampleReport();
+    }
   };
 
-  // Nạp báo cáo mẫu
   const handleLoadSampleReport = () => {
     setReportContent(SAMPLE_REPORT_TEXT);
     setFileName("bao-cao-diem-nghen-ux-sample.txt");
@@ -354,7 +525,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     notify("Đã nạp báo cáo mẫu để trải nghiệm!");
   };
 
-  // Khởi chạy phân tích bằng AI
+  // Khởi chạy phân tích Đa Tác tử (Multi-AI Consensus)
   const handleRunAnalysis = async () => {
     if (!reportContent.trim()) {
       notify("Vui lòng nạp file báo cáo hoặc chọn 'Nạp tự động dữ liệu' trước khi bắt đầu phân tích.");
@@ -362,37 +533,52 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     }
 
     setIsAnalyzing(true);
-    setAnalysisProgress(15);
-    setAnalysisStatusText("Đang phân tích cấu trúc báo cáo điểm nghẽn & hành vi phụ huynh...");
+    setAnalysisProgress(10);
+    setAnalysisStatusText("Khởi động hệ thống Đa Tác tử AI (Multi-Agent Swarm)...");
 
     try {
-      await new Promise((r) => setTimeout(r, 600));
-      setAnalysisProgress(45);
-      setAnalysisStatusText(
-        aiMode === "gemini" && apiKey.trim()
-          ? "Đang kết nối Google Gemini AI để chẩn đoán chuyên sâu..."
-          : "Đang kích hoạt Bộ Phân Tích Thông Minh Tích Hợp..."
-      );
+      let result: SystemAnalysisResult;
 
-      const targetApiKey = aiMode === "gemini" ? apiKey.trim() : undefined;
-      const result = await analyzeUxReport(reportContent, targetApiKey);
-
-      setAnalysisProgress(85);
-      setAnalysisStatusText("Đang tổng hợp ma trận giải pháp kỹ thuật & lập lộ trình nâng cấp...");
-      await new Promise((r) => setTimeout(r, 400));
+      if (aiMode === "multi_agent") {
+        result = await runMultiAgentConsensusAnalysis(reportContent, multiAiKeys, (msg, pct) => {
+          setAnalysisStatusText(msg);
+          setAnalysisProgress(pct);
+        });
+      } else if (aiMode === "single_gemini") {
+        setAnalysisProgress(40);
+        setAnalysisStatusText("Đang kết nối Google Gemini AI đơn...");
+        const singleKey = singleApiKey.trim();
+        // Fallback sang multi-agent format with single key
+        const tempKeys: MultiAiKeyItem[] = DEFAULT_MULTI_AI_KEYS.map((k) => ({
+          ...k,
+          apiKey: singleKey,
+          status: singleKey ? "active" : "untested",
+        }));
+        result = await runMultiAgentConsensusAnalysis(reportContent, tempKeys, (msg, pct) => {
+          setAnalysisStatusText(msg);
+          setAnalysisProgress(pct);
+        });
+      } else {
+        setAnalysisProgress(40);
+        setAnalysisStatusText("Đang kích hoạt Bộ Phân Tích Thông Minh Tích Hợp...");
+        result = await runMultiAgentConsensusAnalysis(reportContent, DEFAULT_MULTI_AI_KEYS, (msg, pct) => {
+          setAnalysisStatusText(msg);
+          setAnalysisProgress(pct);
+        });
+      }
 
       setAnalysisProgress(100);
       setAnalysisResult(result);
       setActiveTab("overview");
-      notify("Đã hoàn thành phân tích hệ thống & lập ma trận giải pháp nâng cấp!");
+      notify("Đã hoàn thành phân tích đa tác tử & thống nhất kế hoạch nâng cấp!");
 
       logAuditAction({
         username: currentUser.username,
         fullName: currentUser.fullName,
         role: currentUser.role,
         category: "ai",
-        action: "Phân tích hệ thống UX",
-        detail: `Hoàn tất phân tích với động cơ: ${result.modelName}. Phát hiện ${result.totalFrictionPoints} điểm nghẽn, đề xuất giải pháp nâng cấp.`,
+        action: "Phân tích hệ thống Multi-AI Consensus",
+        detail: `Hoàn tất phân tích đa tác tử: ${result.modelName}. Các AI đã đồng thuận phê duyệt 6 giải pháp & lộ trình 3 giai đoạn.`,
         target: fileName || "bao-cao-diem-nghen-ux.txt",
         status: "success",
       });
@@ -418,24 +604,25 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
         role: currentUser.role,
         category: "ai",
         action: "Sao chép kế hoạch nâng cấp",
-        detail: "Sao chép nội dung Kế hoạch nâng cấp hệ thống vào clipboard",
+        detail: "Sao chép toàn bộ báo cáo ma trận giải pháp ra clipboard",
         status: "success",
       });
     } catch {
-      notify("Không thể sao chép tự động. Vui lòng chọn và copy thủ công.");
+      notify("Không thể sao chép tự động. Vui lòng thử lại.");
     }
   };
 
-  // Tải file kế hoạch nâng cấp .txt
+  // Tải file kế hoạch .txt
   const handleDownloadPlanTxt = () => {
     if (!analysisResult) return;
-    const blob = new Blob([analysisResult.rawTextReport], { type: "text/plain;charset=utf-8;" });
+    const blob = new Blob([analysisResult.rawTextReport], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `ke-hoach-nang-cap-he-thong-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
-    notify("Đã tải xuống file Kế hoạch Nâng cấp Hệ thống (.txt) thành công!");
+    URL.revokeObjectURL(url);
+    notify("Đã tải xuống file kế hoạch nâng cấp (.txt)!");
 
     logAuditAction({
       username: currentUser.username,
@@ -443,9 +630,67 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
       role: currentUser.role,
       category: "ai",
       action: "Tải file kế hoạch nâng cấp",
-      detail: `Tải file ke-hoach-nang-cap-he-thong-${new Date().toISOString().slice(0, 10)}.txt`,
+      detail: "Tải file ke-hoach-nang-cap-he-thong.txt về máy tính",
       status: "success",
     });
+  };
+
+  // Sao chép toàn bộ Log trao đổi giữa các AI
+  const handleCopyAgentLogs = async () => {
+    if (!analysisResult?.multiAgentLogs) return;
+    let text = "================================================================================\n";
+    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC TÁC TỬ AI (MULTI-AGENT CONSENSUS LOG)\n";
+    text += "Dự án: Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương\n";
+    text += `Thời gian thực hiện: ${new Date().toLocaleString("vi-VN")}\n`;
+    text += "================================================================================\n\n";
+
+    analysisResult.multiAgentLogs.forEach((msg, idx) => {
+      text += `[LƯỢT ${idx + 1}] ${msg.senderIcon} ${msg.senderName} (${msg.senderTitle})\n`;
+      text += `Trạng thái: ${msg.badgeLabel} | Thời gian: ${msg.timestamp}\n`;
+      text += `Tiêu đề: ${msg.title}\n`;
+      text += `Nội dung trao đổi:\n${msg.content}\n\n`;
+      text += "Điểm ghi nhận trọng tâm:\n";
+      msg.keyFindings.forEach((kf) => (text += `  - ${kf}\n`));
+      text += `Hành động đề xuất: ${msg.actionRecommendation}\n`;
+      text += "--------------------------------------------------------------------------------\n\n";
+    });
+
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Đã sao chép toàn bộ Nhật ký Trao đổi giữa các AI vào khay nhớ tạm!");
+    } catch {
+      notify("Lỗi sao chép văn bản.");
+    }
+  };
+
+  // Tải file Log trao đổi .txt
+  const handleDownloadAgentLogsTxt = () => {
+    if (!analysisResult?.multiAgentLogs) return;
+    let text = "================================================================================\n";
+    text += "NHẬT KÝ ĐỐI THOẠI & ĐỒNG THUẬN GIỮA CÁC TÁC TỬ AI (MULTI-AGENT CONSENSUS LOG)\n";
+    text += "Dự án: Trung tâm Hỗ trợ Trẻ tự kỷ Cô Hương\n";
+    text += `Thời gian: ${new Date().toLocaleString("vi-VN")}\n`;
+    text += "================================================================================\n\n";
+
+    analysisResult.multiAgentLogs.forEach((msg, idx) => {
+      text += `[LƯỢT ${idx + 1}] ${msg.senderIcon} ${msg.senderName} (${msg.senderTitle})\n`;
+      text += `Trạng thái: ${msg.badgeLabel} | Thời gian: ${msg.timestamp}\n`;
+      text += `Tiêu đề: ${msg.title}\n`;
+      text += `Nội dung:\n${msg.content}\n\n`;
+      text += "Điểm ghi nhận:\n";
+      msg.keyFindings.forEach((kf) => (text += `  - ${kf}\n`));
+      text += `Hành động đề xuất: ${msg.actionRecommendation}\n`;
+      text += "--------------------------------------------------------------------------------\n\n";
+    });
+
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nhat-ky-trao-doi-multi-ai-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notify("Đã tải xuống file Nhật ký Trao đổi AI (.txt)!");
   };
 
   // Lọc giải pháp theo danh mục
@@ -455,20 +700,35 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     return analysisResult.solutions.filter((s) => s.category === categoryFilter);
   }, [analysisResult, categoryFilter]);
 
-  // Trích xuất thống kê sơ bộ từ file đã nạp
+  // Lọc log trao đổi giữa các AI
+  const filteredAgentLogs = useMemo(() => {
+    if (!analysisResult?.multiAgentLogs) return [];
+    return analysisResult.multiAgentLogs.filter((log) => {
+      if (agentLogFilter !== "all" && log.senderRole !== agentLogFilter) return false;
+      if (agentLogSearch.trim()) {
+        const q = agentLogSearch.toLowerCase();
+        return (
+          log.senderName.toLowerCase().includes(q) ||
+          log.title.toLowerCase().includes(q) ||
+          log.content.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [analysisResult, agentLogFilter, agentLogSearch]);
+
+  // Thông số thống kê tóm tắt
   const parsedStatsFromContent = useMemo(() => {
-    if (!reportContent) return null;
-    const rageMatch = reportContent.match(/(?:Rage Clicks|Nhấp dồn dập)[^\d]*(\d+)/i);
-    const deadMatch = reportContent.match(/(?:Dead Clicks|Nhấp không phản hồi)[^\d]*(\d+)/i);
-    const healthMatch = reportContent.match(/(?:Sức khỏe UX|Health Score)[^\d]*(\d+)/i);
-    const visitorsMatch = reportContent.match(/(\d+)\s*(?:phụ huynh|lượt truy cập|visitors)/i);
-    const zaloMatch = reportContent.match(/(\d+)\s*(?:lượt qua Zalo|Zalo Campaign)/i);
+    const text = reportContent || "";
+    const rageMatch = text.match(/(?:Rage Clicks|Nhấp dồn dập)[^\d]*(\d+)/i);
+    const deadMatch = text.match(/(?:Dead Clicks|Nhấp không phản hồi)[^\d]*(\d+)/i);
+    const visitorsMatch = text.match(/(\d+)\s*(?:phụ huynh|lượt truy cập|visitors)/i);
+    const zaloMatch = text.match(/(\d+)\s*(?:lượt qua Zalo|Zalo Campaign)/i);
 
     return {
-      rageCount: rageMatch ? parseInt(rageMatch[1], 10) : 18,
-      deadCount: deadMatch ? parseInt(deadMatch[1], 10) : 34,
-      healthScore: healthMatch ? parseInt(healthMatch[1], 10) : 88,
-      visitors: visitorsMatch ? parseInt(visitorsMatch[1], 10) : 142,
+      rageClicks: rageMatch ? parseInt(rageMatch[1], 10) : 18,
+      deadClicks: deadMatch ? parseInt(deadMatch[1], 10) : 34,
+      totalVisitors: visitorsMatch ? parseInt(visitorsMatch[1], 10) : 142,
       zaloVisitors: zaloMatch ? parseInt(zaloMatch[1], 10) : 118,
     };
   }, [reportContent]);
@@ -480,13 +740,11 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
         <div className="header-meta-group">
           <div className="page-badge-pill">
             <Icon name="sparkle" size={14} />
-            <span>AI Diagnostic Hub & Hệ Thống Nâng Cấp UX</span>
+            <span>Google Gemini Multi-Agent AI System</span>
           </div>
           <h1>Phân tích hệ thống & Lập Kế hoạch Nâng cấp</h1>
           <p className="page-desc">
-            Cấu hình Google Gemini AI hoặc sử dụng AI Thông minh tích hợp. Nạp lại file báo cáo điểm nghẽn
-            (<strong>bao-cao-diem-nghen-ux.txt</strong>) để chẩn đoán toàn diện nguyên nhân kỹ thuật, tâm lý phụ
-            huynh và nhận ma trận giải pháp nâng cấp tự động.
+            Hệ thống Multi-Agent AI cho phép đưa nhiều Key Google Gemini API với phân quyền tác tử chuyên biệt: Nhân viên rà soát nội dung & 5 hằng số nhận diện, Quản lý thẩm định quy trình & Zalo Campaign, Giám đốc điều hành phê duyệt lộ trình tối cao.
           </p>
         </div>
 
@@ -495,38 +753,44 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             type="button"
             className="secondary-action-btn"
             onClick={() => navigate("/heatmap")}
-            title="Mở công cụ Bản đồ nhiệt UX để xem chi tiết từng thao tác của phụ huynh"
+            title="Xem dữ liệu trực quan bản đồ nhiệt"
           >
-            <Icon name="flame" size={16} />
-            <span>Xem Bản đồ nhiệt UX</span>
+            <Icon name="chart" size={15} />
+            <span>Mở Bản đồ nhiệt</span>
           </button>
           <button
             type="button"
             className="secondary-action-btn"
             onClick={() => navigate("/cau-hinh-trang")}
-            title="Mở trang Cấu hình nội dung website để cập nhật"
+            title="Chỉnh sửa cấu hình 11 khối giao diện"
           >
-            <Icon name="settings" size={16} />
+            <Icon name="settings" size={15} />
             <span>Mở Cấu hình trang</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Hai cột thiết lập: Cấu hình API và Nạp Báo cáo */}
+      {/* 2. Hai cột thiết lập: Cấu hình Multi-AI và Nạp Báo cáo */}
       <div className="analysis-setup-grid">
-        {/* CỘT TRÁI: CẤU HÌNH API */}
+        {/* CỘT TRÁI: DANH MỤC QUẢN LÝ KEY AI & PHÂN QUYỀN TÁC TỬ */}
         <div className="setup-card">
           <div className="card-header-row">
             <div className="card-title-wrap">
               <span className="step-number">1</span>
               <div>
-                <h3>Cấu hình API Phân tích AI</h3>
-                <p>Chọn động cơ phân tích phù hợp cho hệ thống</p>
+                <h3>Danh mục Quản lý Key AI & Phân quyền Tác tử</h3>
+                <p>Cấu hình nhiều Key Gemini AI để các AI tự phân tích và phản biện lẫn nhau</p>
               </div>
             </div>
-            <div className={`engine-badge ${aiMode === "gemini" ? "badge--gemini" : "badge--builtin"}`}>
+            <div className={`engine-badge ${aiMode === "multi_agent" ? "badge--gemini" : "badge--builtin"}`}>
               <Icon name="sparkle" size={13} />
-              <span>{aiMode === "gemini" ? "Google Gemini AI" : "AI Thông minh Tích hợp"}</span>
+              <span>
+                {aiMode === "multi_agent"
+                  ? `Multi-Agent AI (${activeKeysCount} Key Hoạt động)`
+                  : aiMode === "single_gemini"
+                  ? "Single Gemini AI"
+                  : "AI Tích hợp sẵn"}
+              </span>
             </div>
           </div>
 
@@ -534,39 +798,242 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
           <div className="mode-toggle-group">
             <button
               type="button"
+              className={`mode-btn ${aiMode === "multi_agent" ? "mode-btn--active" : ""}`}
+              onClick={() => setAiMode("multi_agent")}
+            >
+              <Icon name="users" size={15} />
+              <span>🤖 Multi-Agent AI (3 Cấp bậc: Nhân viên - Quản lý - Giám đốc)</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-btn ${aiMode === "single_gemini" ? "mode-btn--active" : ""}`}
+              onClick={() => setAiMode("single_gemini")}
+            >
+              <Icon name="key" size={15} />
+              <span>🔑 Dùng 1 Key chung</span>
+            </button>
+            <button
+              type="button"
               className={`mode-btn ${aiMode === "builtin" ? "mode-btn--active" : ""}`}
               onClick={() => setAiMode("builtin")}
             >
               <Icon name="check" size={15} />
-              <span>AI Tích hợp sẵn (Khuyên dùng - 100% Ổn định)</span>
-            </button>
-            <button
-              type="button"
-              className={`mode-btn ${aiMode === "gemini" ? "mode-btn--active" : ""}`}
-              onClick={() => setAiMode("gemini")}
-            >
-              <Icon name="key" size={15} />
-              <span>Google Gemini AI (API Key riêng)</span>
+              <span>🛡️ AI Tích hợp sẵn</span>
             </button>
           </div>
 
-          {aiMode === "builtin" ? (
-            <div className="builtin-info-box">
-              <div className="info-icon">
-                <Icon name="check" size={18} />
+          {aiMode === "multi_agent" && (
+            <div className="multi-ai-manager-wrap">
+              {/* Toolbar */}
+              <div className="multi-ai-toolbar-header">
+                <div className="multi-ai-counter-badge">
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: activeKeysCount > 0 ? "#10b981" : "#f59e0b" }} />
+                  <span>
+                    {activeKeysCount} / {multiAiKeys.length} Key sẵn sàng hoạt động
+                  </span>
+                </div>
+
+                <div className="multi-ai-actions-group">
+                  <button
+                    type="button"
+                    className="multi-ai-btn multi-ai-btn--test"
+                    onClick={handleTestAllKeys}
+                    disabled={isTestingAllKeys}
+                    title="Kiểm tra kết nối đồng loạt tất cả các Key AI tới Google AI Studio"
+                  >
+                    {isTestingAllKeys ? (
+                      <>
+                        <span className="spinner-inline" /> Đang kiểm tra...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="refresh" size={13} />
+                        <span>Kiểm tra toàn bộ AI (Ping All)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="multi-ai-btn"
+                    onClick={handleOpenAddKeyModal}
+                    title="Thêm Key AI mới kèm phân quyền chức năng riêng"
+                  >
+                    <Icon name="plus" size={13} />
+                    <span>Thêm Key AI</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="multi-ai-btn"
+                    onClick={handleResetMultiKeys}
+                    title="Khôi phục lại 3 vai trò tác tử chuẩn (Nhân viên, Quản lý, Giám đốc)"
+                  >
+                    <Icon name="refresh" size={13} />
+                    <span>Khôi phục chuẩn</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="multi-ai-btn multi-ai-btn--primary"
+                    onClick={() => handleSaveMultiKeys()}
+                    title="Lưu danh mục Key AI vào bộ nhớ hệ thống"
+                  >
+                    <Icon name="check" size={13} />
+                    <span>Lưu Key</span>
+                  </button>
+                </div>
               </div>
-              <div className="info-text">
-                <strong>Sẵn sàng hoạt động ngay lập tức</strong>
-                <p>
-                  Được huấn luyện chuyên sâu với các mô hình tâm lý phụ huynh có con tự kỷ, can thiệp sớm và các quy chuẩn
-                  tối ưu chuyển đổi Zalo. Không giới hạn hạn mức truy vấn, không lo lỗi mạng hay khóa token.
-                </p>
+
+              {/* List of 3 Key Cards */}
+              <div className="multi-ai-cards-list">
+                {multiAiKeys.map((k) => (
+                  <div
+                    key={k.id}
+                    className={`multi-ai-card ${k.isActive ? "multi-ai-card--active" : "multi-ai-card--disabled"}`}
+                  >
+                    <div className="multi-ai-card-header">
+                      <div className="multi-ai-identity">
+                        <span className="multi-ai-avatar">{k.icon}</span>
+                        <div className="multi-ai-meta">
+                          <h4>{k.name}</h4>
+                          <span
+                            className="multi-ai-role-tag"
+                            style={{
+                              background: `${k.badgeColor}15`,
+                              color: k.badgeColor,
+                              border: `1px solid ${k.badgeColor}40`,
+                            }}
+                          >
+                            {k.roleTitle}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="multi-ai-card-controls">
+                        <button
+                          type="button"
+                          className="multi-ai-btn"
+                          style={{ height: 28, padding: "0 8px", fontSize: 11.5 }}
+                          onClick={() => handleOpenEditKeyModal(k)}
+                          title="Chỉnh sửa vai trò & quyền hạn của Key này"
+                        >
+                          <Icon name="edit" size={12} />
+                          <span>Sửa quyền</span>
+                        </button>
+                        {k.role === "custom" && (
+                          <button
+                            type="button"
+                            className="multi-ai-btn"
+                            style={{ height: 28, padding: "0 8px", color: "#ef4444", borderColor: "#fca5a5" }}
+                            onClick={() => handleDeleteKey(k.id, k.name)}
+                            title="Xóa Key này khỏi danh mục"
+                          >
+                            <Icon name="trash" size={12} />
+                          </button>
+                        )}
+                        <label
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: k.isActive ? "#10b981" : "#94a3b8",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={k.isActive}
+                            onChange={() => handleToggleKeyActive(k.id)}
+                            style={{ accentColor: "#50008b", cursor: "pointer" }}
+                          />
+                          <span>{k.isActive ? "Bật" : "Tắt"}</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* API Key Input Row */}
+                    <div className="multi-ai-input-row">
+                      <div className="multi-ai-input-wrap">
+                        <input
+                          type={showKeyTextMap[k.id] ? "text" : "password"}
+                          placeholder="Dán API Key Google AI Studio dạng AIzaSy..."
+                          value={k.apiKey}
+                          onChange={(e) => handleUpdateKeyInput(k.id, e.target.value)}
+                          className="multi-ai-key-input"
+                        />
+                        <button
+                          type="button"
+                          className="multi-ai-eye-btn"
+                          onClick={() => toggleKeyVisibility(k.id)}
+                          title={showKeyTextMap[k.id] ? "Ẩn Key" : "Hiện Key"}
+                        >
+                          <Icon name={showKeyTextMap[k.id] ? "eyeOff" : "eye"} size={14} />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="multi-ai-btn multi-ai-btn--test"
+                        style={{ height: 36, whiteSpace: "nowrap" }}
+                        onClick={() => handleTestSingleKey(k)}
+                        disabled={testingKeyId === k.id || !k.apiKey.trim()}
+                        title="Kiểm tra tính hoạt động của riêng Key này"
+                      >
+                        {testingKeyId === k.id ? (
+                          <>
+                            <span className="spinner-inline" /> Kiểm tra...
+                          </>
+                        ) : (
+                          <>
+                            <Icon name="refresh" size={13} />
+                            <span>Kiểm tra Key</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Scope Jurisdiction Box */}
+                    <div className="multi-ai-scope-box">
+                      <strong>Phạm vi nhiệm vụ & thẩm quyền của Key:</strong>
+                      {k.scopeDescription}
+                    </div>
+
+                    {/* Status Feedback Row */}
+                    <div className="multi-ai-status-bar">
+                      <div>
+                        {k.status === "active" && (
+                          <span style={{ color: "#16a34a", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <Icon name="check" size={12} /> {k.statusMessage || "Đang hoạt động tốt"}
+                          </span>
+                        )}
+                        {k.status === "error" && (
+                          <span style={{ color: "#dc2626", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <Icon name="close" size={12} /> {k.statusMessage || "Lỗi xác thực khóa"}
+                          </span>
+                        )}
+                        {k.status === "untested" && (
+                          <span style={{ color: "#64748b" }}>
+                            {k.apiKey ? "Chưa kiểm tra kết nối với Google AI Studio" : "Chưa cấu hình API Key (sẽ dùng bộ mô phỏng tác tử tích hợp)"}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                        Mô hình: <code>{k.model}</code> {k.testedAt && `• Đã test lúc ${k.testedAt}`}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
+          )}
+
+          {aiMode === "single_gemini" && (
             <div className="api-key-form">
               <label className="field-label">
-                <span>Google AI Studio API Key</span>
+                <span>Google AI Studio API Key (Dùng chung cho cả 3 cấp tác tử)</span>
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
@@ -579,29 +1046,29 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
 
               <div className="key-input-wrapper">
                 <input
-                  type={showApiKey ? "text" : "password"}
+                  type={showSingleKey ? "text" : "password"}
                   placeholder="Dán API Key dạng AIzaSy..."
-                  value={apiKey}
+                  value={singleApiKey}
                   onChange={(e) => {
-                    setApiKey(e.target.value);
-                    if (keyStatus) setKeyStatus(null);
+                    setSingleApiKey(e.target.value);
+                    if (singleKeyStatus) setSingleKeyStatus(null);
                   }}
                   className="key-input"
                 />
                 <button
                   type="button"
                   className="key-eye-btn"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  title={showApiKey ? "Ẩn" : "Hiện"}
+                  onClick={() => setShowSingleKey(!showSingleKey)}
+                  title={showSingleKey ? "Ẩn" : "Hiện"}
                 >
-                  <Icon name={showApiKey ? "eyeOff" : "eye"} size={16} />
+                  <Icon name={showSingleKey ? "eyeOff" : "eye"} size={16} />
                 </button>
               </div>
 
-              {keyStatus && (
-                <div className={`key-status-msg ${keyStatus.ok ? "msg--success" : "msg--error"}`}>
-                  <Icon name={keyStatus.ok ? "check" : "close"} size={14} />
-                  <span>{keyStatus.message}</span>
+              {singleKeyStatus && (
+                <div className={`key-status-msg ${singleKeyStatus.ok ? "msg--success" : "msg--error"}`}>
+                  <Icon name={singleKeyStatus.ok ? "check" : "close"} size={14} />
+                  <span>{singleKeyStatus.message}</span>
                 </div>
               )}
 
@@ -609,10 +1076,10 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 <button
                   type="button"
                   className="test-key-btn"
-                  onClick={handleTestApiKey}
-                  disabled={isTestingKey || !apiKey.trim()}
+                  onClick={handleTestSingleKeySimple}
+                  disabled={isTestingSingleKey || !singleApiKey.trim()}
                 >
-                  {isTestingKey ? (
+                  {isTestingSingleKey ? (
                     <>
                       <span className="spinner-inline" /> Đang kiểm tra...
                     </>
@@ -622,9 +1089,23 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                     </>
                   )}
                 </button>
-                <button type="button" className="save-key-btn" onClick={handleSaveApiKey}>
-                  <Icon name="check" size={15} /> Lưu cấu hình Key
+                <button type="button" className="save-key-btn" onClick={handleSaveSingleKey}>
+                  <Icon name="check" size={15} /> Lưu Key đơn
                 </button>
+              </div>
+            </div>
+          )}
+
+          {aiMode === "builtin" && (
+            <div className="builtin-info-box">
+              <div className="info-icon">
+                <Icon name="check" size={18} />
+              </div>
+              <div className="info-text">
+                <strong>Sẵn sàng hoạt động ngay lập tức (Không cần Key)</strong>
+                <p>
+                  Hệ thống sử dụng bộ mô phỏng Đa Tác tử Tích hợp sẵn (3 cấp: Nhân viên, Quản lý, Giám đốc) để phân tích báo cáo điểm nghẽn, kiểm tra nghiêm ngặt 5 hằng số nhận diện của Cô Hương tại TDP Duyên Phúc, Hưng Hà, Hưng Yên và lập lộ trình 3 giai đoạn.
+                </p>
               </div>
             </div>
           )}
@@ -638,7 +1119,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
               <div>
                 <h3>Nạp Báo cáo Điểm nghẽn UX</h3>
                 <p>
-                  Nạp file <code>bao-cao-diem-nghen-ux.txt</code> hoặc đồng bộ trực tiếp
+                  Nạp file <code>bao-cao-diem-nghen-ux.txt</code> hoặc trích xuất từ Bản đồ nhiệt
                 </p>
               </div>
             </div>
@@ -650,31 +1131,32 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             )}
           </div>
 
-          {/* Quick source actions */}
-          <div className="quick-ingestion-buttons">
+          {/* Quick ingest buttons */}
+          <div className="quick-ingest-buttons">
             <button
               type="button"
-              className="quick-source-btn quick-source-btn--highlight"
+              className="quick-ingest-btn quick-ingest-btn--heatmap"
               onClick={handleAutoPullFromHeatmap}
-              title="Đọc dữ liệu mới nhất trực tiếp từ bộ đếm bản đồ nhiệt mà không cần tải file về"
+              title="Đọc dữ liệu bản đồ nhiệt tương tác gần nhất từ trình duyệt"
             >
               <Icon name="flame" size={15} />
-              <span>Nạp tự động dữ liệu mới nhất từ Bản đồ nhiệt UX</span>
+              <span>Nạp tự động từ Bản đồ nhiệt</span>
             </button>
+
             <button
               type="button"
-              className="quick-source-btn"
+              className="quick-ingest-btn"
               onClick={handleLoadSampleReport}
-              title="Nạp báo cáo chuẩn mẫu có sẵn để trải nghiệm ngay lập tức"
+              title="Nạp dữ liệu báo cáo 142 phụ huynh mẫu để trải nghiệm"
             >
               <Icon name="article" size={15} />
-              <span>Nạp báo cáo mẫu</span>
+              <span>Nạp dữ liệu mẫu</span>
             </button>
           </div>
 
-          {/* Dropzone upload area */}
+          {/* Dropzone Upload */}
           <div
-            className={`file-dropzone ${isDragging ? "dropzone--dragging" : ""} ${reportContent ? "dropzone--loaded" : ""}`}
+            className={`file-dropzone ${isDragging ? "dropzone--dragging" : ""} ${reportContent ? "dropzone--has-content" : ""}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -687,86 +1169,80 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
               accept=".txt,.json,.csv"
               style={{ display: "none" }}
             />
-            <div className="dropzone-icon">
-              <Icon name={reportContent ? "check" : "download"} size={24} />
+
+            <div className="dropzone-icon-circle">
+              <Icon name="upload" size={24} />
             </div>
-            {reportContent ? (
-              <div className="dropzone-meta">
-                <strong>{fileName || "bao-cao-diem-nghen-ux.txt"}</strong>
-                <p>
-                  Kích thước: {fileSize} • Thời gian nạp: {fileLoadDate || "Vừa xong"}
-                </p>
-                <span className="reselect-hint">Bấm hoặc kéo file mới vào đây để thay thế</span>
-              </div>
-            ) : (
-              <div className="dropzone-text">
-                <strong>Kéo & thả file "bao-cao-diem-nghen-ux.txt" vào đây</strong>
-                <p>hoặc bấm để chọn file từ máy tính của bạn (định dạng .txt)</p>
+
+            <div className="dropzone-text">
+              <strong>Kéo thả file báo cáo vào đây hoặc bấm để chọn file</strong>
+              <p>Hỗ trợ định dạng .txt, .json, .csv (Tối ưu nhất cho file xuất từ Bản đồ nhiệt)</p>
+            </div>
+
+            {reportContent && (
+              <div className="dropzone-file-meta" onClick={(e) => e.stopPropagation()}>
+                <span className="meta-badge meta-name">📄 {fileName || "bao-cao-diem-nghen-ux.txt"}</span>
+                {fileSize && <span className="meta-badge">{fileSize}</span>}
+                {fileLoadDate && <span className="meta-badge">Lúc {fileLoadDate}</span>}
+                <button
+                  type="button"
+                  className="preview-toggle-btn"
+                  onClick={() => setShowPreviewText(!showPreviewText)}
+                >
+                  <Icon name={showPreviewText ? "eyeOff" : "eye"} size={13} />
+                  <span>{showPreviewText ? "Thu gọn" : "Xem nội dung"}</span>
+                </button>
               </div>
             )}
           </div>
 
-          {/* Live snapshot pills if content is loaded */}
-          {parsedStatsFromContent && (
-            <div className="loaded-stats-ribbon">
-              <div className="stat-pill">
-                <small>Tương tác</small>
-                <strong>{parsedStatsFromContent.visitors} phụ huynh</strong>
+          {/* Preview Box */}
+          {showPreviewText && reportContent && (
+            <div className="report-preview-box">
+              <div className="preview-header">
+                <span>Trích đoạn nội dung file báo cáo:</span>
+                <button type="button" onClick={() => setShowPreviewText(false)}>
+                  ✕
+                </button>
               </div>
-              <div className="stat-pill stat-pill--zalo">
-                <small>Zalo Campaign</small>
-                <strong>{parsedStatsFromContent.zaloVisitors} lượt</strong>
-              </div>
-              <div className="stat-pill stat-pill--rage">
-                <small>Rage Clicks</small>
-                <strong>{parsedStatsFromContent.rageCount} lượt</strong>
-              </div>
-              <div className="stat-pill stat-pill--dead">
-                <small>Dead Clicks</small>
-                <strong>{parsedStatsFromContent.deadCount} lượt</strong>
-              </div>
-              <button
-                type="button"
-                className="view-preview-toggle-btn"
-                onClick={() => setShowPreviewText(!showPreviewText)}
-              >
-                <Icon name={showPreviewText ? "eyeOff" : "eye"} size={13} />
-                <span>{showPreviewText ? "Đóng xem trước" : "Xem trước nội dung"}</span>
-              </button>
+              <textarea value={reportContent} readOnly rows={7} className="preview-textarea" />
             </div>
           )}
 
-          {showPreviewText && reportContent && (
-            <div className="report-preview-box">
-              <div className="preview-top-bar">
-                <span>Xem trước nội dung file báo cáo:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(reportContent);
-                    notify("Đã chép nội dung file báo cáo vào clipboard!");
-                  }}
-                  className="copy-mini-btn"
-                >
-                  Sao chép text
-                </button>
+          {/* Quick Metrics Bar */}
+          {reportContent && (
+            <div className="report-quick-stats-strip">
+              <div className="stat-pill">
+                <small>Phụ huynh</small>
+                <strong>{parsedStatsFromContent.totalVisitors} người</strong>
               </div>
-              <pre className="preview-code">{reportContent}</pre>
+              <div className="stat-pill stat-pill--dead">
+                <small>Dead Clicks</small>
+                <strong>{parsedStatsFromContent.deadClicks} lượt</strong>
+              </div>
+              <div className="stat-pill stat-pill--rage">
+                <small>Rage Clicks</small>
+                <strong>{parsedStatsFromContent.rageClicks} lượt</strong>
+              </div>
+              <div className="stat-pill stat-pill--zalo">
+                <small>Zalo Campaign</small>
+                <strong>{parsedStatsFromContent.zaloVisitors} lượt (83%)</strong>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* 3. Nút kích hoạt phân tích lớn */}
+      {/* 3. Khối Chạy Phân Tích & Tiến Trình Đa Tác Tử */}
       <div className="analysis-trigger-bar">
-        <div className="trigger-lead-text">
-          <Icon name="sparkle" size={22} />
-          <div>
-            <h4>Bắt đầu Chẩn đoán Hệ thống & Lập Giải pháp Nâng cấp</h4>
-            <p>
-              Hệ thống sẽ đối soát từng điểm nghẽn, tính toán độ ưu tiên và thiết lập mã code frontend khắc phục ngay.
-            </p>
+        <div className="trigger-info">
+          <div className="step-indicator">
+            <span className="step-number">3</span>
+            <h4>Kích hoạt Phân tích Đa Tác tử & Lập Kế hoạch</h4>
           </div>
+          <p>
+            Hệ thống sẽ chạy lần lượt 3 cấp bậc AI: Nhân viên rà soát lỗi thông tin ➔ Quản lý thẩm định tính khả thi ➔ Giám đốc phê duyệt lộ trình toàn hệ thống.
+          </p>
         </div>
 
         <button
@@ -774,30 +1250,46 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
           className="run-analysis-main-btn"
           onClick={handleRunAnalysis}
           disabled={isAnalyzing || !reportContent.trim()}
+          title="Bắt đầu chạy phân tích đa tác tử"
         >
           {isAnalyzing ? (
             <>
-              <span className="spinner-inline spinner-white" />
-              <span>Đang phân tích hệ thống ({analysisProgress}%)...</span>
+              <span className="spinner-inline" /> Đang chạy Multi-AI Swarm...
             </>
           ) : (
             <>
               <Icon name="sparkle" size={18} />
-              <span>Bắt đầu Phân tích & Lập Kế hoạch Nâng cấp</span>
+              <span>🚀 Chạy Phân tích Đa Tác tử (Multi-AI Consensus)</span>
             </>
           )}
         </button>
       </div>
 
-      {/* Processing indicator bar */}
+      {/* Progress Bar with Agent Icons */}
       {isAnalyzing && (
-        <div className="analysis-progress-card">
-          <div className="progress-info-row">
-            <span className="progress-step-text">{analysisStatusText}</span>
-            <span className="progress-percent">{analysisProgress}%</span>
+        <div className="analysis-progress-overlay">
+          <div className="progress-status-row">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span className="spinner-inline" />
+              <strong style={{ fontSize: 13.5, color: "#50008b" }}>{analysisStatusText}</strong>
+            </div>
+            <span className="progress-pct">{analysisProgress}%</span>
           </div>
+
           <div className="progress-track">
             <div className="progress-fill" style={{ width: `${analysisProgress}%` }} />
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11.5, color: "#64748b" }}>
+            <span style={{ color: analysisProgress >= 25 ? "#2563eb" : "#94a3b8", fontWeight: 600 }}>
+              👨‍💻 Bước 1: Nhân viên rà soát nội dung & 5 hằng số
+            </span>
+            <span style={{ color: analysisProgress >= 60 ? "#7c3aed" : "#94a3b8", fontWeight: 600 }}>
+              👩‍💼 Bước 2: Quản lý thẩm định & phản biện
+            </span>
+            <span style={{ color: analysisProgress >= 85 ? "#d97706" : "#94a3b8", fontWeight: 600 }}>
+              👑 Bước 3: Giám đốc phê duyệt lộ trình
+            </span>
           </div>
         </div>
       )}
@@ -849,7 +1341,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 <Icon name="sparkle" size={24} />
               </div>
               <div className="kpi-content">
-                <span className="kpi-label">Động cơ Phân tích</span>
+                <span className="kpi-label">Động cơ Phân tích Đồng thuận</span>
                 <div className="kpi-engine-name">{analysisResult.modelName}</div>
                 <small className="kpi-note">
                   Thời gian: {new Date(analysisResult.timestamp).toLocaleTimeString("vi-VN")}
@@ -862,7 +1354,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
           <div className="executive-summary-card">
             <div className="summary-title-row">
               <Icon name="article" size={18} />
-              <h4>Tổng kết Đánh giá Thực trạng & Cơ hội Đột phá</h4>
+              <h4>Tổng kết Phán quyết & Đồng thuận Toàn diện từ Đa Tác tử AI</h4>
             </div>
             <p className="summary-paragraph">{analysisResult.executiveSummary}</p>
           </div>
@@ -878,6 +1370,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 <Icon name="settings" size={16} />
                 <span>Ma trận Giải pháp Nâng cấp ({analysisResult.solutions.length})</span>
               </button>
+
               <button
                 type="button"
                 className={`res-tab-btn ${activeTab === "roadmap" ? "res-tab-btn--active" : ""}`}
@@ -886,6 +1379,20 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 <Icon name="calendar" size={16} />
                 <span>Lộ trình Thực thi 3 Giai đoạn</span>
               </button>
+
+              <button
+                type="button"
+                className={`res-tab-btn ${activeTab === "multiAgentLogs" ? "res-tab-btn--active" : ""}`}
+                onClick={() => setActiveTab("multiAgentLogs")}
+                style={{
+                  color: activeTab === "multiAgentLogs" ? "#50008b" : "#4338ca",
+                  fontWeight: 700,
+                }}
+              >
+                <Icon name="message" size={16} />
+                <span>💬 Log Trao đổi giữa các AI ({analysisResult.multiAgentLogs?.length || 3})</span>
+              </button>
+
               <button
                 type="button"
                 className={`res-tab-btn ${activeTab === "rawReport" ? "res-tab-btn--active" : ""}`}
@@ -949,83 +1456,62 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                 </button>
                 <button
                   type="button"
-                  className={`cat-chip ${categoryFilter === "cta_conversion" ? "cat-chip--active" : ""}`}
-                  onClick={() => setCategoryFilter("cta_conversion")}
-                >
-                  Tối ưu Zalo & Form CTA
-                </button>
-                <button
-                  type="button"
                   className={`cat-chip ${categoryFilter === "mobile_ergonomics" ? "cat-chip--active" : ""}`}
                   onClick={() => setCategoryFilter("mobile_ergonomics")}
                 >
-                  Công thái học Di động
+                  Công thái học di động
+                </button>
+                <button
+                  type="button"
+                  className={`cat-chip ${categoryFilter === "cta_conversion" ? "cat-chip--active" : ""}`}
+                  onClick={() => setCategoryFilter("cta_conversion")}
+                >
+                  Tối ưu Zalo & Hotline
                 </button>
               </div>
 
-              {/* Solutions List */}
+              {/* Solution Cards */}
               <div className="solutions-card-list">
                 {filteredSolutions.map((sol, index) => (
                   <div key={sol.id || index} className="solution-item-card">
                     <div className="solution-header-row">
                       <div className="title-and-badges">
-                        <span className={`priority-tag priority-tag--${sol.priorityLevel || 1}`}>
+                        <span className={`priority-badge priority--level-${sol.priorityLevel}`}>
                           {sol.priority}
                         </span>
-                        <h4>
-                          {index + 1}. {sol.title}
-                        </h4>
+                        <h4>{sol.title}</h4>
                       </div>
-                      <span className="effort-badge">
-                        <Icon name="calendar" size={13} /> {sol.estimatedEffort}
-                      </span>
+                      <span className="effort-badge">⏱ {sol.estimatedEffort}</span>
                     </div>
 
-                    <div className="solution-body-grid">
-                      <div className="diagnosis-box">
-                        <div className="box-subheading">
-                          <Icon name="search" size={14} />
-                          <strong>Triệu chứng phát hiện từ báo cáo:</strong>
-                        </div>
+                    <div className="solution-details-grid">
+                      <div className="detail-col detail-col--problem">
+                        <strong>Hiện trạng ghi nhận:</strong>
                         <p>{sol.problemSummary}</p>
+                      </div>
 
-                        <div className="box-subheading" style={{ marginTop: 12 }}>
-                          <Icon name="shield" size={14} />
-                          <strong>Nguyên nhân tâm lý & kỹ thuật:</strong>
-                        </div>
+                      <div className="detail-col detail-col--cause">
+                        <strong>Nguyên nhân tâm lý & kỹ thuật:</strong>
                         <p>{sol.rootCause}</p>
                       </div>
 
-                      <div className="remedy-box">
-                        <div className="box-subheading">
-                          <Icon name="settings" size={14} />
-                          <strong>Giải pháp Kỹ thuật Frontend cụ thể:</strong>
-                        </div>
-                        <p className="remedy-desc">{sol.technicalFix}</p>
+                      <div className="detail-col detail-col--fix">
+                        <strong>Giải pháp kỹ thuật khuyến nghị:</strong>
+                        <p>{sol.technicalFix}</p>
+                      </div>
 
-                        <div className="impact-callout">
-                          <strong>Tác động UX & Chuyển đổi:</strong>
-                          <span>{sol.uxImpact}</span>
-                        </div>
+                      <div className="detail-col detail-col--impact">
+                        <strong>Tác động trải nghiệm phụ huynh:</strong>
+                        <p>{sol.uxImpact}</p>
                       </div>
                     </div>
 
                     {sol.actionCodeSnippet && (
-                      <div className="code-snippet-box">
-                        <div className="snippet-header">
-                          <span>Mã nguồn gợi ý nâng cấp (CSS / Component):</span>
-                          <button
-                            type="button"
-                            className="copy-mini-btn"
-                            onClick={() => {
-                              navigator.clipboard.writeText(sol.actionCodeSnippet!);
-                              notify("Đã chép đoạn mã nguồn gợi ý!");
-                            }}
-                          >
-                            Sao chép code
-                          </button>
-                        </div>
-                        <pre className="snippet-code">{sol.actionCodeSnippet}</pre>
+                      <div className="snippet-accordion">
+                        <div className="snippet-title">Mã nguồn mẫu / Chỉ dẫn kỹ thuật:</div>
+                        <pre className="snippet-code-box">
+                          <code>{sol.actionCodeSnippet}</code>
+                        </pre>
                       </div>
                     )}
                   </div>
@@ -1034,7 +1520,7 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             </div>
           )}
 
-          {/* TAB 2: LỘ TRÌNH THỰC THI (ROADMAP) */}
+          {/* TAB 2: LỘ TRÌNH 3 GIAI ĐOẠN */}
           {activeTab === "roadmap" && (
             <div className="roadmap-tab-body">
               <div className="roadmap-timeline">
@@ -1042,19 +1528,17 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
                   <div key={idx} className="roadmap-phase-card">
                     <div className="phase-marker">
                       <span className="phase-num">{idx + 1}</span>
-                      <div className="phase-line" />
                     </div>
                     <div className="phase-content">
-                      <div className="phase-title-row">
-                        <h3>{phase.phase}</h3>
-                        <span className="timeframe-pill">
-                          <Icon name="calendar" size={13} /> {phase.timeframe}
-                        </span>
+                      <div className="phase-header-row">
+                        <h4>{phase.phase}</h4>
+                        <span className="phase-timeframe">📅 {phase.timeframe}</span>
                       </div>
-                      <p className="phase-goal">
-                        <strong>Mục tiêu:</strong> {phase.goal}
-                      </p>
-                      <div className="phase-action-list">
+                      <div className="phase-goal">
+                        <strong>Mục tiêu then chốt:</strong>
+                        <span>{phase.goal}</span>
+                      </div>
+                      <div className="phase-actions-list">
                         <strong>Các đầu việc cụ thể:</strong>
                         <ul>
                           {phase.actions.map((act, aIdx) => (
@@ -1072,53 +1556,407 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
             </div>
           )}
 
-          {/* TAB 3: BÁO CÁO DẠNG TEXT (RAW REPORT) */}
-          {activeTab === "rawReport" && (
-            <div className="raw-report-tab-body">
-              <div className="raw-report-header">
-                <div>
-                  <h4>Bản Báo cáo Nâng cấp Tổng hợp (Văn bản thuần)</h4>
-                  <p>Bạn có thể sao chép văn bản này để gửi cho đội kỹ thuật hoặc lưu trữ hồ sơ.</p>
+          {/* TAB 3: LOG TRAO ĐỔI GIỮA CÁC AI (MULTI-AGENT DIALOGUE) */}
+          {activeTab === "multiAgentLogs" && (
+            <div className="agent-dialogue-wrap">
+              {/* Dialogue Toolbar */}
+              <div className="agent-dialogue-toolbar">
+                <div className="agent-dialogue-filters">
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: "#334155" }}>Lọc người gửi:</span>
+                  <button
+                    type="button"
+                    className={`agent-filter-pill ${agentLogFilter === "all" ? "agent-filter-pill--active" : ""}`}
+                    onClick={() => setAgentLogFilter("all")}
+                  >
+                    Tất cả các AI ({analysisResult.multiAgentLogs?.length || 3})
+                  </button>
+                  <button
+                    type="button"
+                    className={`agent-filter-pill ${agentLogFilter === "functional_staff" ? "agent-filter-pill--active" : ""}`}
+                    onClick={() => setAgentLogFilter("functional_staff")}
+                  >
+                    👨‍💻 Nhân viên (Key 1)
+                  </button>
+                  <button
+                    type="button"
+                    className={`agent-filter-pill ${agentLogFilter === "qa_manager" ? "agent-filter-pill--active" : ""}`}
+                    onClick={() => setAgentLogFilter("qa_manager")}
+                  >
+                    👩‍💼 Quản lý (Key 2)
+                  </button>
+                  <button
+                    type="button"
+                    className={`agent-filter-pill ${agentLogFilter === "director" ? "agent-filter-pill--active" : ""}`}
+                    onClick={() => setAgentLogFilter("director")}
+                  >
+                    👑 Giám đốc (Key 3)
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="action-pill-btn"
-                  onClick={handleCopyReport}
-                  style={{ minWidth: "185px", justifyContent: "center" }}
-                >
-                  <Icon name={copySuccess ? "check" : "copy"} size={14} />
-                  <span>{copySuccess ? "Đã sao chép toàn bộ" : "Sao chép toàn bộ văn bản"}</span>
-                </button>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Tìm trong nội dung trao đổi..."
+                    value={agentLogSearch}
+                    onChange={(e) => setAgentLogSearch(e.target.value)}
+                    style={{
+                      height: 32,
+                      padding: "0 10px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 12,
+                      outline: "none",
+                      width: 200,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="multi-ai-btn"
+                    onClick={handleCopyAgentLogs}
+                    title="Sao chép toàn bộ nhật ký trao đổi giữa các AI"
+                  >
+                    <Icon name="copy" size={13} />
+                    <span>Sao chép Log</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="multi-ai-btn"
+                    onClick={handleDownloadAgentLogsTxt}
+                    title="Tải file text nhật ký đối thoại"
+                  >
+                    <Icon name="download" size={13} />
+                    <span>Tải file .txt</span>
+                  </button>
+                </div>
               </div>
-              <pre className="raw-report-text-block">{analysisResult.rawTextReport}</pre>
+
+              {/* Timeline of Messages */}
+              <div className="agent-dialogue-timeline">
+                {filteredAgentLogs.map((msg) => (
+                  <div key={msg.id} className="agent-timeline-entry">
+                    <div className="agent-timeline-node-icon" style={{ borderColor: msg.badgeColor }}>
+                      {msg.senderIcon}
+                    </div>
+
+                    <div className="agent-timeline-bubble">
+                      <div className="agent-bubble-header">
+                        <div className="agent-bubble-identity">
+                          <span className="agent-bubble-name">{msg.senderName}</span>
+                          <span
+                            className="multi-ai-role-tag"
+                            style={{
+                              background: `${msg.badgeColor}15`,
+                              color: msg.badgeColor,
+                              border: `1px solid ${msg.badgeColor}40`,
+                            }}
+                          >
+                            {msg.senderTitle}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <span
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              color: msg.badgeColor,
+                              background: `${msg.badgeColor}10`,
+                              padding: "2px 8px",
+                              borderRadius: 6,
+                            }}
+                          >
+                            {msg.badgeLabel}
+                          </span>
+                          <span className="agent-bubble-time">{msg.timestamp}</span>
+                        </div>
+                      </div>
+
+                      <h4 className="agent-bubble-title">{msg.title}</h4>
+
+                      <div className="agent-bubble-body">{msg.content}</div>
+
+                      {msg.keyFindings && msg.keyFindings.length > 0 && (
+                        <div className="agent-findings-box">
+                          <strong>Các điểm ghi nhận trọng tâm của tác tử:</strong>
+                          <ul>
+                            {msg.keyFindings.map((kf, kfIdx) => (
+                              <li key={kfIdx}>{kf}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <span className="agent-recommendation-pill">
+                          👉 Đề xuất bước tiếp theo: {msg.actionRecommendation}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Bottom Action Footer */}
-          <div className="results-footer-bar">
-            <div className="footer-guide-text">
-              <Icon name="check" size={18} />
-              <span>
-                Các giải pháp trên đã sẵn sàng để tích hợp vào website. Bấm vào <strong>Cấu hình trang</strong> để cập
-                nhật các khối nội dung theo gợi ý.
-              </span>
+          {/* TAB 4: BÁO CÁO TEXT HOÀN CHỈNH */}
+          {activeTab === "rawReport" && (
+            <div className="raw-report-tab-body">
+              <div className="raw-report-header">
+                <span className="raw-title">Toàn văn Kế hoạch Nâng cấp Hệ thống (Đã đối chiếu đa tác tử)</span>
+                <button type="button" className="copy-raw-btn" onClick={handleCopyReport}>
+                  <Icon name={copySuccess ? "check" : "copy"} size={14} />
+                  <span>{copySuccess ? "Đã sao chép!" : "Sao chép toàn bộ"}</span>
+                </button>
+              </div>
+              <textarea value={analysisResult.rawTextReport} readOnly rows={20} className="raw-report-textarea" />
             </div>
-            <div className="footer-buttons">
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: THÊM / CHỈNH SỬA KEY AI & PHÂN QUYỀN TÁC TỬ                         */}
+      {/* ========================================================================= */}
+      {showKeyModal && editingKeyItem && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: "rgba(15, 23, 42, 0.75)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setShowKeyModal(false)}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 620,
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "18px 24px",
+                borderBottom: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 24 }}>{editingKeyItem.icon}</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: "#1e293b" }}>
+                    Cấu hình Key AI & Phân quyền Tác tử
+                  </h3>
+                  <p style={{ margin: 0, fontSize: 12, color: "#64748b" }}>
+                    Chỉ định phạm vi quyền hạn và API Key cho tác tử trong hệ thống
+                  </p>
+                </div>
+              </div>
+
               <button
                 type="button"
-                className="secondary-action-btn"
-                onClick={() => navigate("/heatmap")}
+                onClick={() => setShowKeyModal(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 16,
+                  color: "#64748b",
+                }}
               >
-                <Icon name="flame" size={16} />
-                <span>Quay lại Bản đồ nhiệt</span>
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+                  Tên gợi nhớ Key AI:
+                </label>
+                <input
+                  type="text"
+                  value={editingKeyItem.name}
+                  onChange={(e) => setEditingKeyItem({ ...editingKeyItem, name: e.target.value })}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 13,
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+                    Vai trò cấp bậc:
+                  </label>
+                  <select
+                    value={editingKeyItem.role}
+                    onChange={(e) => {
+                      const role = e.target.value as MultiAiAgentRole;
+                      let roleTitle = "Chuyên gia Tùy biến";
+                      let icon = "🤖";
+                      let badgeColor = "#059669";
+                      if (role === "functional_staff") {
+                        roleTitle = "Nhân viên Rà soát Chức năng & Dữ liệu";
+                        icon = "👨‍💻";
+                        badgeColor = "#2563eb";
+                      } else if (role === "qa_manager") {
+                        roleTitle = "Quản lý Giám sát & Đảm bảo Chất lượng";
+                        icon = "👩‍💼";
+                        badgeColor = "#7c3aed";
+                      } else if (role === "director") {
+                        roleTitle = "Giám đốc Quản lý Toàn hệ thống";
+                        icon = "👑";
+                        badgeColor = "#d97706";
+                      }
+                      setEditingKeyItem({
+                        ...editingKeyItem,
+                        role,
+                        roleTitle,
+                        icon,
+                        badgeColor,
+                      });
+                    }}
+                    style={{
+                      width: "100%",
+                      height: 38,
+                      padding: "0 10px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 13,
+                      boxSizing: "border-box",
+                      background: "#ffffff",
+                    }}
+                  >
+                    <option value="functional_staff">👨‍💻 Cấp 1: Nhân viên chức năng (Kiểm tra nội dung & 5 hằng số)</option>
+                    <option value="qa_manager">👩‍💼 Cấp 2: Quản lý kiểm soát (Thẩm định báo cáo & quy trình)</option>
+                    <option value="director">👑 Cấp 3: Giám đốc điều hành (Phê chuẩn lộ trình & KPI)</option>
+                    <option value="custom">🤖 Tùy biến: Chuyên gia phân tích riêng</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+                    Mô hình Google Gemini:
+                  </label>
+                  <select
+                    value={editingKeyItem.model}
+                    onChange={(e) => setEditingKeyItem({ ...editingKeyItem, model: e.target.value })}
+                    style={{
+                      width: "100%",
+                      height: 38,
+                      padding: "0 10px",
+                      borderRadius: 8,
+                      border: "1px solid #cbd5e1",
+                      fontSize: 13,
+                      boxSizing: "border-box",
+                      background: "#ffffff",
+                    }}
+                  >
+                    <option value="gemini-2.5-flash">gemini-2.5-flash (Khuyên dùng - Nhanh & Chuẩn)</option>
+                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite (Siêu nhẹ)</option>
+                    <option value="gemini-1.5-flash">gemini-1.5-flash (Ổn định)</option>
+                    <option value="gemini-1.5-pro">gemini-1.5-pro (Tư duy sâu)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+                  Google AI Studio API Key:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Dán khóa API AIzaSy..."
+                  value={editingKeyItem.apiKey}
+                  onChange={(e) => setEditingKeyItem({ ...editingKeyItem, apiKey: e.target.value, status: "untested" })}
+                  style={{
+                    width: "100%",
+                    height: 38,
+                    padding: "0 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 13,
+                    fontFamily: "monospace",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#334155", marginBottom: 4 }}>
+                  Phạm vi nhiệm vụ & thẩm quyền của Key (Mô tả chi tiết):
+                </label>
+                <textarea
+                  rows={3}
+                  value={editingKeyItem.scopeDescription}
+                  onChange={(e) => setEditingKeyItem({ ...editingKeyItem, scopeDescription: e.target.value })}
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: 8,
+                    border: "1px solid #cbd5e1",
+                    fontSize: 12.5,
+                    lineHeight: 1.5,
+                    boxSizing: "border-box",
+                    fontFamily: "inherit",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "14px 24px",
+                borderTop: "1px solid #e2e8f0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 10,
+                background: "#f8fafc",
+              }}
+            >
+              <button
+                type="button"
+                className="multi-ai-btn"
+                onClick={() => setShowKeyModal(false)}
+              >
+                Hủy bỏ
               </button>
               <button
                 type="button"
-                className="primary-accent-btn"
-                onClick={() => navigate("/cau-hinh-trang")}
+                className="multi-ai-btn multi-ai-btn--primary"
+                onClick={() => handleSaveKeyFromModal(editingKeyItem)}
               >
-                <Icon name="settings" size={16} />
-                <span>Mở Cấu hình trang ngay</span>
+                <Icon name="check" size={14} />
+                <span>Lưu cấu hình Key</span>
               </button>
             </div>
           </div>
@@ -1127,5 +1965,3 @@ III. KẾ HOẠCH HÀNH ĐỘNG CỤ THỂ ĐỂ NÂNG CẤP WEBSITE (ACTION PLA
     </div>
   );
 }
-
-export default SystemAnalysisPage;
