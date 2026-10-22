@@ -23,6 +23,14 @@ export function getGoogleSheetsUrl(): string {
   try {
     const customUrl = localStorage.getItem(STORAGE_GOOGLE_SHEETS_URL_KEY);
     if (customUrl && customUrl.trim()) return customUrl.trim();
+
+    const savedConfig = localStorage.getItem("aurora-cms:landing-page");
+    if (savedConfig) {
+      const parsed = JSON.parse(savedConfig);
+      if (parsed.googleSheetsUrl && parsed.googleSheetsUrl.trim()) {
+        return parsed.googleSheetsUrl.trim();
+      }
+    }
   } catch {}
   return "";
 }
@@ -30,7 +38,17 @@ export function getGoogleSheetsUrl(): string {
 export function setGoogleSheetsUrl(url: string): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_GOOGLE_SHEETS_URL_KEY, url.trim());
+    const trimmed = url.trim();
+    localStorage.setItem(STORAGE_GOOGLE_SHEETS_URL_KEY, trimmed);
+
+    const savedConfig = localStorage.getItem("aurora-cms:landing-page");
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        parsed.googleSheetsUrl = trimmed;
+        localStorage.setItem("aurora-cms:landing-page", JSON.stringify(parsed));
+      } catch {}
+    }
   } catch {}
 }
 

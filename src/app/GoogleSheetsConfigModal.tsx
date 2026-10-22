@@ -22,6 +22,29 @@ const APPS_SCRIPT_SOURCE = `/**
  * =========================================================================
  */
 
+function testRun() {
+  setupSheetTabs();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Don_Tu_Van");
+  const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+  sheet.appendRow([
+    "TEST_" + Date.now(),
+    timeStr,
+    "Phụ huynh mẫu (Kiểm tra)",
+    "096 290 3942",
+    "Tư vấn can thiệp trẻ chậm nói",
+    "Bé 2.5 tuổi cần kiểm tra đánh giá phát triển",
+    "Chạy thử trực tiếp từ Apps Script",
+    "Mới nhận (Chưa liên hệ)",
+    "Dữ liệu mẫu đã vào bảng tính thành công!"
+  ]);
+  Logger.log("✅ CHÚC MỪNG: Đã thêm dữ liệu mẫu vào tab Don_Tu_Van thành công!");
+}
+
+function chayThuNghiem() {
+  testRun();
+}
+
 function setupSheetTabs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -98,8 +121,18 @@ function setupSheetTabs() {
 function doPost(e) {
   try {
     setupSheetTabs();
-    const contents = e.postData ? e.postData.contents : "";
-    const data = JSON.parse(contents || "{}");
+    e = e || {};
+    let data = {};
+    if (e.postData && e.postData.contents) {
+      try { data = JSON.parse(e.postData.contents); } catch(err) { data = {}; }
+    } else if (e.parameter && Object.keys(e.parameter).length > 0) {
+      data = e.parameter;
+    } else {
+      // Khi bấm Chạy trực tiếp trong Apps Script
+      testRun();
+      return responseJson({ success: true, message: "Đã chạy thử nghiệm và thêm 1 dòng mẫu vào bảng tính!" });
+    }
+
     const action = data.action || "create_lead";
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -212,8 +245,28 @@ function doPost(e) {
 function doGet(e) {
   try {
     setupSheetTabs();
-    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "get_leads";
+    e = e || {};
+    const parameter = e.parameter || {};
+    const action = parameter.action || "get_leads";
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Hỗ trợ tạo đơn bằng GET (dự phòng)
+    if (action === "create_lead") {
+      const sheet = ss.getSheetByName("Don_Tu_Van");
+      const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+      sheet.appendRow([
+        parameter.id || ("lead_" + Date.now()),
+        timeStr,
+        parameter.name || "Phụ huynh",
+        parameter.phone || "",
+        parameter.need || "Tư vấn can thiệp",
+        parameter.message || "",
+        parameter.campaign || "Chiến dịch Zalo / Trang chủ",
+        "Mới nhận (Chưa liên hệ)",
+        ""
+      ]);
+      return responseJson({ success: true, message: "Đã lưu đơn tư vấn thành công vào Google Trang tính!" });
+    }
 
     // 1. LẤY DANH SÁCH ĐƠN TƯ VẤN
     if (action === "get_leads") {
@@ -325,8 +378,28 @@ export function GoogleSheetsConfigModal({
     }
   };
 
-  const handleSave = () => {
-    setGoogleSheetsUrl(url.trim());
+  const handleSave = async () => {
+    const trimmed = url.trim();
+    setGoogleSheetsUrl(trimmed);
+
+    if (trimmed) {
+      try {
+        const cloudUrl = "https://kvdb.io/RtALwN4JAnjEQUjqKLgAuk/landing_config";
+        const res = await fetch(cloudUrl, { cache: "no-store" });
+        if (res.ok) {
+          const cfg = await res.json();
+          cfg.googleSheetsUrl = trimmed;
+          await fetch(cloudUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(cfg),
+          });
+        }
+      } catch (e) {
+        console.warn("Could not sync googleSheetsUrl to cloud:", e);
+      }
+    }
+
     if (onSuccess) onSuccess();
     onClose();
   };

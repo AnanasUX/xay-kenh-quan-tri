@@ -5,24 +5,45 @@
  * Kết nối: Landing Page (tre-tu-ky-responsive) & Quản trị CMS (xay-kenh-quan-tri)
  * =========================================================================
  *
- * HƯỚNG DẪN CÀI ĐẶT 4 BƯỚC (CHỈ MẤT 1 PHÚT):
- * 1. Mở một trang tính Google mới (gõ sheets.new trên trình duyệt)
- *    Đặt tên file là: "CSDL Trẻ Tự Kỷ Cô Hương".
- * 2. Trên thanh menu, vào: Tiện ích mở rộng (Extensions) -> Chọn "Apps Script".
- * 3. Xóa sạch mọi code mẫu cũ trong khung soạn thảo, DÁN TOÀN BỘ FILE CODE NÀY VÀO.
- * 4. Bấm nút "Triển khai" (Deploy) màu xanh ở góc phải trên:
- *    - Chọn "Tùy chọn triển khai mới" (New deployment).
- *    - Bấm vào bánh răng ⚙ "Chọn loại", chọn: "Ứng dụng web" (Web app).
- *    - Mô tả: "CSDL Cô Hương v1.0".
- *    - Thực thi dưới dạng (Execute as): "Tôi" (Me).
- *    - Ai có quyền truy cập (Who has access): "Bất kỳ ai" (Anyone).
- *    - Bấm "Triển khai" (Deploy) -> Chọn "Ủy quyền truy cập" (Authorize access).
- *    - Chọn tài khoản Google của bạn -> Bấm "Advanced" (Nâng cao) -> "Go to CSDL (unsafe)".
- *    - Bấm "Allow" (Cho phép).
- * 5. Sao chép "URL ứng dụng web" (dạng: https://script.google.com/macros/s/.../exec)
- *    và dán vào ô "Cấu hình Google Sheets" trong Trang Quản trị CMS.
+ * HƯỚNG DẪN CÀI ĐẶT CHUẨN 3 BƯỚC:
+ * 1. Mở trang tính Google Sheets của bạn.
+ *    Vào Tiện ích mở rộng (Extensions) -> Apps Script.
+ * 2. Xóa hết code cũ, dán toàn bộ file này vào và bấm LƯU (Ctrl + S).
+ *    -> Bạn có thể bấm nút "Chạy" (Run) để kiểm tra: Hệ thống sẽ tự tạo 4 tab và ghi 1 dòng mẫu ngay!
+ * 3. Bấm "Triển khai" (Deploy) góc trên bên phải -> "Tùy chọn triển khai mới" (New deployment):
+ *    - Loại: Chọn "Ứng dụng web" (Web app)
+ *    - Thực thi dưới dạng (Execute as): "Tôi" (Me)
+ *    - Ai có quyền truy cập (Who has access): "Bất kỳ ai" (Anyone)
+ *    - Bấm "Triển khai" (Deploy) -> Ủy quyền truy cập -> Sao chép URL kết thúc bằng /exec.
  * =========================================================================
  */
+
+/**
+ * Hàm chạy thử nghiệm trực tiếp trong Google Apps Script
+ * Bấm nút "Chạy" (Run) trên thanh công cụ Apps Script sẽ tự động thực thi hàm này!
+ */
+function testRun() {
+  setupSheetTabs();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("Don_Tu_Van");
+  const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+  sheet.appendRow([
+    "TEST_" + Date.now(),
+    timeStr,
+    "Phụ huynh mẫu (Kiểm tra)",
+    "096 290 3942",
+    "Tư vấn can thiệp trẻ chậm nói",
+    "Bé 2.5 tuổi cần kiểm tra đánh giá phát triển",
+    "Chạy thử trực tiếp từ Apps Script",
+    "Mới nhận (Chưa liên hệ)",
+    "Dữ liệu mẫu đã vào bảng tính thành công!"
+  ]);
+  Logger.log("✅ CHÚC MỪNG: Đã thêm dữ liệu mẫu vào tab Don_Tu_Van thành công!");
+}
+
+function chayThuNghiem() {
+  testRun();
+}
 
 function setupSheetTabs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -108,8 +129,18 @@ function setupSheetTabs() {
 function doPost(e) {
   try {
     setupSheetTabs();
-    const contents = e.postData ? e.postData.contents : "";
-    const data = JSON.parse(contents || "{}");
+    e = e || {};
+    let data = {};
+    if (e.postData && e.postData.contents) {
+      try { data = JSON.parse(e.postData.contents); } catch(err) { data = {}; }
+    } else if (e.parameter && Object.keys(e.parameter).length > 0) {
+      data = e.parameter;
+    } else {
+      // Khi người dùng bấm nút "Chạy" trực tiếp trong Apps Script
+      testRun();
+      return responseJson({ success: true, message: "Đã chạy thử nghiệm và thêm 1 dòng mẫu vào bảng tính!" });
+    }
+
     const action = data.action || "create_lead";
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
@@ -223,8 +254,28 @@ function doPost(e) {
 function doGet(e) {
   try {
     setupSheetTabs();
-    const action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "get_leads";
+    e = e || {};
+    const parameter = e.parameter || {};
+    const action = parameter.action || "get_leads";
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Hỗ trợ tạo đơn bằng GET (dự phòng tối đa)
+    if (action === "create_lead") {
+      const sheet = ss.getSheetByName("Don_Tu_Van");
+      const timeStr = Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy HH:mm:ss");
+      sheet.appendRow([
+        parameter.id || ("lead_" + Date.now()),
+        timeStr,
+        parameter.name || "Phụ huynh",
+        parameter.phone || "",
+        parameter.need || "Tư vấn can thiệp",
+        parameter.message || "",
+        parameter.campaign || "Chiến dịch Zalo / Trang chủ",
+        "Mới nhận (Chưa liên hệ)",
+        ""
+      ]);
+      return responseJson({ success: true, message: "Đã lưu đơn tư vấn thành công vào Google Trang tính!" });
+    }
 
     // 1. LẤY DANH SÁCH ĐƠN TƯ VẤN
     if (action === "get_leads") {
