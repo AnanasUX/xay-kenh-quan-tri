@@ -341,7 +341,7 @@ export function AccountsPage() {
                   <td className="col-user">
                     <div className="user-info-cell">
                       <span className={`user-avatar ${acc.role === "admin" ? "avatar-admin" : "avatar-staff"}`}>
-                        {acc.fullName.slice(0, 2).toUpperCase()}
+                        {((acc.fullName || acc.username || "AD").slice(0, 2)).toUpperCase()}
                       </span>
                       <div>
                         <strong>{acc.fullName}</strong>

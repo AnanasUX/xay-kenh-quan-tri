@@ -557,7 +557,7 @@ export function PageConfigPage() {
                         </div>
                       ))}
                     </div>
-                  ) : activeSection.items && (
+                  ) : Array.isArray(activeSection.items) && (
                     <div className="mini-items">
                       {activeSection.items.slice(0, 6).map((item) => (
                         <span key={item.id}><i />{item.title}</span>

@@ -563,9 +563,7 @@ export function AuditLogsPage() {
                       <td className="col-user">
                         <div className="user-info-cell">
                           <span className={`user-avatar ${log.role === "admin" ? "avatar-admin" : "avatar-staff"}`}>
-                            {log.fullName
-                              ? log.fullName.slice(0, 2).toUpperCase()
-                              : log.username.slice(0, 2).toUpperCase()}
+                            {((log.fullName || log.username || "AD").slice(0, 2)).toUpperCase()}
                           </span>
                           <div>
                             <strong>{log.fullName}</strong>
@@ -1163,7 +1161,7 @@ export function AuditLogsPage() {
                               }}
                               title={acc.accessUrl}
                             >
-                              {acc.accessUrl.length > 70 ? acc.accessUrl.slice(0, 70) + "..." : acc.accessUrl}
+                              {acc.accessUrl ? (acc.accessUrl.length > 70 ? acc.accessUrl.slice(0, 70) + "..." : acc.accessUrl) : "Trang chính"}
                             </a>
                           </div>
                         </td>
@@ -1328,7 +1326,7 @@ export function AuditLogsPage() {
                               className={`user-avatar ${stat.role === "admin" ? "avatar-admin" : "avatar-staff"}`}
                               style={{ width: "36px", height: "36px", fontSize: "14px" }}
                             >
-                              {stat.fullName.slice(0, 2).toUpperCase()}
+                              {((stat.fullName || stat.username || "AD").slice(0, 2)).toUpperCase()}
                             </span>
                             <div>
                               <div style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a" }}>
@@ -1642,9 +1640,7 @@ export function AuditLogsPage() {
                           <td className="col-user">
                             <div className="user-info-cell">
                               <span className={`user-avatar ${acc.role === "admin" ? "avatar-admin" : "avatar-staff"}`}>
-                                {acc.fullName
-                                  ? acc.fullName.slice(0, 2).toUpperCase()
-                                  : acc.username.slice(0, 2).toUpperCase()}
+                                {((acc.fullName || acc.username || "AD").slice(0, 2)).toUpperCase()}
                               </span>
                               <div>
                                 <strong>{acc.fullName}</strong>

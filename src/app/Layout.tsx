@@ -82,6 +82,7 @@ export default function Layout() {
     if (currentUser?.role === "staff") {
       const adminOnlyPaths = [
         "/tai-khoan",
+        "/quan-ly-ai-he-thong",
         "/heatmap",
         "/dang-ky-tu-van",
         "/nhat-ky-hoat-dong",
@@ -357,7 +358,7 @@ export default function Layout() {
   // Filter navigation items by role
   const visibleNavItems = navItems.filter((item) => !item.adminOnly || currentUser.role === "admin");
 
-  const avatarInitials = currentUser.fullName ? currentUser.fullName.slice(0, 2).toUpperCase() : "AD";
+  const avatarInitials = ((currentUser?.fullName || currentUser?.username || "AD").slice(0, 2)).toUpperCase();
 
   return (
     <div className="app-shell">
@@ -460,9 +461,7 @@ export default function Layout() {
                 <div className="dropdown-quick-switch">
                   {accountsList.map((acc) => {
                     const isAccCurrent = acc.id === currentUser.id;
-                    const initials = acc.fullName
-                      ? acc.fullName.slice(0, 2).toUpperCase()
-                      : acc.username.slice(0, 2).toUpperCase();
+                    const initials = ((acc.fullName || acc.username || "AD").slice(0, 2)).toUpperCase();
                     return (
                       <button
                         key={acc.id}
@@ -509,6 +508,14 @@ export default function Layout() {
                     >
                       <Icon name="users" size={15} />
                       Quản lý danh sách tài khoản
+                    </NavLink>
+                    <NavLink
+                      to="/quan-ly-ai-he-thong"
+                      className="dropdown-link-item"
+                      onClick={() => setShowProfileMenu(false)}
+                    >
+                      <Icon name="sparkle" size={15} />
+                      Quản lý AI hệ thống
                     </NavLink>
                     <NavLink
                       to="/nhat-ky-hoat-dong"

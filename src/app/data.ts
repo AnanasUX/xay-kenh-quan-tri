@@ -7,5 +7,6 @@ export const navItems: { label: string; path: string; icon: IconName; badge?: nu
   { label: "Bản đồ nhiệt UX", path: "/heatmap", icon: "flame", adminOnly: true },
   { label: "Phân tích hệ thống", path: "/phan-tich-he-thong", icon: "sparkle", adminOnly: true },
   { label: "Quản lý tài khoản", path: "/tai-khoan", icon: "profile", adminOnly: true },
+  { label: "Quản lý AI hệ thống", path: "/quan-ly-ai-he-thong", icon: "sparkle", adminOnly: true },
   { label: "Nhật ký hoạt động", path: "/nhat-ky-hoat-dong", icon: "history", adminOnly: true },
 ];
