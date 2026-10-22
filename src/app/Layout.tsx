@@ -469,7 +469,10 @@ export default function Layout() {
                         className={`quick-switch-item ${isAccCurrent ? "active" : ""}`}
                         onClick={() => handleSwitchUser(acc)}
                       >
-                        <span className={`avatar ${acc.role === "admin" ? "avatar--admin-xs" : "avatar--staff-xs"}`}>
+                        <span
+                          className={`avatar ${acc.role === "admin" ? "avatar--admin-xs" : "avatar--staff-xs"}`}
+                          style={{ flexShrink: 0, width: 28, height: 28, minWidth: 28, minHeight: 28 }}
+                        >
                           {initials}
                         </span>
                         <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>

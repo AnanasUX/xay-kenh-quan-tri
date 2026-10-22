@@ -154,15 +154,15 @@ export function ConsultationsPage() {
   };
 
   return (
-    <div className="page" style={{ padding: "24px 32px", maxWidth: 1400, margin: "0 auto" }}>
+    <div className="accounts-page" style={{ paddingBottom: 60 }}>
       <PageHeading
         action={
           <div style={{ display: "flex", gap: "10px" }}>
-            <button className="button button--secondary" onClick={exportCsv} type="button">
+            <button className="secondary-button" onClick={exportCsv} type="button">
               <Icon name="download" size={16} />
               <span>Xuất Excel / CSV</span>
             </button>
-            <button className="button button--secondary" onClick={fetchLeads} type="button">
+            <button className="secondary-button" onClick={fetchLeads} type="button">
               <Icon name="refresh" size={16} />
               <span>Tải lại</span>
             </button>
@@ -170,6 +170,7 @@ export function ConsultationsPage() {
         }
         description="Theo dõi danh sách phụ huynh để lại số điện thoại đăng ký tư vấn & đánh giá phát triển từ trang web."
         title="Đăng ký tư vấn"
+        eyebrow="Quản lý khách hàng & Đăng ký"
       />
 
       {/* Quick Stats Banner */}
