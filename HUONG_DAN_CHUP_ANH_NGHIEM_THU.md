@@ -83,14 +83,15 @@ Nhằm đảm bảo tính chính xác và toàn vẹn pháp lý, hệ thống th
      * Bổ sung `scroll-margin-top: 80px !important` cho toàn bộ các section đích.
 6. **Khắc phục triệt để lỗi điều hướng và Scrollspy khi truy cập URL với `#about` hoặc tải lại trang (Reload):**
    * **Vấn đề đã xử lý:** Khi người dùng truy cập link `https://ananasux.github.io/tre-tu-ky-responsive/?zarsrc=30&utm_source=zalo&utm_medium=zalo&utm_campaign=zalo#about`, trang web bị cuộn lỡ dở và khi F5 tải lại trang thì menu điều hướng bị mặc định chọn sai mục "Không gian" (`#gallery`).
-   * **Giải pháp kỹ thuật đã áp dụng:**
-     * **Ưu tiên đầu trang tuyệt đối khi vào với `#about` / `#top`:** Hệ thống cưỡng bức đưa vị trí cuộn về `0` (`window.scrollTo(0, 0)` và `lenis.scrollTo(0, { immediate: true })`), kích hoạt `activeSection = "about"` để người dùng luôn nhìn thấy toàn cảnh Hero Banner & Tiêu đề trung tâm trước tiên.
-     * **Khóa Scroll Restoration:** Thiết lập `window.history.scrollRestoration = 'manual'` tại `main.tsx` chặn trình duyệt tự động ghi nhớ và phục hồi cuộn lưng chừng trang khi F5.
-     * **Tái thiết kế thuật toán Scrollspy (Active Section Engine):**
-       * Sử dụng `getBoundingClientRect().top <= 140` đo đạc khoảng cách thực tế so với khung nhìn, không bị sai lệch bởi độ trễ tải ảnh của trình duyệt.
-       * Thiết lập rào chắn an toàn: Khi section `#areas` chưa vượt qua ngưỡng đọc (`areasTop > 140`), menu luôn giữ trạng thái active là "Giới thiệu" (`about`), triệt tiêu 100% tình trạng nhảy nhầm sang "Không gian" (`gallery`).
-     * **Sửa logic bộ lọc Zalo Campaign (`isZaloCampaignResourcesLanding`):** Chỉ ẩn khối Đội ngũ khi URL thực sự có mục tiêu `#resources`, giữ nguyên cấu trúc trang hoàn chỉnh cho các đường link `#about`.
-     * **Đồng bộ nút "Giới thiệu" & Logo:** Khi click logo thương hiệu hoặc mục "Giới thiệu" trên menu, trang web cuộn mượt mà lên đầu trang `0` và kích hoạt ngay mục "Giới thiệu".
+   * **Nguyên nhân cốt lõi phát hiện:**
+     1. Khối `Hero` ban đầu mang id `#top`, trong khi `#about` bị gắn vào khối `Sứ mệnh` (nằm sâu bên dưới 860px). Khi trình duyệt đọc URL có `#about`, cơ chế nhảy anchor tự nhiên của trình duyệt tự cuộn bỏ qua khối Hero để nhảy tới Sứ mệnh.
+     2. Khi tải trang, ảnh cơ sở vật chất và dữ liệu đám mây nạp bất đồng bộ gây co giãn chiều cao DOM (layout reflow), khiến vị trí cuộn rơi vào ngưỡng nhận diện của khối "Không gian" (`#gallery`).
+   * **Giải pháp kỹ thuật toàn diện đã áp dụng & kiểm thử thành công:**
+     * **Hợp nhất Anchor `#about` lên đỉnh trang (Top: 0):** Gắn thẻ neo `#about` trực tiếp tại đầu khối `Hero` (`top: 0`) và đổi khối Sứ mệnh thành `#mission`. Bất kỳ yêu cầu điều hướng nào tới `#about` giờ đây được trình duyệt định tuyến chính xác 100% lên đầu trang, hiển thị trọn vẹn Hero Banner.
+     * **Khóa Scroll Restoration đồng bộ ngay trong `<head>`:** Nhúng script đồng bộ thực thi ngay lập tức trong `<head>` của `index.html` khóa `history.scrollRestoration = 'manual'` và cưỡng bức cuộn về `0` trước cả khi DOM bắt đầu render.
+     * **Khóa bảo vệ điều hướng 800ms (`isNavigatingRef.current = true`):** Khóa tạm thời Scrollspy trong 800ms đầu tiên của phiên tải trang, chặn hoàn toàn các đợt reflow do ảnh hoặc dữ liệu mạng gây nhảy nhầm sang "Không gian".
+     * **Rào chắn Scrollspy kép (`scroll < 350` & `areasTop > 140`):** Khi vị trí cuộn ở vùng đầu trang (`< 350px`) hoặc đỉnh khối `#areas` chưa vượt qua ngưỡng đọc, menu luôn luôn giữ trạng thái active là "Giới thiệu" (`about`).
+     * **Chuẩn hóa siêu dữ liệu Geo & SEO:** Đã chuẩn hóa toàn bộ thẻ meta trong `index.html` về đúng `TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên` theo quy tắc 5 hằng số bất biến.
 
 ---
 
