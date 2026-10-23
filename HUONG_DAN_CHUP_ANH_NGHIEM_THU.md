@@ -162,6 +162,20 @@ Nhằm đảm bảo tính chính xác và toàn vẹn pháp lý, hệ thống th
 * **Lỗi phát hiện:** Thông báo lỗi `useCms is not defined` tại trang Quản lý AI hệ thống do thiếu import hook React và CMS context.
 * **Xử lý dứt điểm:** Đã bổ sung đầy đủ `import React, { useState, useEffect, useRef } from "react"` và `import { useCms } from "./Layout"` vào `AiManagementPage.tsx`, biên dịch và deploy live ổn định 100%.
 
+
+### 6. Hệ thống Hiệu ứng Tương tác Cao cấp Toàn trang (High-End Visual & Micro-Interactions)
+Nhằm tạo nên trải nghiệm sống động, hiện đại và tràn đầy cảm xúc cho phụ huynh, trang Landing Page đã được bổ sung bộ hiệu ứng chuyên sâu:
+* **Quả cầu Ánh sáng Nền Mềm mại (Ambient Floating Blobs):** 3 quả cầu ánh sáng màu tím lavender, vàng ấm và xanh bạc hà chuyển động bồng bềnh tự nhiên (`floatBlob1`, `floatBlob2`, `floatBlob3`) tạo chiều sâu thị giác êm dịu, chuẩn thẩm mỹ can thiệp trẻ em.
+* **Thẻ nổi Thủy tinh Tương tác (Glassmorphism Badges) trên ảnh Hero:**
+  * Thẻ trên: `🌱 Can thiệp 1:1 cá nhân hóa - Giáo án IEP theo thế mạnh riêng` bồng bềnh nhẹ nhàng.
+  * Thẻ dưới: `⭐ 10+ Năm đồng hành cùng trẻ - Trung tâm Cô Hương • Hưng Yên` tạo niềm tin vững chắc.
+* **Dải Số liệu Động Ấn tượng (Animated Stats Ticker Count-Up):**
+  * Tự động chạy số mượt mà khi cuộn tới: `10+` Năm kinh nghiệm, `500+` Trẻ tiến bộ hòa nhập, `100%` Giáo viên chuyên môn cao, `1:1` Lộ trình IEP độc bản.
+* **Thông báo Hoạt động Thời gian thực (Live Social Proof Toast):**
+  * Hộp thông báo nổi góc dưới bên trái tự động luân chuyển các cập nhật ấm áp (phụ huynh hoàn thành trắc nghiệm, đặt lịch Denver II thành công, Cô Hương trực tuyến Zalo), có nút đóng nhanh `×`.
+* **Hiệu ứng Quét sáng Lấp lánh (Shimmer Sweep) trên nút CTA:** Vệt sáng chuyển động định kỳ qua các nút `Tư vấn ngay` (`button--primary`) thu hút ánh nhìn một cách tinh tế.
+* **Tương tác Thẻ Nâng cao (Card Lift & Border Glow):** Toàn bộ thẻ Sứ mệnh, Lĩnh vực, Quy trình đều có hiệu ứng nâng nhẹ (`translateY(-8px)`), đổi bóng đổ và viền sáng gradient khi rê chuột.
+
 ## PHẦN VI: HƯỚNG DẪN CHỤP ẢNH NGHIỆM THU CHI TIẾT (STEP-BY-STEP SCREENSHOT GUIDE)
 
 | STT | Tên ảnh cần chụp | Trang & Đường dẫn | Vị trí / Thao tác trên màn hình | Điểm cần làm nổi bật trong ảnh |
