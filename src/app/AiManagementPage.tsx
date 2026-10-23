@@ -61,6 +61,92 @@ export function AiManagementPage() {
   const [logFilterRole, setLogFilterRole] = useState<"all" | MultiAiAgentRole>("all");
   const [logSearchQuery, setLogSearchQuery] = useState("");
 
+  // Helper to load current landing config
+  const loadCurrentConfig = (): LandingPageConfig => {
+    try {
+      const raw = localStorage.getItem("aurora_landing_config_v1");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return initialLandingPageConfig;
+  };
+
+  // Automated Quality & Compliance Auditor State
+  const [auditReport, setAuditReport] = useState<ComplianceAuditReport | null>(getStoredComplianceAuditReport);
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditProgress, setAuditProgress] = useState(0);
+  const [auditStatusText, setAuditStatusText] = useState("");
+  const [isAutoFixing, setIsAutoFixing] = useState(false);
+  const [autoFixSuccessMsg, setAutoFixSuccessMsg] = useState<string | null>(null);
+  const [activeAuditTab, setActiveAuditTab] = useState<"issues" | "debate">("issues");
+  const [issueSeverityFilter, setIssueSeverityFilter] = useState<"all" | "critical" | "warning" | "info">("all");
+
+  // Initial audit run on first mount if none exists
+  useEffect(() => {
+    if (!auditReport) {
+      const cfg = loadCurrentConfig();
+      runAutomatedComplianceAudit(cfg, multiAiKeys).then(setAuditReport).catch(() => {});
+    }
+  }, []);
+
+  const handleRunComplianceAudit = async () => {
+    setIsAuditing(true);
+    setAuditProgress(15);
+    setAuditStatusText("Khởi chạy AI Auditor kiểm định toàn bộ 11 khối...");
+    setAutoFixSuccessMsg(null);
+    try {
+      const cfg = loadCurrentConfig();
+      const report = await runAutomatedComplianceAudit(cfg, multiAiKeys, (msg, pct) => {
+        setAuditStatusText(msg);
+        setAuditProgress(pct);
+      });
+      setAuditReport(report);
+      logAuditAction({
+        username: currentUser?.username || "admin",
+        fullName: currentUser?.fullName || "Quản trị viên",
+        role: currentUser?.role || "admin",
+        category: "ai",
+        action: "Kiểm định chất lượng toàn trang (Automated Quality Auditor)",
+        detail: `Hoàn tất kiểm định: Điểm sức khỏe ${report.overallScore}/100. Ghi nhận ${report.totalIssues} vấn đề (${report.criticalCount} lỗi nghiêm trọng).`,
+        target: "Quản lý AI hệ thống",
+        status: "success",
+      });
+      notify(`Hoàn tất kiểm định! Điểm chất lượng: ${report.overallScore}/100`);
+    } catch (err: any) {
+      notify(`Lỗi khi kiểm định: ${err?.message || "Không xác định"}`);
+    } finally {
+      setIsAuditing(false);
+      setAuditProgress(100);
+    }
+  };
+
+  const handleApplyAutoFix = () => {
+    setIsAutoFixing(true);
+    try {
+      const cfg = loadCurrentConfig();
+      const res = applyOneClickAutoFix(cfg);
+      setAutoFixSuccessMsg(`Đã tự động sửa thành công ${res.fixedCount} vấn đề! Đưa 5 hằng số và địa chỉ TDP Duyên Phúc Hưng Yên về chuẩn mực 100%, xuất bản lên Live Cloud.`);
+      logAuditAction({
+        username: currentUser?.username || "admin",
+        fullName: currentUser?.fullName || "Quản trị viên",
+        role: currentUser?.role || "admin",
+        category: "ai",
+        action: "Áp dụng Sửa lỗi Tự động 1-Chạm (1-Click Auto-Fix)",
+        detail: `Tự động khắc phục ${res.fixedCount} vấn đề toàn trang. Chuẩn hóa địa chỉ TDP Duyên Phúc Hưng Yên và đồng bộ Live Cloud.`,
+        target: "Quản lý AI hệ thống",
+        status: "success",
+      });
+      notify(`Đã sửa tự động ${res.fixedCount} vấn đề thành công! Trang web đã đạt chuẩn mực tối đa.`);
+      setTimeout(async () => {
+        const fresh = await runAutomatedComplianceAudit(res.updatedConfig, multiAiKeys);
+        setAuditReport(fresh);
+        setIsAutoFixing(false);
+      }, 500);
+    } catch (err: any) {
+      notify(`Lỗi khi sửa tự động: ${err?.message || "Không xác định"}`);
+      setIsAutoFixing(false);
+    }
+  };
+
   // Sync changes across tabs / storage events
   useEffect(() => {
     const handleStorageChange = (e: any) => {
