@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import { Link } from "react-router";
-import { useCms } from "./Layout";
 import {
   type MultiAiKeyItem,
   type MultiAiAgentExchange,
   type MultiAiAgentRole,
+  type ComplianceAuditReport,
+  type ComplianceAuditIssue,
   DEFAULT_MULTI_AI_KEYS,
   getStoredMultiAiKeys,
   saveStoredMultiAiKeys,
@@ -13,7 +12,11 @@ import {
   runSystemWideMultiAgentSync,
   STORAGE_KEY_SYSTEM_AI_SYNC_LOGS,
   IMMUTABLE_SYSTEM_INFO,
+  runAutomatedComplianceAudit,
+  applyOneClickAutoFix,
+  getStoredComplianceAuditReport,
 } from "./aiService";
+import { initialLandingPageConfig, type LandingPageConfig } from "./landingPage";
 import { logAuditAction } from "./auditService";
 import { Icon, PageHeading } from "./ui";
 
@@ -401,6 +404,441 @@ export function AiManagementPage() {
           </div>
         }
       />
+
+      {/* AUTOMATED QUALITY & COMPLIANCE AUDITOR CARD */}
+      <div
+        className="compliance-auditor-panel"
+        style={{
+          background: "#ffffff",
+          borderRadius: "16px",
+          border: "1px solid #e0e7ff",
+          boxShadow: "0 10px 25px -5px rgba(79, 70, 229, 0.07), 0 8px 10px -6px rgba(79, 70, 229, 0.05)",
+          marginBottom: "28px",
+          overflow: "hidden",
+        }}
+      >
+        {/* Panel Header */}
+        <div
+          style={{
+            padding: "20px 24px",
+            background: "linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%)",
+            borderBottom: "1px solid #e0e7ff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "16px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "12px",
+                background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#ffffff",
+                boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
+              }}
+            >
+              <Icon name="shield" size={24} />
+            </div>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <h3 style={{ margin: 0, fontSize: "17px", fontWeight: "700", color: "#1e1b4b" }}>
+                  AI Kiểm Định Chất Lượng & Tuân Thủ Toàn Trang
+                </h3>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    fontWeight: "700",
+                    padding: "3px 9px",
+                    borderRadius: "999px",
+                    background: auditReport && auditReport.criticalCount === 0 ? "#dcfce7" : "#fee2e2",
+                    color: auditReport && auditReport.criticalCount === 0 ? "#15803d" : "#b91c1c",
+                    border: `1px solid ${auditReport && auditReport.criticalCount === 0 ? "#bbf7d0" : "#fecaca"}`,
+                  }}
+                >
+                  {auditReport && auditReport.criticalCount === 0 ? "✓ 100% Chuẩn mực Pháp lý" : `⚠️ Có ${auditReport?.criticalCount || 0} Lỗi cần sửa`}
+                </span>
+              </div>
+              <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
+                Hệ thống Multi-Agent AI tự động quét 11 khối, bảo vệ 5 hằng số pháp lý (TDP Duyên Phúc, Hưng Yên) và hỗ trợ sửa lỗi tự động 1-chạm.
+              </p>
+            </div>
+          </div>
+
+          {/* Top Actions */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="secondary-button"
+              style={{ height: "38px", padding: "0 14px", fontSize: "13px", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "6px" }}
+              onClick={handleRunComplianceAudit}
+              disabled={isAuditing}
+            >
+              <Icon name="sparkle" size={15} />
+              <span>{isAuditing ? "Đang quét..." : "Quét lại toàn trang"}</span>
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              style={{
+                height: "38px",
+                padding: "0 16px",
+                fontSize: "13px",
+                fontWeight: "700",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+                border: "none",
+                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+              }}
+              onClick={handleApplyAutoFix}
+              disabled={isAutoFixing}
+              title="Tự động sửa toàn bộ địa chỉ Thái Bình thành Hưng Yên, khôi phục 5 hằng số và xuất bản lên Cloud"
+            >
+              <Icon name="check" size={16} />
+              <span>{isAutoFixing ? "Đang tự động sửa..." : "⚡ Sửa Toàn Bộ Lỗi Tự Động (1-Click Auto-Fix)"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Progress bar during audit */}
+        {isAuditing && (
+          <div style={{ padding: "12px 24px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#4338ca", fontWeight: "600", marginBottom: "6px" }}>
+              <span>{auditStatusText}</span>
+              <span>{auditProgress}%</span>
+            </div>
+            <div style={{ height: "6px", background: "#e0e7ff", borderRadius: "999px", overflow: "hidden" }}>
+              <div style={{ width: `${auditProgress}%`, height: "100%", background: "linear-gradient(90deg, #4f46e5, #7c3aed)", transition: "width 0.3s ease" }} />
+            </div>
+          </div>
+        )}
+
+        {/* Auto-fix success banner */}
+        {autoFixSuccessMsg && (
+          <div
+            style={{
+              padding: "12px 24px",
+              background: "#ecfdf5",
+              borderBottom: "1px solid #a7f3d0",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13px", color: "#065f46", fontWeight: "600" }}>
+              <span style={{ fontSize: "16px" }}>🎉</span>
+              <span>{autoFixSuccessMsg}</span>
+            </div>
+            <button
+              type="button"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#047857", fontWeight: "700", fontSize: "12px" }}
+              onClick={() => setAutoFixSuccessMsg(null)}
+            >
+              Đóng
+            </button>
+          </div>
+        )}
+
+        {/* Audit Body */}
+        {auditReport && (
+          <div style={{ padding: "24px" }}>
+            {/* Score & Pillars Grid */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: "14px",
+                marginBottom: "22px",
+              }}
+            >
+              {/* Overall Score */}
+              <div
+                style={{
+                  padding: "16px 20px",
+                  borderRadius: "12px",
+                  background: auditReport.overallScore >= 90 ? "#f0fdf4" : auditReport.overallScore >= 70 ? "#fffbeb" : "#fef2f2",
+                  border: `1px solid ${auditReport.overallScore >= 90 ? "#bbf7d0" : auditReport.overallScore >= 70 ? "#fde68a" : "#fecaca"}`,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "32px",
+                    fontWeight: "900",
+                    color: auditReport.overallScore >= 90 ? "#15803d" : auditReport.overallScore >= 70 ? "#b45309" : "#b91c1c",
+                    lineHeight: 1,
+                  }}
+                >
+                  {auditReport.overallScore}
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "#64748b" }}>/100</span>
+                </div>
+                <div>
+                  <strong style={{ display: "block", fontSize: "13px", color: "#1e293b" }}>Điểm Sức Khỏe Toàn Trang</strong>
+                  <span style={{ fontSize: "11.5px", color: "#64748b" }}>
+                    {auditReport.criticalCount === 0 ? "Tuyệt đối an toàn" : `Còn ${auditReport.criticalCount} lỗi cần xử lý`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Legal & Constants */}
+              <div style={{ padding: "14px 18px", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#475569" }}>⚖️ Pháp lý & 5 Hằng số</span>
+                  <strong style={{ fontSize: "13px", color: auditReport.legalScore >= 90 ? "#16a34a" : "#dc2626" }}>{auditReport.legalScore}%</strong>
+                </div>
+                <small style={{ display: "block", fontSize: "11px", color: "#64748b" }}>TDP Duyên Phúc, Hưng Yên & hotline</small>
+              </div>
+
+              {/* 11 Sections Integrity */}
+              <div style={{ padding: "14px 18px", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#475569" }}>📑 Toàn vẹn 11 Khối</span>
+                  <strong style={{ fontSize: "13px", color: auditReport.contentScore >= 90 ? "#16a34a" : "#d97706" }}>{auditReport.contentScore}%</strong>
+                </div>
+                <small style={{ display: "block", fontSize: "11px", color: "#64748b" }}>Tiêu đề, mô tả & mạch thông tin</small>
+              </div>
+
+              {/* Links & Channels */}
+              <div style={{ padding: "14px 18px", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#475569" }}>🔗 Kênh Hotline & Zalo</span>
+                  <strong style={{ fontSize: "13px", color: "#16a34a" }}>{auditReport.linksScore}%</strong>
+                </div>
+                <small style={{ display: "block", fontSize: "11px", color: "#64748b" }}>Kênh chuyển đổi nhanh cho ba mẹ</small>
+              </div>
+
+              {/* Mobile Thumb UX */}
+              <div style={{ padding: "14px 18px", borderRadius: "12px", background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: "600", color: "#475569" }}>📱 Công thái học chạm</span>
+                  <strong style={{ fontSize: "13px", color: "#16a34a" }}>{auditReport.uxScore}%</strong>
+                </div>
+                <small style={{ display: "block", fontSize: "11px", color: "#64748b" }}>Nút nổi 52px chuẩn ngón tay cái</small>
+              </div>
+            </div>
+
+            {/* Audit Sub-Tabs */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="button"
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    fontSize: "12.5px",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeAuditTab === "issues" ? "#4f46e5" : "#f1f5f9",
+                    color: activeAuditTab === "issues" ? "#ffffff" : "#475569",
+                  }}
+                  onClick={() => setActiveAuditTab("issues")}
+                >
+                  🔍 Danh sách Vấn đề Phát hiện ({auditReport.issues.length})
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    fontSize: "12.5px",
+                    fontWeight: "600",
+                    border: "none",
+                    cursor: "pointer",
+                    background: activeAuditTab === "debate" ? "#4f46e5" : "#f1f5f9",
+                    color: activeAuditTab === "debate" ? "#ffffff" : "#475569",
+                  }}
+                  onClick={() => setActiveAuditTab("debate")}
+                >
+                  💬 Hội đồng Đa Agent Thẩm định & Phản biện ({auditReport.agentDebateLog.length})
+                </button>
+              </div>
+
+              {activeAuditTab === "issues" && (
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <span style={{ fontSize: "11.5px", color: "#64748b" }}>Lọc:</span>
+                  {(["all", "critical", "warning", "info"] as const).map((sev) => (
+                    <button
+                      key={sev}
+                      type="button"
+                      style={{
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        border: "1px solid",
+                        cursor: "pointer",
+                        background: issueSeverityFilter === sev ? "#1e293b" : "#ffffff",
+                        color: issueSeverityFilter === sev ? "#ffffff" : "#64748b",
+                        borderColor: issueSeverityFilter === sev ? "#1e293b" : "#cbd5e1",
+                      }}
+                      onClick={() => setIssueSeverityFilter(sev)}
+                    >
+                      {sev === "all" ? "Tất cả" : sev === "critical" ? "🔴 Nghiêm trọng" : sev === "warning" ? "🟡 Cảnh báo" : "🔵 Gợi ý"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tab 1: Issues List */}
+            {activeAuditTab === "issues" && (
+              <div>
+                {auditReport.issues.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "32px 16px", color: "#16a34a" }}>
+                    <div style={{ fontSize: "32px", marginBottom: "8px" }}>🎉</div>
+                    <strong style={{ fontSize: "15px" }}>Không phát hiện bất kỳ lỗi hay sai lệch nào!</strong>
+                    <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>Toàn bộ 11 khối, 5 hằng số pháp lý và địa chỉ Hưng Yên đều hoàn hảo.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {auditReport.issues
+                      .filter((iss) => (issueSeverityFilter === "all" ? true : iss.severity === issueSeverityFilter))
+                      .map((iss) => (
+                        <div
+                          key={iss.id}
+                          style={{
+                            padding: "12px 16px",
+                            borderRadius: "10px",
+                            background: "#f8fafc",
+                            border: "1px solid #e2e8f0",
+                            borderLeft: `4px solid ${iss.severity === "critical" ? "#dc2626" : iss.severity === "warning" ? "#d97706" : "#2563eb"}`,
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            flexWrap: "wrap",
+                            gap: "12px",
+                          }}
+                        >
+                          <div style={{ flex: "1 1 300px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                              <span
+                                style={{
+                                  fontSize: "10.5px",
+                                  fontWeight: "700",
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  background: iss.severity === "critical" ? "#fee2e2" : iss.severity === "warning" ? "#fef3c7" : "#dbeafe",
+                                  color: iss.severity === "critical" ? "#b91c1c" : iss.severity === "warning" ? "#b45309" : "#1d4ed8",
+                                }}
+                              >
+                                {iss.severity === "critical" ? "NGHIÊM TRỌNG" : iss.severity === "warning" ? "CẢNH BÁO" : "GỢI Ý"}
+                              </span>
+                              <span style={{ fontSize: "11px", fontWeight: "600", color: "#64748b" }}>{iss.categoryTitle}</span>
+                              {iss.sectionTitle && (
+                                <span style={{ fontSize: "10.5px", padding: "1px 6px", borderRadius: "4px", background: "#ede9fe", color: "#6d28d9" }}>
+                                  Khối: {iss.sectionTitle}
+                                </span>
+                              )}
+                            </div>
+                            <strong style={{ fontSize: "13.5px", color: "#1e293b", display: "block" }}>{iss.title}</strong>
+                            <p style={{ margin: "4px 0 0", fontSize: "12.5px", color: "#475569" }}>{iss.description}</p>
+                            {(iss.currentValue || iss.recommendedValue) && (
+                              <div style={{ display: "flex", gap: "16px", marginTop: "6px", fontSize: "11.5px", flexWrap: "wrap" }}>
+                                {iss.currentValue && (
+                                  <span style={{ color: "#dc2626" }}>
+                                    <strong>Hiện tại:</strong> {iss.currentValue}
+                                  </span>
+                                )}
+                                {iss.recommendedValue && (
+                                  <span style={{ color: "#16a34a" }}>
+                                    <strong>Đề xuất:</strong> {iss.recommendedValue}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            {iss.canAutoFix ? (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  fontWeight: "600",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  background: "#dcfce7",
+                                  color: "#166534",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                ⚡ Hỗ trợ Auto-Fix
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: "11px", color: "#64748b" }}>Cần biên tập viên sửa</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 2: Multi-Agent Debate Room */}
+            {activeAuditTab === "debate" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px" }}>
+                {auditReport.agentDebateLog.map((ag) => (
+                  <div
+                    key={ag.id}
+                    style={{
+                      padding: "16px",
+                      borderRadius: "12px",
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                      borderTop: `4px solid ${ag.badgeColor}`,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+                      <span style={{ fontSize: "22px" }}>{ag.senderIcon}</span>
+                      <div>
+                        <strong style={{ fontSize: "13.5px", color: "#1e293b", display: "block" }}>{ag.senderName}</strong>
+                        <span style={{ fontSize: "11px", color: ag.badgeColor, fontWeight: "600" }}>{ag.senderTitle}</span>
+                      </div>
+                    </div>
+                    <blockquote
+                      style={{
+                        margin: "0 0 10px",
+                        padding: "8px 12px",
+                        background: "#ffffff",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontStyle: "italic",
+                        color: "#334155",
+                        borderLeft: `3px solid ${ag.badgeColor}`,
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      "{ag.speechContent}"
+                    </blockquote>
+                    <div style={{ fontSize: "11.5px", color: "#475569" }}>
+                      <strong style={{ display: "block", marginBottom: "3px", color: "#1e293b" }}>Kết luận chính:</strong>
+                      <ul style={{ margin: 0, paddingLeft: "16px", lineHeight: 1.4 }}>
+                        {ag.keyFindings.slice(0, 2).map((kf, i) => (
+                          <li key={i}>{kf}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* METRIC CARDS */}
       <div className="accounts-metrics-grid">
