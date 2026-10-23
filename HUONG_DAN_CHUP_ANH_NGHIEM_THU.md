@@ -148,6 +148,20 @@ Nhằm đảm bảo tính chính xác và toàn vẹn pháp lý, hệ thống th
 
 ---
 
+
+### 4. Ghi nhớ phiên Trắc nghiệm Sàng lọc (Session Persistence & Zero-Retest Friction)
+* **Cơ chế hoạt động:**
+  * Khi phụ huynh hoàn tất 5 câu hỏi và bấm *Xem Kết Quả Phân Tích*, hệ thống tự động ghi nhận và đóng gói toàn bộ phiên đánh giá vào `sessionStorage` & `localStorage` (`aurora_screener_session_v1`).
+  * Khi người dùng tải lại trang (F5/Reload) hoặc quay lại trang trong phiên làm việc:
+    * Hệ thống **tự động phục hồi kết quả đánh giá thành công ngay lập tức**, không bắt phụ huynh phải thao tác trả lời lại từ đầu.
+    * Hiển thị bảng thông báo trạng thái: `✅ Đã đánh giá thành công & Lưu vào phiên làm việc (Session Saved)`.
+    * Cung cấp nút tiện ích `🔄 Làm lại trắc nghiệm` nếu gia đình muốn đánh giá lại hoặc kiểm tra cho bé khác.
+  * **Sửa lỗi hiển thị kết quả:** Loại bỏ class `.reveal` ẩn đối với khung kết quả động, đảm bảo kết quả đánh giá luôn hiển thị trực quan 100% không bị trắng màn hình.
+
+### 5. Khắc phục lỗi Runtime useCms trong Kênh Quản trị CMS
+* **Lỗi phát hiện:** Thông báo lỗi `useCms is not defined` tại trang Quản lý AI hệ thống do thiếu import hook React và CMS context.
+* **Xử lý dứt điểm:** Đã bổ sung đầy đủ `import React, { useState, useEffect, useRef } from "react"` và `import { useCms } from "./Layout"` vào `AiManagementPage.tsx`, biên dịch và deploy live ổn định 100%.
+
 ## PHẦN VI: HƯỚNG DẪN CHỤP ẢNH NGHIỆM THU CHI TIẾT (STEP-BY-STEP SCREENSHOT GUIDE)
 
 | STT | Tên ảnh cần chụp | Trang & Đường dẫn | Vị trí / Thao tác trên màn hình | Điểm cần làm nổi bật trong ảnh |
