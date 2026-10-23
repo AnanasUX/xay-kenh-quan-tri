@@ -1638,6 +1638,30 @@ ${managerExchange.content.substring(0, 600)}` }] }],
  * HỌP GIAO BAN MULTI-AGENT TOÀN HỆ THỐNG (SYSTEM-WIDE MULTI-AGENT SYNC)
  * Điều phối sự phối hợp giữa Nhân viên, Quản lý và Giám đốc để vận hành toàn bộ Kênh Quản trị CMS
  */
+
+async function callGeminiRawText(prompt: string, apiKey: string, model: string = "gemini-2.5-flash"): Promise<{ ok: boolean; text?: string; error?: string }> {
+  try {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey.trim()}`;
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+      })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { ok: false, error: err?.error?.message || `HTTP ${res.status}` };
+    }
+    const data = await res.json();
+    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return { ok: true, text: txt || "" };
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "Lỗi kết nối Gemini" };
+  }
+}
+
 export async function runSystemWideMultiAgentSync(
   keys: MultiAiKeyItem[],
   onProgress?: (msg: string, pct: number) => void
