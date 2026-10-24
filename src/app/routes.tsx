@@ -1,6 +1,7 @@
 import { createHashRouter, Navigate, useRouteError } from "react-router";
 import { AccountsPage } from "./AccountsPage";
 import { AiManagementPage } from "./AiManagementPage";
+import { ArticlesManagementPage } from "./ArticlesManagementPage";
 import { AuditLogsPage } from "./AuditLogsPage";
 import { ConsultationsPage } from "./ConsultationsPage";
 import { HeatmapPage } from "./HeatmapPage";
@@ -49,6 +50,7 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/cau-hinh-trang" replace /> },
       { path: "cau-hinh-trang", Component: PageConfigPage },
+      { path: "quan-ly-bai-viet", Component: ArticlesManagementPage },
       { path: "chat-khach-hang", Component: LiveChatPage },
       { path: "dang-ky-tu-van", Component: ConsultationsPage },
       { path: "heatmap", Component: HeatmapPage },
