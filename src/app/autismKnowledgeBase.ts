@@ -56,7 +56,7 @@ export const DEFAULT_AI_SYSTEM_ROLE: AiSystemRoleConfig = {
     "Phụ huynh cảm thấy được lắng nghe, hiểu được hướng hỗ trợ tiếp theo và chủ động liên hệ cô Hương để trao đổi về việc hỗ trợ trẻ.",
 };
 
-export const STORAGE_KEY_AUTISM_SCENARIOS = "autism_ai_scenarios_v1";
+export const STORAGE_KEY_AUTISM_SCENARIOS = "autism_ai_scenarios_v2";
 export const STORAGE_KEY_AI_ROLE = "autism_ai_system_role_v1";
 
 export function getStoredAiRole(): AiSystemRoleConfig {
@@ -275,8 +275,19 @@ export function getStoredScenarios(): AutismScenario[] {
     if (typeof window !== "undefined" && window.localStorage) {
       const raw = window.localStorage.getItem(STORAGE_KEY_AUTISM_SCENARIOS);
       if (raw) {
-        const parsed = JSON.parse(raw);
+        let parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          // Tự động chuẩn hóa địa chỉ nếu cache cũ chứa Hà Nội
+          parsed = parsed.map((sc: AutismScenario) => {
+            if (sc.id === "sc-location" && sc.responseTemplate.includes("Hà Nội")) {
+              return {
+                ...sc,
+                keywords: ["địa chỉ", "dia chi", "ở đâu", "o dau", "cơ sở", "co so", "phòng học", "phong hoc", "hưng hà", "hung ha", "hưng yên", "duyên phúc", "đường đi"],
+                responseTemplate: "Dạ trung tâm Cô Hương tọa lạc tại TDP Duyên Phúc, xã Hưng Hà, Tỉnh Hưng Yên, giao thông thuận tiện và có chỗ đỗ xe an toàn cho gia đình. Hệ thống phòng học được thiết kế an toàn, thân thiện, trang bị đầy đủ dụng cụ điều hòa cảm giác (xích đu tiền đình, thang leo mầm non, bóng gai, thảm áp lực). Cô Hương xin phép gửi định vị bản đồ chỉ đường chi tiết qua số Zalo {customerPhone} của ba mẹ nhé ?!"
+              };
+            }
+            return sc;
+          });
           return parsed;
         }
       }

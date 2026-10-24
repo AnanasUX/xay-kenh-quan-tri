@@ -72,17 +72,56 @@ export function PageConfigPage() {
   const [showRewriteModal, setShowRewriteModal] = useState(false);
   const [showSheetsModal, setShowSheetsModal] = useState(false);
 
+  // 1. Tải cấu hình từ cloud khi vào trang, nhưng tôn trọng bản nháp chưa xuất bản ở localStorage
   useEffect(() => {
     fetch(CLOUD_API_URL, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && Array.isArray(data.sections)) {
+          const status = window.localStorage.getItem(`${STORAGE_KEY}:status`);
+          const savedLocal = window.localStorage.getItem(STORAGE_KEY);
+          // Nếu có bản nháp chưa xuất bản tại local (status === 'draft'), ưu tiên giữ bản nháp của người dùng
+          if (status === "draft" && savedLocal) {
+            try {
+              const localParsed = JSON.parse(savedLocal);
+              if (localParsed && Array.isArray(localParsed.sections)) {
+                setConfig(localParsed);
+                setDirty(true);
+                return;
+              }
+            } catch {}
+          }
           setConfig(data);
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
       })
       .catch((err) => console.warn("Could not load from cloud:", err));
   }, []);
+
+  // 2. Tự động lưu bản nháp vào localStorage mỗi khi có chỉnh sửa (đính kèm ảnh, sửa chữ...) để reload không bị mất
+  useEffect(() => {
+    if (dirty) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        window.localStorage.setItem(`${STORAGE_KEY}:status`, "draft");
+      } catch (e) {
+        console.warn("Could not auto-save draft to localStorage:", e);
+      }
+    }
+  }, [config, dirty]);
+
+  // 3. Cảnh báo trước khi rời trang / reload nếu chưa bấm xuất bản
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (dirty) {
+        e.preventDefault();
+        e.returnValue = "Bạn có thay đổi chưa xuất bản. Bạn có chắc chắn muốn tải lại trang?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [dirty]);
 
   const activeSection = useMemo(() => {
     const found = visibleSections.find((section) => section.id === activeId);
@@ -1004,7 +1043,7 @@ function SectionEditor({
           )}
           <label className="field-wide">Tiêu đề khối<input value={section.title} onChange={(event) => onChange({ title: event.target.value })} /></label>
           <label className="field-wide">Mô tả<textarea value={section.description} onChange={(event) => onChange({ description: event.target.value })} /></label>
-          {section.image && (
+          {(section.image !== undefined || section.id === "hero" || section.id === "gallery") && (
             <MediaField
               label="Hình ảnh chính"
               value={section.image}
@@ -1149,7 +1188,7 @@ function ItemImageField({
       },
       (dataUrl) => {
         onChange(dataUrl);
-        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã áp dụng trực tiếp!`);
+        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã đính kèm! Vui lòng bấm 'Xuất bản thay đổi' ở trên cùng để lưu vĩnh viễn.`);
       }
     );
     event.target.value = "";
@@ -1276,7 +1315,7 @@ function ItemImageField({
         onCropComplete={(croppedDataUrl) => {
           onChange(croppedDataUrl);
           setCropperData((p) => ({ ...p, isOpen: false }));
-          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công!`);
+          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công! Vui lòng bấm 'Xuất bản thay đổi' ở trên cùng để lưu vĩnh viễn.`);
           logAuditAction({
             username: currentUser?.username || "admin",
             fullName: currentUser?.fullName || "Người dùng",
@@ -1341,7 +1380,7 @@ function MediaField({
       },
       (dataUrl) => {
         onChange(dataUrl);
-        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã áp dụng trực tiếp!`);
+        notify(`Ảnh vừa kích thước chuẩn (${spec.targetWidth}×${spec.targetHeight} px) - Đã đính kèm! Vui lòng bấm 'Xuất bản thay đổi' ở trên cùng để lưu vĩnh viễn.`);
       }
     );
     event.target.value = "";
@@ -1398,7 +1437,7 @@ function MediaField({
         onCropComplete={(croppedDataUrl) => {
           if (onChange) onChange(croppedDataUrl);
           setCropperData((p) => ({ ...p, isOpen: false }));
-          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công!`);
+          notify(`Đã cắt ảnh chuẩn ${spec.targetWidth}×${spec.targetHeight} px thành công! Vui lòng bấm 'Xuất bản thay đổi' ở trên cùng để lưu vĩnh viễn.`);
           logAuditAction({
             username: currentUser?.username || "admin",
             fullName: currentUser?.fullName || "Người dùng",
