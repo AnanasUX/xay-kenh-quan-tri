@@ -36,12 +36,12 @@ export const CROP_SPECS = {
     tip: "Căn chỉnh để bao quát góc phòng học, đồ dùng can thiệp và không gian thân thiện.",
   },
   sectionMain: {
-    name: "Hình ảnh Banner / Giới thiệu chính",
+    name: "Hình ảnh Banner / Giới thiệu chính (Hero)",
     targetWidth: 1200,
-    targetHeight: 675,
-    aspectRatio: 16 / 9,
-    aspectRatioLabel: "16:9 (Toàn cảnh)",
-    tip: "Ảnh góc rộng chất lượng cao làm điểm nhấn cho toàn bộ khối nội dung.",
+    targetHeight: 900,
+    aspectRatio: 4 / 3,
+    aspectRatioLabel: "4:3 (Chuẩn khung Hero)",
+    tip: "Khung hiển thị thực tế trên website có cấu trúc tỉ lệ 4:3 (1200 × 900 px hoặc 800 × 600 px). Bạn cũng có thể linh hoạt chọn tỉ lệ 16:9 hoặc dùng ảnh gốc để không bị cắt thông tin.",
   },
 } as const;
 
@@ -69,6 +69,14 @@ export function ImageCropperModal({
   const [zoom, setZoom] = useState<number>(1.0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [currentRatio, setCurrentRatio] = useState<number>(spec.aspectRatio);
+  const [currentRatioLabel, setCurrentRatioLabel] = useState<string>(spec.aspectRatioLabel);
+
+  useEffect(() => {
+    setCurrentRatio(spec.aspectRatio);
+    setCurrentRatioLabel(spec.aspectRatioLabel);
+  }, [spec, isOpen]);
+
   const dragStartRef = useRef<{ mouseX: number; mouseY: number; panX: number; panY: number }>({
     mouseX: 0,
     mouseY: 0,
@@ -82,12 +90,12 @@ export function ImageCropperModal({
   const containerWidth = 460;
   const containerHeight = 320;
 
-  // Tính toán kích thước crop box theo aspect ratio của spec
+  // Tính toán kích thước crop box theo currentRatio
   let cropBoxW = 340;
-  let cropBoxH = Math.round(cropBoxW / spec.aspectRatio);
+  let cropBoxH = Math.round(cropBoxW / currentRatio);
   if (cropBoxH > containerHeight - 30) {
     cropBoxH = containerHeight - 30;
-    cropBoxW = Math.round(cropBoxH * spec.aspectRatio);
+    cropBoxW = Math.round(cropBoxH * currentRatio);
   }
 
   // Tỉ lệ scale tối thiểu để ảnh phủ kín khung cắt
@@ -168,8 +176,20 @@ export function ImageCropperModal({
     if (!imgRef.current) return;
     try {
       const canvas = document.createElement("canvas");
-      canvas.width = spec.targetWidth;
-      canvas.height = spec.targetHeight;
+      let targetW = spec.targetWidth;
+      let targetH = Math.round(targetW / currentRatio);
+      if (Math.abs(currentRatio - 16 / 9) < 0.05) {
+        targetW = 1200;
+        targetH = 675;
+      } else if (Math.abs(currentRatio - 4 / 3) < 0.05) {
+        targetW = 1200;
+        targetH = 900;
+      } else if (Math.abs(currentRatio - 1) < 0.05) {
+        targetW = 512;
+        targetH = 512;
+      }
+      canvas.width = targetW;
+      canvas.height = targetH;
       const ctx = canvas.getContext("2d");
       if (!ctx) {
         onUseOriginal();
@@ -199,12 +219,13 @@ export function ImageCropperModal({
         cropHInImage,
         0,
         0,
-        spec.targetWidth,
-        spec.targetHeight
+        targetW,
+        targetH
       );
 
-      const mime = spec.aspectRatio === 1 && imageSrc.startsWith("data:image/png") ? "image/png" : "image/jpeg";
-      const croppedDataUrl = canvas.toDataURL(mime, 0.90);
+      // Giữ nguyên định dạng PNG nếu người dùng tải ảnh PNG (để giữ độ sắc nét vector và nền trong suốt)
+      const mime = imageSrc.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+      const croppedDataUrl = canvas.toDataURL(mime, 0.92);
       onCropComplete(croppedDataUrl);
     } catch (e) {
       console.error("Error cropping image:", e);
@@ -228,7 +249,7 @@ export function ImageCropperModal({
             </span>
             <div>
               <h3>Cắt & Căn chỉnh Kích thước Ảnh</h3>
-              <p>{spec.name} · Chuẩn {spec.targetWidth} × {spec.targetHeight} px</p>
+              <p>{spec.name} · Khung chuẩn {spec.targetWidth} × {spec.targetHeight} px</p>
             </div>
           </div>
           <button className="icon-button" type="button" onClick={onCancel}>
@@ -253,20 +274,95 @@ export function ImageCropperModal({
             }}
           >
             <div>
-              <span style={{ color: "#64748b" }}>Ảnh vừa tải lên: </span>
+              <span style={{ color: "#64748b" }}>Ảnh tải lên: </span>
               <strong style={{ color: "#0f172a" }}>
                 {origWidth} × {origHeight} px
-              </strong>{" "}
-              <span style={{ color: "#d97706", fontWeight: "600" }}>
-                (Vượt chuẩn {spec.targetWidth}×{spec.targetHeight})
-              </span>
-            </div>
-            <div>
-              <span style={{ color: "#64748b" }}>Chuẩn tối ưu: </span>
-              <strong style={{ color: "#50008b" }}>
-                {spec.targetWidth} × {spec.targetHeight} px ({spec.aspectRatioLabel})
               </strong>
             </div>
+            <div>
+              <span style={{ color: "#64748b" }}>Khung cắt đang chọn: </span>
+              <strong style={{ color: "#50008b" }}>
+                {currentRatioLabel}
+              </strong>
+            </div>
+          </div>
+
+          {/* Quick Aspect Ratio Switcher */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              background: "#ffffff",
+              padding: "4px 0",
+            }}
+          >
+            <span style={{ fontSize: "12px", color: "#475569", fontWeight: "600" }}>
+              📐 Chọn tỉ lệ cắt:
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentRatio(4 / 3);
+                setCurrentRatioLabel("4:3 (Chuẩn khung Hero 1200×900)");
+              }}
+              style={{
+                fontSize: "11.5px",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid",
+                borderColor: Math.abs(currentRatio - 4 / 3) < 0.05 ? "#50008b" : "#cbd5e1",
+                background: Math.abs(currentRatio - 4 / 3) < 0.05 ? "#f3e8ff" : "#f8fafc",
+                color: Math.abs(currentRatio - 4 / 3) < 0.05 ? "#50008b" : "#334155",
+                fontWeight: Math.abs(currentRatio - 4 / 3) < 0.05 ? "700" : "500",
+                cursor: "pointer",
+              }}
+            >
+              4:3 (Chuẩn khung Hero 1200×900)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentRatio(16 / 9);
+                setCurrentRatioLabel("16:9 (Toàn cảnh 1200×675)");
+              }}
+              style={{
+                fontSize: "11.5px",
+                padding: "4px 10px",
+                borderRadius: "8px",
+                border: "1px solid",
+                borderColor: Math.abs(currentRatio - 16 / 9) < 0.05 ? "#50008b" : "#cbd5e1",
+                background: Math.abs(currentRatio - 16 / 9) < 0.05 ? "#f3e8ff" : "#f8fafc",
+                color: Math.abs(currentRatio - 16 / 9) < 0.05 ? "#50008b" : "#334155",
+                fontWeight: Math.abs(currentRatio - 16 / 9) < 0.05 ? "700" : "500",
+                cursor: "pointer",
+              }}
+            >
+              16:9 (Toàn cảnh 1200×675)
+            </button>
+            {spec.aspectRatio === 1 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentRatio(1);
+                  setCurrentRatioLabel("1:1 (Vuông 512×512)");
+                }}
+                style={{
+                  fontSize: "11.5px",
+                  padding: "4px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid",
+                  borderColor: Math.abs(currentRatio - 1) < 0.05 ? "#50008b" : "#cbd5e1",
+                  background: Math.abs(currentRatio - 1) < 0.05 ? "#f3e8ff" : "#f8fafc",
+                  color: Math.abs(currentRatio - 1) < 0.05 ? "#50008b" : "#334155",
+                  fontWeight: Math.abs(currentRatio - 1) < 0.05 ? "700" : "500",
+                  cursor: "pointer",
+                }}
+              >
+                1:1 (Vuông 512×512)
+              </button>
+            )}
           </div>
 
           {/* Interactive Crop Viewport */}

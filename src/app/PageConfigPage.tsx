@@ -1123,13 +1123,14 @@ function processUploadedImageFile(
       const origW = img.naturalWidth || img.width;
       const origH = img.naturalHeight || img.height;
       const userRatio = origW / origH;
-      const ratioDiff = Math.abs(userRatio - spec.aspectRatio) / spec.aspectRatio;
+      const ratioDiffSpec = Math.abs(userRatio - spec.aspectRatio) / spec.aspectRatio;
+      const ratioDiff43 = Math.abs(userRatio - 4 / 3) / (4 / 3);
+      const ratioDiff169 = Math.abs(userRatio - 16 / 9) / (16 / 9);
 
-      // Điều kiện "vừa kích thước hiện tại" (không cần cắt):
-      // 1. Tỉ lệ khung hình khớp chuẩn (chênh lệch <= 4%)
-      // 2. Kích thước không vượt quá 10% kích thước chuẩn
-      const isRatioFit = ratioDiff <= 0.04;
-      const isSizeFit = origW <= spec.targetWidth * 1.1 && origH <= spec.targetHeight * 1.1;
+      // Điều kiện tự động nhận diện ảnh hợp lệ:
+      // Khớp chuẩn 4:3 (Chuẩn khung Hero) hoặc 16:9 (Toàn cảnh) hoặc khớp spec hiện tại
+      const isRatioFit = ratioDiffSpec <= 0.05 || ratioDiff43 <= 0.05 || ratioDiff169 <= 0.05;
+      const isSizeFit = origW <= 1600 && origH <= 1200;
 
       if (isRatioFit && isSizeFit) {
         onDirectApply(dataUrl);
